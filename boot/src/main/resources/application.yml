@@ -1,3 +1,7 @@
+server:
+  port: 9090
+  servlet:
+    context-path: /authsox
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/AUTHS_SOX

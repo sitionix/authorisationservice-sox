@@ -5,9 +5,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.shaded.org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @TestConfiguration
 public class TestContainerSupport {
@@ -16,36 +19,59 @@ public class TestContainerSupport {
 
     private static final Integer POSTGRES_SERVICE_PORT = 5432;
 
-    private static DockerComposeContainer<?> composeContainer;
+    private static final DockerComposeContainer<?> compose = new DockerComposeContainer<>(
+            new File(ClassLoader.getSystemResource("compose/docker-compose.yml").getPath()));
 
     static {
         final Boolean localContainers = Boolean.parseBoolean(System.getenv("LOCAL_CONTAINERS"));
 
         if (!localContainers) {
-            composeContainer = new DockerComposeContainer<>(new File(ClassLoader.getSystemResource("compose/docker-compose.yml").getPath()));
             startCompose();
         }
     }
 
     public static void startCompose() {
+        prepareCompose();
+
         printLogs();
 
-        composeContainer.withExposedService(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
+        compose.waitingFor(POSTGRES_SERVICE_NAME, Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(5)));
 
-        composeContainer.start();
+        compose.start();
 
-        waitScriptExecutions();
-    }
-
-    public static void waitScriptExecutions() {
-        composeContainer.waitingFor(POSTGRES_SERVICE_NAME,
-                Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)));
+        configFramework();
     }
 
     public static void printLogs() {
         final Slf4jLogConsumer consumer = new Slf4jLogConsumer(LoggerFactory.getLogger(TestContainerSupport.class));
 
-        composeContainer.withLogConsumer(POSTGRES_SERVICE_NAME, consumer);
+        compose.withLogConsumer(POSTGRES_SERVICE_NAME, consumer);
+    }
+
+    private static void prepareCompose() {
+        final Map<String, Object> composeContent = new Yaml().load(ClassLoader.getSystemResourceAsStream("compose/docker-compose.yml"));
+        final Map<String, Object> composeServices = (Map<String, Object>) composeContent.get("services");
+
+        for (final Map.Entry<String, Object> composeServicesEntry : composeServices.entrySet()) {
+            final String composeServiceName = composeServicesEntry.getKey();
+
+            final Map<String, Object> composeService = (Map<String, Object>) composeServicesEntry.getValue();
+
+            final List<String> composeServicePorts = (List<String>) composeService.get("ports");
+
+            for (final String composeServicePort : composeServicePorts) {
+                compose.withExposedService(composeServiceName, Integer.parseInt(composeServicePort.split(":")[1]),
+                        Wait.defaultWaitStrategy().withStartupTimeout(Duration.ofMinutes(5)));
+            }
+        }
+    }
+
+    public static void configFramework() {
+
+        final String mariadbHost = compose.getServiceHost(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
+        final Integer mariadbPort = compose.getServicePort(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
+        System.setProperty("qa.mariadb.host", mariadbHost);
+        System.setProperty("qa.mariadb.port", String.valueOf(mariadbPort));
     }
 
 }
