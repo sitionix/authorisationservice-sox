@@ -26,6 +26,7 @@ public class TestContainerSupport {
         final Boolean localContainers = Boolean.parseBoolean(System.getenv("LOCAL_CONTAINERS"));
 
         if (!localContainers) {
+            compose.withLocalCompose(true);
             startCompose();
         }
     }
