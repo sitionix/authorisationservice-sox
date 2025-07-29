@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.afesox</groupId>
             <artifactId>app-afesox-athssox-api-first-stable</artifactId>
-            <version>0.0.6</version>
+            <version>0.0.2</version>
         </dependency>
         <dependency>
             <groupId>javax.validation</groupId>
@@ -90,7 +90,7 @@
     <repositories>
         <repository>
             <id>github</id>
-            <url>https://maven.pkg.github.com/vlad-vinskevitch/app-afesox</url>
+            <url>https://maven.pkg.github.com/vladvinskevitch/app-afesox</url>
         </repository>
     </repositories>
 </project>

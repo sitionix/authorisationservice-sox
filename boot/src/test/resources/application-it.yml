@@ -13,3 +13,7 @@ logging:
     root: INFO
     org.springframework: INFO
     org.hibernate: INFO
+testcontainers:
+  docker:
+    compose:
+      strategy: local
