@@ -38,3 +38,4 @@ fi
 shopt -u nullglob
 
 echo "PostgreSQL custom scripts execution completed."
+
