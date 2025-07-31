@@ -67,11 +67,12 @@ public class TestContainerSupport {
     }
 
     public static void configFramework() {
+        final String postgresHost = compose.getServiceHost(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
+        final Integer postgresPort = compose.getServicePort(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
 
-        final String mariadbHost = compose.getServiceHost(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
-        final Integer mariadbPort = compose.getServicePort(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
-        System.setProperty("qa.mariadb.host", mariadbHost);
-        System.setProperty("qa.mariadb.port", String.valueOf(mariadbPort));
+        System.setProperty("spring.datasource.url", "jdbc:postgresql://" + postgresHost + ":" + postgresPort + "/AUTHS_SOX");
+        System.setProperty("spring.datasource.username", "postgres");
+        System.setProperty("spring.datasource.password", "postgres-pwd");
     }
 
 }
