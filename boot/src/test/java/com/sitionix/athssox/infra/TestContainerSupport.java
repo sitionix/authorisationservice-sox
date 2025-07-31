@@ -70,7 +70,6 @@ public class TestContainerSupport {
         final String postgresHost = compose.getServiceHost(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
         final Integer postgresPort = compose.getServicePort(POSTGRES_SERVICE_NAME, POSTGRES_SERVICE_PORT);
 
-        // Використовуємо Spring Boot автоконфігурацію datasource
         System.setProperty("spring.datasource.url", "jdbc:postgresql://" + postgresHost + ":" + postgresPort + "/AUTHS_SOX");
         System.setProperty("spring.datasource.username", "postgres");
         System.setProperty("spring.datasource.password", "postgres-pwd");
