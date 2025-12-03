@@ -1,32 +1,36 @@
 package com.sitionix.athssox.controller;
 
 import com.app_afesox.athssox.api_first.api.UserApi;
-import com.app_afesox.athssox.api_first.dto.UserDTO;
-import com.app_afesox.athssox.api_first.dto.UserResponseDTO;
-import com.sitionix.athssox.domain.User;
+import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
+import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
+import com.sitionix.athssox.domain.RegisterUserDO;
+import com.sitionix.athssox.domain.ResponseRegisterUser;
 import com.sitionix.athssox.mapper.UserApiMapper;
-import com.sitionix.athssox.usecase.CreateUser;
+import com.sitionix.athssox.usecase.RegisterUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
-
+@Log4j2
 @RestController
 @RequiredArgsConstructor
 public class UserController implements UserApi {
 
-    private final CreateUser createUser;
-
     private final UserApiMapper userDtoMapper;
 
-    @Override
-    public ResponseEntity<UserResponseDTO> createUser(@Valid UserDTO userDTO) {
-        final User user = this.userDtoMapper.asUser(userDTO);
-        final User createdUser = this.createUser.execute(user);
+    private final RegisterUser registerUser;
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(this.userDtoMapper.asUserResponseDTO(createdUser));
+    @Override
+    public ResponseEntity<ResponseRegisterUserDTO> registerUser(@Valid final RegisterUserDTO registerUserDTO) {
+
+        log.info("Received request to register user: {}", registerUserDTO);
+
+        final RegisterUserDO user = this.userDtoMapper.asRegisterUser(registerUserDTO);
+        final ResponseRegisterUser responseRegisterUser = this.registerUser.execute(user);
+
+        log.info("User registration completed: {}", responseRegisterUser);
+        return ResponseEntity.ok(this.userDtoMapper.asResponseRegisterUserDTO(responseRegisterUser));
     }
 }

@@ -1,38 +1,53 @@
 package com.sitionix.athssox.mapper;
 
-import com.sitionix.athssox.domain.User;
+import com.sitionix.athssox.domain.RegisterUserDO;
+import com.sitionix.athssox.domain.ResponseRegisterUser;
+import com.sitionix.athssox.domain.UserRole;
+import com.sitionix.athssox.domain.UserStatus;
+import com.sitionix.athssox.entity.GlobalRoleEntity;
 import com.sitionix.athssox.entity.UserEntity;
-import org.junit.jupiter.api.DisplayNameGeneration;
-import org.junit.jupiter.api.DisplayNameGenerator;
+import com.sitionix.athssox.entity.UserStatusEntity;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(SpringExtension.class)
-@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+@ExtendWith(MockitoExtension.class)
 class UserInfraMapperImplTest {
 
-    @TestConfiguration
-    static class TestContextConfiguration {
-        @Bean
-        public UserInfraMapper userInfraMapper() {
-            return new UserInfraMapperImpl();
-        }
-    }
-
-    @Autowired
     private UserInfraMapper userInfraMapper;
 
+    @Mock
+    private UserRoleInfraMapper userRoleInfraMapper;
+
+    @Mock
+    private UserStatusInfraMapper userStatusInfraMapper;
+
+    @BeforeEach
+    void setUp() {
+        this.userInfraMapper = new UserInfraMapperImpl(
+                this.userRoleInfraMapper,
+                this.userStatusInfraMapper);
+    }
     @Test
-    void givenUser_whenAsUserEntity_thenReturnUserEntity() {
+    void givenResponseRegisterUser_whenAsUserEntity_thenReturnUserEntity() {
         //given
-        final User given = this.getUser();
-        final UserEntity expected = this.getUserEntity();
+        final UUID siteId = UUID.randomUUID();
+
+        final RegisterUserDO given = this.getRegisterUser(siteId);
+        final UserEntity expected = this.getUserEntity(siteId);
+        final UserStatusEntity userStatusEntity = this.getUserStatusEntity();
+        final GlobalRoleEntity globalRoleEntity = this.getGlobalRoleEntity();
+
+        when(this.userRoleInfraMapper.asGlobalRoleEntity(UserRole.SITE_USER)).thenReturn(globalRoleEntity);
+        when(this.userStatusInfraMapper.asUserStatusEntity(UserStatus.PENDING_EMAIL_VERIFY)).thenReturn(userStatusEntity);
 
         //when
         final UserEntity actual = this.userInfraMapper.asUserEntity(given);
@@ -43,32 +58,68 @@ class UserInfraMapperImplTest {
     }
 
     @Test
-    void givenUserEntity_whenAsUser_thenReturnUser() {
+    void givenUserEntity_whenResponseRegisterUser_thenReturnResponseRegisterUser() {
         //given
-        final UserEntity given = this.getUserEntity();
-        final User expected = this.getUser();
+        final UUID siteId = UUID.randomUUID();
+        final UserEntity given = this.getUserEntityForResponse(siteId);
+        final ResponseRegisterUser expected = this.getResponseRegisterUser();
+
+        when(this.userStatusInfraMapper.asStatus(any())).thenReturn(UserStatus.PENDING_EMAIL_VERIFY);
 
         //when
-        final User actual = this.userInfraMapper.asUser(given);
+        final ResponseRegisterUser actual = this.userInfraMapper.asResponseRegisterUser(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
 
     }
 
-    private User getUser() {
-        return User.builder()
-                .id(1L)
-                .userName("userName")
-                .password("password")
+    private RegisterUserDO getRegisterUser(final UUID siteId) {
+        return RegisterUserDO.builder()
+                .email("email@sitionix.com")
+                .password("P@ssw0rd!")
+                .role(UserRole.SITE_USER)
+                .status(UserStatus.PENDING_EMAIL_VERIFY)
+                .siteId(siteId)
                 .build();
     }
 
-    private UserEntity getUserEntity() {
+    private ResponseRegisterUser getResponseRegisterUser() {
+        return ResponseRegisterUser.builder()
+                .userId(1L)
+                .status(UserStatus.PENDING_EMAIL_VERIFY)
+                .build();
+    }
+
+    private UserEntity getUserEntity(final UUID siteId) {
+        return UserEntity.builder()
+                .email("email@sitionix.com")
+                .status(this.getUserStatusEntity())
+                .globalRole(this.getGlobalRoleEntity())
+                .siteId(siteId)
+                .passwordHash("P@ssw0rd!")
+                .build();
+    }
+    private UserEntity getUserEntityForResponse(final UUID siteId) {
         return UserEntity.builder()
                 .id(1L)
-                .userName("userName")
-                .password("password")
+                .status(this.getUserStatusEntity())
+                .email("email@sitionix.com")
+                .siteId(siteId)
+                .build();
+    }
+
+    private UserStatusEntity getUserStatusEntity() {
+        return UserStatusEntity.builder()
+                .id(1L)
+                .description("PENDING EMAIL VERIFY")
+                .build();
+    }
+
+    private GlobalRoleEntity getGlobalRoleEntity() {
+        return GlobalRoleEntity.builder()
+                .id(1L)
+                .description("SITE USER")
                 .build();
     }
 }

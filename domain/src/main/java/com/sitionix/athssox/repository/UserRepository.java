@@ -1,8 +1,9 @@
 package com.sitionix.athssox.repository;
 
-import com.sitionix.athssox.domain.User;
+import com.sitionix.athssox.domain.RegisterUserDO;
+import com.sitionix.athssox.domain.ResponseRegisterUser;
 
 public interface UserRepository {
 
-    User createUser(final User user);
+    ResponseRegisterUser createUser(final RegisterUserDO registerUserDO);
 }

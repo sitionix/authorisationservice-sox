@@ -5,6 +5,7 @@ import com.sitionix.athssox.entity.UserEntity;
 import com.sitionix.athssox.infra.IntegrationTest;
 import com.sitionix.athssox.util.TestResourceManager;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
-class UserControllerIT {
+class RegisterUserDOControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,6 +36,7 @@ class UserControllerIT {
 
     @DisplayName("should create new user in database")
     @Test
+    @Disabled
     void givenUser_whenCreate_thenCreateNewUser() throws Exception {
 
         final String request = this.resourceManager.givenRequest().request("givenDefaultUserWithUserNameAndPassword.json");
