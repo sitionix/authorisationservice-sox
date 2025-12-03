@@ -30,8 +30,8 @@ public class UsersTable {
         this.jdbcTemplate.update(
                 sql,
                 new MapSqlParameterSource()
-                        .addValue("username", userEntity.getUserName())
-                        .addValue("password", userEntity.getPassword()),
+                        .addValue("username", userEntity.getEmail())
+                        .addValue("password", userEntity.getPasswordHash()),
                 generatedKeyHolder,
                 new String[] {"id"});
 

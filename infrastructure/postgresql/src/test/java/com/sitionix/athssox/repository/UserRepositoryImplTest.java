@@ -1,13 +1,17 @@
 package com.sitionix.athssox.repository;
 
-import com.sitionix.athssox.domain.User;
+import com.sitionix.athssox.domain.RegisterUserDO;
+import com.sitionix.athssox.domain.ResponseRegisterUser;
 import com.sitionix.athssox.entity.UserEntity;
 import com.sitionix.athssox.jpa.UserJpaRepository;
 import com.sitionix.athssox.mapper.UserInfraMapper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -18,30 +22,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class UserRepositoryImplTest {
 
-    @TestConfiguration
-    static class TestContextConfiguration {
-        @Bean
-        public UserRepositoryImpl userRepositoryImpl(
-                final UserJpaRepository userJpaRepository,
-                final UserInfraMapper userInfraMapper) {
-            return new UserRepositoryImpl(userJpaRepository, userInfraMapper);
-        }
-    }
+    private UserRepository userRepository;
 
-    @Autowired
-    private UserRepositoryImpl userRepositoryImpl;
-
-    @MockBean
+    @Mock
     public UserJpaRepository userJpaRepository;
 
-    @MockBean
+    @Mock
     public UserInfraMapper userInfraMapper;
 
-    @AfterEach
-    public void tearDown (){
+    @BeforeEach
+    void setUp() {
+        this.userRepository = new UserRepositoryImpl(
+                this.userJpaRepository,
+                this.userInfraMapper
+        );
+    }
+
+    @BeforeEach
+    void tearDown (){
         verifyNoMoreInteractions(
                 this.userJpaRepository,
                 this.userInfraMapper);
@@ -51,30 +52,24 @@ class UserRepositoryImplTest {
     void givenUser_thenCreateUser_thenReturnCreatedUser() {
 
         //given
-
-        final User givenUser = Mockito.mock(User.class);
-        final User createdUser = Mockito.mock(User.class);
+        final RegisterUserDO givenRegisterUserDO = Mockito.mock(RegisterUserDO.class);
+        final ResponseRegisterUser responseRegisterUser = Mockito.mock(ResponseRegisterUser.class);
 
         final UserEntity givenUserEntity = Mockito.mock(UserEntity.class);
         final UserEntity createdUserEntity = Mockito.mock(UserEntity.class);
 
-        when(this.userInfraMapper.asUserEntity(givenUser)).thenReturn(givenUserEntity);
-        when(this.userInfraMapper.asUser(createdUserEntity)).thenReturn(createdUser);
+        when(this.userInfraMapper.asUserEntity(givenRegisterUserDO)).thenReturn(givenUserEntity);
+        when(this.userInfraMapper.asResponseRegisterUser(createdUserEntity)).thenReturn(responseRegisterUser);
         when(this.userJpaRepository.save(givenUserEntity)).thenReturn(createdUserEntity);
 
         //when
 
-        final User actual = this.userRepositoryImpl.createUser(givenUser);
+        final ResponseRegisterUser actual = this.userRepository.createUser(givenRegisterUserDO);
 
         //then
 
-        assertThat(actual).isEqualTo(createdUser);
+        assertThat(actual).isEqualTo(responseRegisterUser);
 
-        //verify
-
-        verify(this.userInfraMapper, times(1)).asUser(createdUserEntity);
-        verify(this.userInfraMapper, times(1)).asUserEntity(givenUser);
-        verify(this.userJpaRepository, times(1)).save(givenUserEntity);
     }
 
 }

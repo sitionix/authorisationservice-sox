@@ -1,6 +1,7 @@
 package com.sitionix.athssox.repository;
 
-import com.sitionix.athssox.domain.User;
+import com.sitionix.athssox.domain.RegisterUserDO;
+import com.sitionix.athssox.domain.ResponseRegisterUser;
 import com.sitionix.athssox.entity.UserEntity;
 import com.sitionix.athssox.jpa.UserJpaRepository;
 import com.sitionix.athssox.mapper.UserInfraMapper;
@@ -16,11 +17,11 @@ public class UserRepositoryImpl implements UserRepository {
     private final UserInfraMapper userInfraMapper;
 
     @Override
-    public User createUser(final User user) {
+    public ResponseRegisterUser createUser(final RegisterUserDO registerUserDO) {
 
-        final UserEntity userEntity = this.userInfraMapper.asUserEntity(user);
+        final UserEntity userEntity = this.userInfraMapper.asUserEntity(registerUserDO);
         final UserEntity createdUser = this.userJpaRepository.save(userEntity);
 
-        return this.userInfraMapper.asUser(createdUser);
+        return this.userInfraMapper.asResponseRegisterUser(createdUser);
     }
 }

@@ -1,17 +1,19 @@
 package com.sitionix.athssox.mapper;
 
-import com.app_afesox.athssox.api_first.dto.UserDTO;
-import com.app_afesox.athssox.api_first.dto.UserResponseDTO;
-import com.sitionix.athssox.domain.User;
+import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
+import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
+import com.sitionix.athssox.config.MapstructComponent;
+import com.sitionix.athssox.domain.RegisterUserDO;
+import com.sitionix.athssox.domain.ResponseRegisterUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
 public interface UserApiMapper {
 
-    @Mapping(source = "userName", target = "username")
-    UserResponseDTO asUserResponseDTO(final User user);
+    RegisterUserDO asRegisterUser(final RegisterUserDTO src);
 
-    @Mapping(source = "username", target = "userName")
-    User asUser(final UserDTO user);
+    @Mapping(target = "message", constant = "User registered successfully")
+    ResponseRegisterUserDTO asResponseRegisterUserDTO(final ResponseRegisterUser src);
+
 }
