@@ -1,0 +1,11 @@
+{
+  "email": "email@sitionix.com",
+  "passwordHash": "password",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "globalRole": {
+    "id": 1
+  },
+  "status": {
+    "id": 1
+  }
+}

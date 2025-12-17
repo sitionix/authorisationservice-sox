@@ -5,6 +5,7 @@ import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,44 +13,45 @@ import java.util.UUID;
 @Data
 @Builder
 @Entity
-@Table(name = "USERS")
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserEntity {
 
     @Id
-    @Column(name = "ID")
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "EMAIL")
+    @Column(name = "email")
     private String email;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "ROLE_ID", nullable = false)
+    @JoinColumn(name = "role_id", nullable = false, referencedColumnName = "id")
     @JsonIgnore
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private GlobalRoleEntity globalRole;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "STATUS_ID", nullable = false)
+    @JoinColumn(name = "status_id", nullable = false, referencedColumnName = "id")
     @JsonIgnore
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private UserStatusEntity status;
 
-    @Column(name = "PASSWORD_HASH")
+    @Column(name = "password_hash")
     private String passwordHash;
 
-    @Column(name = "CREATED_AT")
+    @Column(name = "created_at", insertable = false, updatable = false)
     @CreatedDate
     private LocalDateTime createdAt;
 
-    @Column(name = "UPDATED_AT")
+    @Column(name = "updated_at", insertable = false, updatable = false)
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @Column(name = "SITE_ID")
+    @Column(name = "site_id")
     private UUID siteId;
 }
