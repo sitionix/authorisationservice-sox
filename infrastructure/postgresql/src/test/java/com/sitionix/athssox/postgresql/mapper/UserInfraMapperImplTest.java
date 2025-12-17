@@ -54,7 +54,6 @@ class UserInfraMapperImplTest {
 
         //then
         assertThat(actual).isEqualTo(expected);
-
     }
 
     @Test
