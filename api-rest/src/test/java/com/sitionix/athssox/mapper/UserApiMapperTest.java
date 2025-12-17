@@ -85,6 +85,7 @@ class UserApiMapperTest {
         return RegisterUserDO.builder()
                 .email("email@sitionix.com")
                 .role(UserRole.SITE_USER)
+                .status(UserStatus.PENDING_EMAIL_VERIFY)
                 .siteId(siteId)
                 .password("password")
                 .build();

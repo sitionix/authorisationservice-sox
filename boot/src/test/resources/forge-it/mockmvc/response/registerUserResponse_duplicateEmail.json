@@ -1,6 +1,5 @@
 {
   "code": 409,
-  "title": "Conflict",
-  "details": "Email already registered for this role and context"
+  "title": "Conflict"
 }
 

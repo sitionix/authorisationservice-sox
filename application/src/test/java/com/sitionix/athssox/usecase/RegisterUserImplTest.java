@@ -4,7 +4,7 @@ import com.sitionix.athssox.domain.RegisterUserDO;
 import com.sitionix.athssox.domain.ResponseRegisterUser;
 import com.sitionix.athssox.domain.UserRole;
 import com.sitionix.athssox.domain.UserStatus;
-import com.sitionix.athssox.exception.InvalidPasswordException;
+import com.sitionix.athssox.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.repository.UserRepository;
 import com.sitionix.athssox.validator.PasswordPolicyValidator;
 import org.junit.jupiter.api.AfterEach;
@@ -14,90 +14,205 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterUserImplTest {
 
-    private RegisterUser createUser;
+    private static final String DEFAULT_EMAIL = "email@sitionix.com";
+
+    private RegisterUserImpl registerUser;
 
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private PasswordPolicyValidator passwordPolicyValidator;
+
     @BeforeEach
     void setUp() {
-        final PasswordEncoder passwordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
-        final PasswordPolicyValidator passwordPolicyValidator = new PasswordPolicyValidator();
-        this.createUser = new RegisterUserImpl(this.userRepository, passwordEncoder, passwordPolicyValidator);
+        this.registerUser = new RegisterUserImpl(this.userRepository,
+                this.passwordEncoder,
+                this.passwordPolicyValidator);
     }
 
     @AfterEach
-    void tearDown (){
-        verifyNoMoreInteractions(
-                this.userRepository
-        );
+    void tearDown() {
+        verifyNoMoreInteractions(this.userRepository,
+                this.passwordEncoder,
+                this.passwordPolicyValidator);
     }
 
     @Test
-    void givenValidUser_whenCreateUser_thenHashPasswordSetPendingStatusAndReturnCreatedUser() {
-
+    void givenRegisterUserDO_whenExecute_thenEncodePasswordCreateUserAndReturnResponseWithMessage() {
         //given
         final String rawPassword = "StrongPassword123";
+        final String encodedPassword = "encoded";
+        final UUID siteId = UUID.randomUUID();
+        final RegisterUserDO given = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SITE_USER,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                rawPassword);
 
-        final RegisterUserDO givenRegisterUserDO = RegisterUserDO.builder()
-                .email("email@sitionix.com")
-                .password(rawPassword)
-                .role(UserRole.SITE_USER)
-                .siteId(UUID.randomUUID())
-                .build();
+        final ResponseRegisterUser createdUser = this.getResponseRegisterUser(10L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                null);
+        final ResponseRegisterUser expected = this.getResponseRegisterUser(10L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "Registration successful. Please verify your email.");
 
-        final ResponseRegisterUser responseRegisterUser = ResponseRegisterUser.builder()
-                .userId(1L)
-                .status(UserStatus.PENDING_EMAIL_VERIFY)
-                .build();
-
-        when(this.userRepository.createUser(any(RegisterUserDO.class))).thenReturn(responseRegisterUser);
+        when(this.userRepository.existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(false);
+        when(this.passwordEncoder.encode(rawPassword))
+                .thenReturn(encodedPassword);
+        when(this.userRepository.createUser(given))
+                .thenReturn(createdUser);
 
         //when
-        final ResponseRegisterUser actual = this.createUser.execute(givenRegisterUserDO);
+        final ResponseRegisterUser actual = this.registerUser.execute(given);
 
         //then
-        assertThat(actual.getUserId()).isEqualTo(1L);
-        assertThat(actual.getStatus()).isEqualTo(UserStatus.PENDING_EMAIL_VERIFY);
-        assertThat(actual.getMessage()).isEqualTo("Registration successful. Please verify your email.");
+        final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
 
-        final ArgumentCaptor<RegisterUserDO> captor = ArgumentCaptor.forClass(RegisterUserDO.class);
-        verify(this.userRepository, times(1)).createUser(captor.capture());
-        final RegisterUserDO userToCreate = captor.getValue();
-        assertThat(userToCreate.getStatus()).isEqualTo(UserStatus.PENDING_EMAIL_VERIFY);
-        assertThat(userToCreate.getPassword()).isNotEqualTo(rawPassword);
-        assertThat(Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8().matches(rawPassword, userToCreate.getPassword())).isTrue();
+        verify(this.passwordPolicyValidator)
+                .validate(rawPassword);
+        verify(this.userRepository)
+                .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
+        verify(this.passwordEncoder)
+                .encode(rawPassword);
+        verify(this.userRepository)
+                .createUser(registerUserCaptor.capture());
+
+        final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SITE_USER,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                encodedPassword);
+        assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void givenInvalidPassword_whenCreateUser_thenThrowAndNotCallRepository() {
+    void givenSiteScopedEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
         //given
-        final RegisterUserDO givenRegisterUserDO = RegisterUserDO.builder()
-                .email("email@sitionix.com")
-                .password("weak")
-                .role(UserRole.SITE_USER)
-                .siteId(UUID.randomUUID())
-                .build();
+        final UUID siteId = UUID.randomUUID();
+        final RegisterUserDO given = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SITE_ADMIN,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "StrongPassword123");
 
-        //when/then
-        assertThatThrownBy(() -> this.createUser.execute(givenRegisterUserDO))
-                .isInstanceOf(InvalidPasswordException.class);
+        when(this.userRepository.existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(true);
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.registerUser.execute(given));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(EmailAlreadyRegisteredException.class)
+                .hasMessage("Email already registered for this site.");
+
+        verify(this.passwordPolicyValidator)
+                .validate("StrongPassword123");
+        verify(this.userRepository)
+                .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
+        verifyNoInteractions(this.passwordEncoder);
     }
 
+    @Test
+    void givenGlobalEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
+        //given
+        final RegisterUserDO given = this.getRegisterUserDO(null,
+                DEFAULT_EMAIL,
+                UserRole.SUPER_ADMIN,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "StrongPassword123");
+
+        when(this.userRepository.existsGlobalByEmail(DEFAULT_EMAIL))
+                .thenReturn(true);
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.registerUser.execute(given));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(EmailAlreadyRegisteredException.class)
+                .hasMessage("Email already registered for this role scope.");
+
+        verify(this.passwordPolicyValidator)
+                .validate("StrongPassword123");
+        verify(this.userRepository)
+                .existsGlobalByEmail(DEFAULT_EMAIL);
+        verifyNoInteractions(this.passwordEncoder);
+    }
+
+    @Test
+    void givenInvalidPassword_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final RegisterUserDO given = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SITE_USER,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "weak");
+
+        final RuntimeException expected = this.getRuntimeException("invalid password");
+
+        doThrow(expected)
+                .when(this.passwordPolicyValidator)
+                .validate("weak");
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.registerUser.execute(given));
+
+        //then
+        assertThat(actualThrowable).isEqualTo(expected);
+        verify(this.passwordPolicyValidator)
+                .validate("weak");
+        verifyNoInteractions(this.passwordEncoder,
+                this.userRepository);
+    }
+
+    private RegisterUserDO getRegisterUserDO(final UUID siteId,
+                                             final String email,
+                                             final UserRole role,
+                                             final UserStatus status,
+                                             final String password) {
+        return RegisterUserDO.builder()
+                .email(email)
+                .role(role)
+                .status(status)
+                .siteId(siteId)
+                .password(password)
+                .build();
+    }
+
+    private ResponseRegisterUser getResponseRegisterUser(final Long userId,
+                                                         final UserStatus status,
+                                                         final String message) {
+        return ResponseRegisterUser.builder()
+                .userId(userId)
+                .status(status)
+                .message(message)
+                .build();
+    }
+
+    private RuntimeException getRuntimeException(final String message) {
+        return new RuntimeException(message);
+    }
 }

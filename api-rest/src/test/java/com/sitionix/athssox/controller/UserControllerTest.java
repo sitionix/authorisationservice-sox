@@ -12,16 +12,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.HttpStatus.CREATED;
 
 @ExtendWith(MockitoExtension.class)
-class RegisterUserDOControllerTest {
+class UserControllerTest {
 
     private UserController userController;
 
@@ -33,37 +33,38 @@ class RegisterUserDOControllerTest {
 
     @BeforeEach
     void setUp() {
-        this.userController = new UserController(
-                this.userApiMapper,
+        this.userController = new UserController(this.userApiMapper,
                 this.registerUser);
     }
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(
-                this.userApiMapper,
+        verifyNoMoreInteractions(this.userApiMapper,
                 this.registerUser);
     }
 
     @Test
-    void givenRegisterUserDTO_whenRegisterUser_thenReturnResponseEntity() {
+    void givenRegisterUserDTO_whenRegisterUser_thenReturnResponseRegisterUserDTO() {
         //given
-
         final RegisterUserDTO given = mock(RegisterUserDTO.class);
-        final RegisterUserDO mappedUser = mock(RegisterUserDO.class);
-
-        final ResponseRegisterUser mappedResponse = mock(ResponseRegisterUser.class);
+        final RegisterUserDO registerUserDO = mock(RegisterUserDO.class);
         final ResponseRegisterUserDTO expected = mock(ResponseRegisterUserDTO.class);
+        final ResponseRegisterUser responseRegisterUser = mock(ResponseRegisterUser.class);
 
-        when(this.userApiMapper.asRegisterUser(given)).thenReturn(mappedUser);
-        when(this.registerUser.execute(mappedUser)).thenReturn(mappedResponse);
-        when(this.userApiMapper.asResponseRegisterUserDTO(mappedResponse)).thenReturn(expected);
+        when(this.userApiMapper.asRegisterUser(given))
+                .thenReturn(registerUserDO);
+        when(this.registerUser.execute(registerUserDO))
+                .thenReturn(responseRegisterUser);
+        when(this.userApiMapper.asResponseRegisterUserDTO(responseRegisterUser))
+                .thenReturn(expected);
 
         //when
-        final ResponseEntity<ResponseRegisterUserDTO> actual = this.userController.registerUser(given);
+        final ResponseEntity<ResponseRegisterUserDTO> actual =
+                this.userController.registerUser(given);
 
         //then
-        assertThat(actual.getStatusCode()).isEqualTo(CREATED);
-        assertThat(actual.getBody()).isEqualTo(expected);
+        assertThat(actual).isEqualTo(ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(expected));
     }
 }
