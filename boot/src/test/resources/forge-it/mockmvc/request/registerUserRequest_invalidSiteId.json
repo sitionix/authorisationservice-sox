@@ -1,6 +1,6 @@
 {
   "email": "email@sitionix.com",
-  "password": "password",
+  "password": "StrongPassword123",
   "role": "SITE_USER",
   "siteId": "not-a-uuid"
 }

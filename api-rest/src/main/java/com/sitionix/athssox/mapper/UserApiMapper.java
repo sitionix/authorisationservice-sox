@@ -5,16 +5,20 @@ import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
 import com.sitionix.athssox.config.MapstructComponent;
 import com.sitionix.athssox.domain.RegisterUserDO;
 import com.sitionix.athssox.domain.ResponseRegisterUser;
+import com.sitionix.athssox.domain.UserRole;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
 public interface UserApiMapper {
 
-    @Mapping(target = "status", constant = "PENDING_EMAIL_VERIFY")
     RegisterUserDO asRegisterUser(final RegisterUserDTO src);
 
-    @Mapping(target = "message", constant = "User registered successfully")
     ResponseRegisterUserDTO asResponseRegisterUserDTO(final ResponseRegisterUser src);
 
+    default UserRole asUserRole(final RegisterUserDTO.RoleEnum role) {
+        if (role == null) {
+            return null;
+        }
+        return UserRole.valueOf(role.name());
+    }
 }

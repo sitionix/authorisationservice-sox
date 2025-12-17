@@ -1,6 +1,7 @@
 {
   "email": "email@sitionix.com",
   "password": "StrongPassword123",
-  "role": "SITE_USER",
+  "role": "SUPER_ADMIN",
   "siteId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 }
+

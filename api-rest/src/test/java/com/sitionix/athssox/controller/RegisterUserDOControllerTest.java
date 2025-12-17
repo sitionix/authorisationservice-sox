@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.CREATED;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterUserDOControllerTest {
@@ -62,6 +63,7 @@ class RegisterUserDOControllerTest {
         final ResponseEntity<ResponseRegisterUserDTO> actual = this.userController.registerUser(given);
 
         //then
+        assertThat(actual.getStatusCode()).isEqualTo(CREATED);
         assertThat(actual.getBody()).isEqualTo(expected);
     }
 }
