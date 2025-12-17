@@ -1,0 +1,5 @@
+{
+  "userId": 1,
+  "message": "User registered successfully",
+  "status": "PENDING_EMAIL_VERIFY"
+}

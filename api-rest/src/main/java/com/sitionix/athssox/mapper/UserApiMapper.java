@@ -11,6 +11,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
 public interface UserApiMapper {
 
+    @Mapping(target = "status", constant = "PENDING_EMAIL_VERIFY")
     RegisterUserDO asRegisterUser(final RegisterUserDTO src);
 
     @Mapping(target = "message", constant = "User registered successfully")

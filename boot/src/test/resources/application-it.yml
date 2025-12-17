@@ -1,19 +1,2 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5433/AUTHS_SOX
-    username: postgres
-    password: postgres-pwd
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl: update
-
-logging:
-  level:
-    root: INFO
-    org.springframework: INFO
-    org.hibernate: INFO
-testcontainers:
-  docker:
-    compose:
-      strategy: local
+server:
+  port: 9090
