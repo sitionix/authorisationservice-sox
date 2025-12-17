@@ -7,7 +7,6 @@ import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.athssox.postgresql.jpa.UserJpaRepository;
 import com.sitionix.athssox.postgresql.mapper.UserInfraMapper;
-import com.sitionix.athssox.postgresql.repository.UserRepositoryImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
