@@ -9,25 +9,29 @@ import com.sitionix.athssox.entity.UserEntity;
 import com.sitionix.athssox.entity.UserStatusEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class UserInfraMapperImplTest {
 
     private UserInfraMapper userInfraMapper;
 
+    @Mock
     private UserRoleInfraMapper userRoleInfraMapper;
 
+    @Mock
     private UserStatusInfraMapper userStatusInfraMapper;
 
     @BeforeEach
     void setUp() {
-        this.userRoleInfraMapper = new UserRoleInfraMapper() {
-        };
-        this.userStatusInfraMapper = new UserStatusInfraMapper() {
-        };
         this.userInfraMapper = new UserInfraMapperImpl(
                 this.userRoleInfraMapper,
                 this.userStatusInfraMapper);
@@ -39,6 +43,11 @@ class UserInfraMapperImplTest {
 
         final RegisterUserDO given = this.getRegisterUser(siteId);
         final UserEntity expected = this.getUserEntity(siteId);
+        final UserStatusEntity userStatusEntity = this.getUserStatusEntity();
+        final GlobalRoleEntity globalRoleEntity = this.getGlobalRoleEntity();
+
+        when(this.userRoleInfraMapper.asGlobalRoleEntity(UserRole.SITE_USER)).thenReturn(globalRoleEntity);
+        when(this.userStatusInfraMapper.asUserStatusEntity(UserStatus.PENDING_EMAIL_VERIFY)).thenReturn(userStatusEntity);
 
         //when
         final UserEntity actual = this.userInfraMapper.asUserEntity(given);
@@ -54,6 +63,8 @@ class UserInfraMapperImplTest {
         final UUID siteId = UUID.randomUUID();
         final UserEntity given = this.getUserEntityForResponse(siteId);
         final ResponseRegisterUser expected = this.getResponseRegisterUser();
+
+        when(this.userStatusInfraMapper.asStatus(any())).thenReturn(UserStatus.PENDING_EMAIL_VERIFY);
 
         //when
         final ResponseRegisterUser actual = this.userInfraMapper.asResponseRegisterUser(given);
