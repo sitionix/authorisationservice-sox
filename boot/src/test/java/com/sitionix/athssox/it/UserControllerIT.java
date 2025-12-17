@@ -1,7 +1,7 @@
 package com.sitionix.athssox.it;
 
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
-import com.sitionix.athssox.entity.UserEntity;
+import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;

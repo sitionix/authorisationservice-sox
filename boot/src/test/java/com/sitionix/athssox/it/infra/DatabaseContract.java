@@ -1,8 +1,8 @@
 package com.sitionix.athssox.it.infra;
 
-import com.sitionix.athssox.entity.GlobalRoleEntity;
-import com.sitionix.athssox.entity.UserEntity;
-import com.sitionix.athssox.entity.UserStatusEntity;
+import com.sitionix.athssox.postgresql.entity.GlobalRoleEntity;
+import com.sitionix.athssox.postgresql.entity.UserEntity;
+import com.sitionix.athssox.postgresql.entity.UserStatusEntity;
 import com.sitionix.forgeit.core.contract.ForgeDbContracts;
 import com.sitionix.forgeit.domain.contract.DbContract;
 import com.sitionix.forgeit.domain.contract.DbContractsDsl;
