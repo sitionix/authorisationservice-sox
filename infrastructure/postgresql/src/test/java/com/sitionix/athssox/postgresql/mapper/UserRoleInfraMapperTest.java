@@ -45,6 +45,31 @@ class UserRoleInfraMapperTest {
         assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
     }
 
+    @Test
+    void givenNullGlobalRoleEntity_whenAsUserRole_thenReturnNull() {
+        //given
+        final GlobalRoleEntity given = null;
+
+        //when
+        final UserRole actual = this.userRoleInfraMapper.asUserRole(given);
+
+        //then
+        assertThat(actual).isNull();
+    }
+
+    @Test
+    void givenGlobalRoleEntity_whenAsUserRole_thenReturnUserRole() {
+        //given
+        final GlobalRoleEntity given = this.getGlobalRoleEntity(4L, "SITE ADMIN");
+        final UserRole expected = UserRole.SITE_ADMIN;
+
+        //when
+        final UserRole actual = this.userRoleInfraMapper.asUserRole(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private GlobalRoleEntity getGlobalRoleEntity(final Long id, final String description) {
         return GlobalRoleEntity.builder()
                 .id(id)
@@ -52,4 +77,3 @@ class UserRoleInfraMapperTest {
                 .build();
     }
 }
-
