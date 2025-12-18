@@ -1,6 +1,9 @@
 package com.sitionix.athssox.application.security;
 
 import com.sitionix.athssox.domain.model.AuthUser;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -8,6 +11,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
+@Getter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class LoginAuthenticationToken extends AbstractAuthenticationToken {
 
     private final String email;
@@ -64,15 +70,4 @@ public class LoginAuthenticationToken extends AbstractAuthenticationToken {
         super.setAuthenticated(false);
     }
 
-    public String getEmail() {
-        return this.email;
-    }
-
-    public UUID getSiteId() {
-        return this.siteId;
-    }
-
-    public AuthUser getUser() {
-        return this.user;
-    }
 }
