@@ -98,7 +98,7 @@ class JwtTokenProviderTest {
         //then
         assertThat(actual.getExpiresAt()).isEqualTo(expiresAt);
         assertThat(actual.getToken()).isNotBlank();
-        assertThat(actual.getToken().length()).isEqualTo(43);
+        assertThat(actual.getToken()).hasSize(43);
         verify(this.clock)
                 .instant();
         verify(this.tokenConfig)
