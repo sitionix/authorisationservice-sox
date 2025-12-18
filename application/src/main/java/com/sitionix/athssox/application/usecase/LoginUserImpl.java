@@ -37,16 +37,13 @@ public class LoginUserImpl implements LoginUser {
                 LoginAuthenticationToken.unauthenticated(loginRequest.getEmail(),
                         loginRequest.getPassword(),
                         loginRequest.getSiteId()));
+
         final AuthUser user = ((LoginAuthenticationToken) authentication).getUser();
         final Instant now = this.clock.instant();
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken refreshToken = this.tokenProvider.generateRefreshToken(user);
 
-        this.refreshTokenRepository.save(RefreshTokenRecord.builder()
-                .tokenHash(this.tokenHasher.hash(refreshToken.getToken()))
-                .userId(user.getId())
-                .expiresAt(refreshToken.getExpiresAt())
-                .build());
+        this.saveRefreshToken(user, refreshToken);
 
         final long expiresIn = Duration.between(now, accessToken.getExpiresAt()).getSeconds();
 
@@ -56,5 +53,13 @@ public class LoginUserImpl implements LoginUser {
                 .expiresIn(expiresIn)
                 .tokenType("Bearer")
                 .build();
+    }
+
+    private void saveRefreshToken(AuthUser user, RefreshToken refreshToken) {
+        this.refreshTokenRepository.save(RefreshTokenRecord.builder()
+                .tokenHash(this.tokenHasher.hash(refreshToken.getToken()))
+                .user(user)
+                .expiresAt(refreshToken.getExpiresAt())
+                .build());
     }
 }

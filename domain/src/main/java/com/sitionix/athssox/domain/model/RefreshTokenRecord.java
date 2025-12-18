@@ -15,7 +15,7 @@ public class RefreshTokenRecord {
 
     private String tokenHash;
 
-    private Long userId;
+    private AuthUser user;
 
     private Instant expiresAt;
 }

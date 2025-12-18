@@ -25,4 +25,9 @@ public interface UserInfraMapper {
 
     @Mapping(target = "role", source = "globalRole")
     AuthUser asAuthUser(final UserEntity userEntity);
+
+    @Mapping(target = "globalRole", source = "role")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    UserEntity asUserEntity(final AuthUser authUser);
 }

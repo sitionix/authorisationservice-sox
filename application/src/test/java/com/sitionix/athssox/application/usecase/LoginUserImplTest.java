@@ -124,7 +124,7 @@ class LoginUserImplTest {
         assertThat(actualToken.getSiteId()).isEqualTo(given.getSiteId());
 
         final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
-                user.getId(),
+                user,
                 refreshToken.getExpiresAt());
 
         assertThat(recordCaptor.getValue()).isEqualTo(expectedRecord);
@@ -221,11 +221,11 @@ class LoginUserImplTest {
     }
 
     private RefreshTokenRecord getRefreshTokenRecord(final String tokenHash,
-                                                     final Long userId,
+                                                     final AuthUser user,
                                                      final Instant expiresAt) {
         return RefreshTokenRecord.builder()
                 .tokenHash(tokenHash)
-                .userId(userId)
+                .user(user)
                 .expiresAt(expiresAt)
                 .build();
     }
