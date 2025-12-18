@@ -11,3 +11,9 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl: update
+auth:
+  tokens:
+    issuer: athssox
+    jwt-secret: change-me
+    access-token-ttl-seconds: 3600
+    refresh-token-ttl-seconds: 2592000

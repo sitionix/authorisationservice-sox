@@ -1,6 +1,7 @@
 package com.sitionix.athssox.postgresql.mapper;
 
 import com.sitionix.athssox.domain.config.MapstructComponent;
+import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.postgresql.entity.UserEntity;
@@ -21,4 +22,12 @@ public interface UserInfraMapper {
 
     @Mapping(target = "userId", source = "id")
     ResponseRegisterUser asResponseRegisterUser(final UserEntity userEntity);
+
+    @Mapping(target = "role", source = "globalRole")
+    AuthUser asAuthUser(final UserEntity userEntity);
+
+    @Mapping(target = "globalRole", source = "role")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    UserEntity asUserEntity(final AuthUser authUser);
 }

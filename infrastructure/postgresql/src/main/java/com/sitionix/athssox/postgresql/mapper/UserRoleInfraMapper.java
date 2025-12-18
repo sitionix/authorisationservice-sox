@@ -20,4 +20,11 @@ public interface UserRoleInfraMapper {
                 .build();
 
     }
+
+    default UserRole asUserRole(final GlobalRoleEntity globalRoleEntity) {
+        if (isNull(globalRoleEntity)) {
+            return null;
+        }
+        return UserRole.fromId(globalRoleEntity.getId());
+    }
 }

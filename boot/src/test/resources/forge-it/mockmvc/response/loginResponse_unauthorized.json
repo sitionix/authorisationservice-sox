@@ -1,0 +1,5 @@
+{
+  "code": 401,
+  "title": "Unauthorized",
+  "details": "Invalid email or password"
+}

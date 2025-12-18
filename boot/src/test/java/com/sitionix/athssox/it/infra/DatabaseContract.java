@@ -1,6 +1,7 @@
 package com.sitionix.athssox.it.infra;
 
 import com.sitionix.athssox.postgresql.entity.GlobalRoleEntity;
+import com.sitionix.athssox.postgresql.entity.RefreshTokenEntity;
 import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.athssox.postgresql.entity.UserStatusEntity;
 import com.sitionix.forgeit.core.contract.ForgeDbContracts;
@@ -26,6 +27,11 @@ public class DatabaseContract {
                     .dependsOn(USER_STATUS_ENTITY_DB_CONTRACT, UserEntity::setStatus)
                     .dependsOn(GLOBAL_ROLE_ENTITY_DB_CONTRACT, UserEntity::setGlobalRole)
                     .withDefaultBody("defaultUserEntity.json")
+                    .cleanupPolicy(CleanupPolicy.DELETE_ALL)
+                    .build();
+
+    public static final DbContract<RefreshTokenEntity> REFRESH_TOKEN_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(RefreshTokenEntity.class)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 }
