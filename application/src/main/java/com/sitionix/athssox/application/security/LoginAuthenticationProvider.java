@@ -43,7 +43,7 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
     }
 
     private AuthUser loadUser(final String email, final UUID siteId) {
-        Optional<AuthUser> user = Optional.empty();
+        Optional<AuthUser> user;
         if (siteId != null) {
             user = this.authUserRepository.findByEmailAndSiteId(email, siteId);
             if (user.isEmpty()) {
