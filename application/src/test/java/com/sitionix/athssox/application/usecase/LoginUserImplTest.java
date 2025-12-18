@@ -1,0 +1,232 @@
+package com.sitionix.athssox.application.usecase;
+
+import com.sitionix.athssox.application.security.LoginAuthenticationToken;
+import com.sitionix.athssox.domain.exception.InactiveUserException;
+import com.sitionix.athssox.domain.model.AccessToken;
+import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.LoginRequest;
+import com.sitionix.athssox.domain.model.LoginResponse;
+import com.sitionix.athssox.domain.model.RefreshToken;
+import com.sitionix.athssox.domain.model.RefreshTokenRecord;
+import com.sitionix.athssox.domain.model.UserRole;
+import com.sitionix.athssox.domain.model.UserStatus;
+import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
+import com.sitionix.athssox.domain.service.TokenHasher;
+import com.sitionix.athssox.domain.service.TokenProvider;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class LoginUserImplTest {
+
+    private static final Instant NOW = Instant.parse("2024-05-01T10:15:30Z");
+
+    private LoginUserImpl loginUser;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private TokenProvider tokenProvider;
+
+    @Mock
+    private TokenHasher tokenHasher;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private Clock clock;
+
+    @BeforeEach
+    void setUp() {
+        this.loginUser = new LoginUserImpl(this.refreshTokenRepository,
+                this.tokenProvider,
+                this.tokenHasher,
+                this.authenticationManager,
+                this.clock);
+    }
+
+    @AfterEach
+    void tearDown() {
+        verifyNoMoreInteractions(this.refreshTokenRepository,
+                this.tokenProvider,
+                this.tokenHasher,
+                this.authenticationManager,
+                this.clock);
+    }
+
+    @Test
+    void givenValidLogin_whenExecute_thenReturnTokensAndPersistRefreshToken() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final LoginRequest given = this.getLoginRequest(siteId);
+        final AuthUser user = this.getAuthUser(10L, siteId);
+        final AccessToken accessToken = this.getAccessToken("access-token", NOW.plusSeconds(3600));
+        final RefreshToken refreshToken = this.getRefreshToken("refresh-token", NOW.plusSeconds(7200));
+        final LoginResponse expected = this.getLoginResponse(accessToken.getToken(),
+                refreshToken.getToken(),
+                3600L,
+                "Bearer");
+
+        when(this.clock.instant())
+                .thenReturn(NOW);
+        when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
+                .thenReturn(LoginAuthenticationToken.authenticated(user));
+        when(this.tokenProvider.generateAccessToken(user))
+                .thenReturn(accessToken);
+        when(this.tokenProvider.generateRefreshToken(user))
+                .thenReturn(refreshToken);
+        when(this.tokenHasher.hash(refreshToken.getToken()))
+                .thenReturn("hashed");
+
+        //when
+        final LoginResponse actual = this.loginUser.execute(given);
+
+        //then
+        final ArgumentCaptor<LoginAuthenticationToken> tokenCaptor = ArgumentCaptor.forClass(LoginAuthenticationToken.class);
+        final ArgumentCaptor<RefreshTokenRecord> recordCaptor = ArgumentCaptor.forClass(RefreshTokenRecord.class);
+
+        verify(this.clock)
+                .instant();
+        verify(this.authenticationManager)
+                .authenticate(tokenCaptor.capture());
+        verify(this.tokenProvider)
+                .generateAccessToken(user);
+        verify(this.tokenProvider)
+                .generateRefreshToken(user);
+        verify(this.tokenHasher)
+                .hash(refreshToken.getToken());
+        verify(this.refreshTokenRepository)
+                .save(recordCaptor.capture());
+
+        final LoginAuthenticationToken actualToken = tokenCaptor.getValue();
+        assertThat(actualToken.getEmail()).isEqualTo(given.getEmail());
+        assertThat(actualToken.getCredentials()).isEqualTo(given.getPassword());
+        assertThat(actualToken.getSiteId()).isEqualTo(given.getSiteId());
+
+        final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
+                user.getId(),
+                refreshToken.getExpiresAt());
+
+        assertThat(recordCaptor.getValue()).isEqualTo(expectedRecord);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenInvalidCredentials_whenExecute_thenThrowInvalidCredentials() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final LoginRequest given = this.getLoginRequest(siteId);
+
+        when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("Invalid email or password"));
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.loginUser.execute(given));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid email or password");
+
+        verify(this.authenticationManager)
+                .authenticate(any(LoginAuthenticationToken.class));
+    }
+
+    @Test
+    void givenInactiveUser_whenExecute_thenThrowInactiveUserException() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final LoginRequest given = this.getLoginRequest(siteId);
+
+        when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
+                .thenThrow(new InactiveUserException("Account is not yet activated"));
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.loginUser.execute(given));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(InactiveUserException.class)
+                .hasMessage("Account is not yet activated");
+
+        verify(this.authenticationManager)
+                .authenticate(any(LoginAuthenticationToken.class));
+    }
+
+    private LoginRequest getLoginRequest(final UUID siteId) {
+        return LoginRequest.builder()
+                .email("user@sitionix.com")
+                .password("StrongPassword123")
+                .siteId(siteId)
+                .sessionSourceId("device-123")
+                .userAgent("Mozilla/5.0")
+                .build();
+    }
+
+    private AuthUser getAuthUser(final Long userId, final UUID siteId) {
+        return AuthUser.builder()
+                .id(userId)
+                .email("user@sitionix.com")
+                .passwordHash("hashed")
+                .status(UserStatus.ACTIVE)
+                .role(UserRole.SITE_USER)
+                .siteId(siteId)
+                .build();
+    }
+
+    private AccessToken getAccessToken(final String token, final Instant expiresAt) {
+        return AccessToken.builder()
+                .token(token)
+                .expiresAt(expiresAt)
+                .build();
+    }
+
+    private RefreshToken getRefreshToken(final String token, final Instant expiresAt) {
+        return RefreshToken.builder()
+                .token(token)
+                .expiresAt(expiresAt)
+                .build();
+    }
+
+    private LoginResponse getLoginResponse(final String accessToken,
+                                           final String refreshToken,
+                                           final Long expiresIn,
+                                           final String tokenType) {
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(expiresIn)
+                .tokenType(tokenType)
+                .build();
+    }
+
+    private RefreshTokenRecord getRefreshTokenRecord(final String tokenHash,
+                                                     final Long userId,
+                                                     final Instant expiresAt) {
+        return RefreshTokenRecord.builder()
+                .tokenHash(tokenHash)
+                .userId(userId)
+                .expiresAt(expiresAt)
+                .build();
+    }
+}

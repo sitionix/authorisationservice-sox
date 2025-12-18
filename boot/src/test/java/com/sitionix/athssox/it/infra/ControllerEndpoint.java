@@ -1,6 +1,8 @@
 package com.sitionix.athssox.it.infra;
 
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
+import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
+import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
 import com.sitionix.forgeit.domain.endpoint.Endpoint;
@@ -39,6 +41,49 @@ public class ControllerEndpoint {
                 RegisterUserDTO.class,
                 ErrorDTO.class,
                 (MockmvcDefault) context -> context.status(409)
+        );
+    }
+
+    public static Endpoint<LoginRequestDTO, LoginResponseDTO> login() {
+        return Endpoint.createContract(
+                "/api/v1/auth/login",
+                HttpMethod.POST,
+                LoginRequestDTO.class,
+                LoginResponseDTO.class,
+                (MockmvcDefault) context -> context
+                        .request("loginRequest.json")
+                        .response("loginResponse.json")
+                        .status(200)
+        );
+    }
+
+    public static Endpoint<LoginRequestDTO, ErrorDTO> loginUnauthorized() {
+        return Endpoint.createContract(
+                "/api/v1/auth/login",
+                HttpMethod.POST,
+                LoginRequestDTO.class,
+                ErrorDTO.class,
+                (MockmvcDefault) context -> context.status(401)
+        );
+    }
+
+    public static Endpoint<LoginRequestDTO, ErrorDTO> loginForbidden() {
+        return Endpoint.createContract(
+                "/api/v1/auth/login",
+                HttpMethod.POST,
+                LoginRequestDTO.class,
+                ErrorDTO.class,
+                (MockmvcDefault) context -> context.status(403)
+        );
+    }
+
+    public static Endpoint<LoginRequestDTO, ErrorDTO> loginBadRequest() {
+        return Endpoint.createContract(
+                "/api/v1/auth/login",
+                HttpMethod.POST,
+                LoginRequestDTO.class,
+                ErrorDTO.class,
+                (MockmvcDefault) context -> context.status(400)
         );
     }
 }

@@ -1,11 +1,13 @@
-package com.sitionix.athssox.api.controller;
+package com.sitionix.athssox.api.controller.handler;
 
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
+import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.InvalidPasswordException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +32,26 @@ public class RestExceptionHandler {
                 .body(ErrorDTO.builder()
                         .code(HttpStatus.BAD_REQUEST.value())
                         .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorDTO> handleInvalidCredentials(final BadCredentialsException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.UNAUTHORIZED.value())
+                        .title(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(InactiveUserException.class)
+    public ResponseEntity<ErrorDTO> handleInactiveUser(final InactiveUserException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.FORBIDDEN.value())
+                        .title(HttpStatus.FORBIDDEN.getReasonPhrase())
                         .details(exception.getMessage())
                         .build());
     }
@@ -59,4 +81,3 @@ public class RestExceptionHandler {
                         .build());
     }
 }
-
