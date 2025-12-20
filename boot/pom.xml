@@ -143,6 +143,13 @@
                     <skip>${skipITs}</skip> <!-- Skip integration tests based on the property -->
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.sitionix.athssox.Application</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

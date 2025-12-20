@@ -1,10 +1,10 @@
 package com.sitionix.athssox.it;
 
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
-import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
+import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,10 +39,10 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .request("registerUserRequest.json")
-                .response("registerUserResponse.json", "userId")
-                .status(HttpStatus.CREATED)
-                .createAndAssert();
+                .withRequest("registerUserRequest.json")
+                .expectResponse("registerUserResponse.json", "userId")
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -88,9 +88,9 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .request(requestResource, requestMutator)
-                .status(HttpStatus.BAD_REQUEST)
-                .createAndAssert();
+                .withRequest(requestResource, requestMutator)
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -103,9 +103,9 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .request("registerUserRequest_invalidRole.json")
-                .status(HttpStatus.BAD_REQUEST)
-                .createAndAssert();
+                .withRequest("registerUserRequest_invalidRole.json")
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -118,9 +118,9 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .request("registerUserRequest_invalidSiteId.json")
-                .status(HttpStatus.BAD_REQUEST)
-                .createAndAssert();
+                .withRequest("registerUserRequest_invalidSiteId.json")
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -141,9 +141,9 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .request("registerUserRequest_sameEmailDifferentSiteId.json")
-                .status(HttpStatus.CREATED)
-                .createAndAssert();
+                .withRequest("registerUserRequest_sameEmailDifferentSiteId.json")
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -165,10 +165,10 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
-                .request("registerUserRequest_duplicateEmailSameSite.json")
-                .response("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this site."))
-                .status(HttpStatus.CONFLICT)
-                .createAndAssert();
+                .withRequest("registerUserRequest_duplicateEmailSameSite.json")
+                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this site."))
+                .expectStatus(HttpStatus.CONFLICT)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -189,10 +189,10 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
-                .request("registerUserRequest_duplicateEmailGlobalRole.json")
-                .response("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role scope."))
-                .status(HttpStatus.CONFLICT)
-                .createAndAssert();
+                .withRequest("registerUserRequest_duplicateEmailGlobalRole.json")
+                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role scope."))
+                .expectStatus(HttpStatus.CONFLICT)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
@@ -205,10 +205,10 @@ class UserControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .request("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> request.setPassword("weak"))
-                .response("registerUserResponse_invalidPassword.json")
-                .status(HttpStatus.BAD_REQUEST)
-                .createAndAssert();
+                .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> request.setPassword("weak"))
+                .expectResponse("registerUserResponse_invalidPassword.json")
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
 
         //then
         final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
