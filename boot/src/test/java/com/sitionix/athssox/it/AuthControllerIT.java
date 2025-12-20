@@ -40,10 +40,10 @@ class AuthControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .request("loginRequest.json")
-                .response("loginResponse.json", "accessToken", "refreshToken")
-                .status(HttpStatus.OK)
-                .createAndAssert();
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
 
         //then
         final List<RefreshTokenEntity> refreshTokens = this.testManager.postgresql()
@@ -71,10 +71,10 @@ class AuthControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .request("loginRequest.json", (LoginRequestDTO request) -> request.setPassword("wrong-password"))
-                .response("loginResponse_unauthorized.json")
-                .status(HttpStatus.UNAUTHORIZED)
-                .createAndAssert();
+                .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setPassword("wrong-password"))
+                .expectResponse("loginResponse_unauthorized.json")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .assertAndCreate();
 
         //then
         assertThat(this.testManager.postgresql()
@@ -96,10 +96,10 @@ class AuthControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginForbidden())
-                .request("loginRequest.json")
-                .response("loginResponse_forbidden.json")
-                .status(HttpStatus.FORBIDDEN)
-                .createAndAssert();
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse_forbidden.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
 
         //then
         assertThat(this.testManager.postgresql()
@@ -113,10 +113,10 @@ class AuthControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .request("loginRequest.json")
-                .response("loginResponse_unauthorized.json")
-                .status(HttpStatus.UNAUTHORIZED)
-                .createAndAssert();
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse_unauthorized.json")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .assertAndCreate();
 
         //then
         assertThat(this.testManager.postgresql()
@@ -130,9 +130,9 @@ class AuthControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginBadRequest())
-                .request("loginRequest.json", (LoginRequestDTO request) -> request.setEmail("not-an-email"))
-                .status(HttpStatus.BAD_REQUEST)
-                .createAndAssert();
+                .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setEmail("not-an-email"))
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
 
         //then
         assertThat(this.testManager.postgresql()

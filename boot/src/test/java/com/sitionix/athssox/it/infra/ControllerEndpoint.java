@@ -18,9 +18,9 @@ public class ControllerEndpoint {
                 RegisterUserDTO.class,
                 ResponseRegisterUserDTO.class,
                 (MockmvcDefault) context -> context
-                        .request("registerUserRequest.json")
-                        .response("registerUserResponse.json")
-                        .status(201)
+                        .withRequest("registerUserRequest.json")
+                        .expectResponse("registerUserResponse.json")
+                        .expectStatus(201)
         );
     }
 
@@ -30,7 +30,7 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 RegisterUserDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.status(400)
+                (MockmvcDefault) context -> context.expectStatus(400)
         );
     }
 
@@ -40,7 +40,7 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 RegisterUserDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.status(409)
+                (MockmvcDefault) context -> context.expectStatus(409)
         );
     }
 
@@ -51,9 +51,9 @@ public class ControllerEndpoint {
                 LoginRequestDTO.class,
                 LoginResponseDTO.class,
                 (MockmvcDefault) context -> context
-                        .request("loginRequest.json")
-                        .response("loginResponse.json")
-                        .status(200)
+                        .withRequest("loginRequest.json")
+                        .expectResponse("loginResponse.json")
+                        .expectStatus(200)
         );
     }
 
@@ -63,7 +63,7 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.status(401)
+                (MockmvcDefault) context -> context.expectStatus(401)
         );
     }
 
@@ -73,7 +73,7 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.status(403)
+                (MockmvcDefault) context -> context.expectStatus(403)
         );
     }
 
@@ -83,7 +83,7 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.status(400)
+                (MockmvcDefault) context -> context.expectStatus(400)
         );
     }
 

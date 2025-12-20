@@ -29,9 +29,9 @@ class SecurityErrorHandlerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .request("loginRequest.json", request -> request.setPassword("wrong-password"))
-                .response("loginResponse_unauthorized.json")
-                .status(HttpStatus.UNAUTHORIZED)
-                .createAndAssert();
+                .withRequest("loginRequest.json", request -> request.setPassword("wrong-password"))
+                .expectResponse("loginResponse_unauthorized.json")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .assertAndCreate();
     }
 }
