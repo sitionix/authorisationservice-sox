@@ -46,7 +46,7 @@
         <jacoco.version>0.8.10</jacoco.version>
         <validation.version>2.0.1.Final</validation.version>
         <spring.version>3.3.4</spring.version>
-        <forgeit.version>0.0.16</forgeit.version>
+        <forgeit.version>0.0.17</forgeit.version>
     </properties>
     <dependencyManagement>
         <dependencies>

@@ -7,6 +7,7 @@ import com.sitionix.athssox.domain.exception.InvalidPasswordException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -38,6 +39,16 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorDTO> handleInvalidCredentials(final BadCredentialsException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.UNAUTHORIZED.value())
+                        .title(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorDTO> handleAuthentication(final AuthenticationException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ErrorDTO.builder()
                         .code(HttpStatus.UNAUTHORIZED.value())
