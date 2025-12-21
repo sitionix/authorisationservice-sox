@@ -1,6 +1,10 @@
 package com.sitionix.athssox.it.infra;
 
 import com.sitionix.athssox.postgresql.entity.GlobalRoleEntity;
+import com.sitionix.athssox.postgresql.entity.OutboxAggregateTypeEntity;
+import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
+import com.sitionix.athssox.postgresql.entity.OutboxEventTypeEntity;
+import com.sitionix.athssox.postgresql.entity.OutboxStatusEntity;
 import com.sitionix.athssox.postgresql.entity.RefreshTokenEntity;
 import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.athssox.postgresql.entity.UserStatusEntity;
@@ -11,6 +15,21 @@ import com.sitionix.forgeit.domain.contract.clean.CleanupPolicy;
 
 @ForgeDbContracts
 public class DatabaseContract {
+
+    public static final DbContract<OutboxAggregateTypeEntity> OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(OutboxAggregateTypeEntity.class)
+                    .cleanupPolicy(CleanupPolicy.NONE)
+                    .build();
+
+    public static final DbContract<OutboxEventTypeEntity> OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(OutboxEventTypeEntity.class)
+                    .cleanupPolicy(CleanupPolicy.NONE)
+                    .build();
+
+    public static final DbContract<OutboxStatusEntity> OUTBOX_STATUS_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(OutboxStatusEntity.class)
+                    .cleanupPolicy(CleanupPolicy.NONE)
+                    .build();
 
     public static final DbContract<UserStatusEntity> USER_STATUS_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(UserStatusEntity.class)
@@ -27,6 +46,14 @@ public class DatabaseContract {
                     .dependsOn(USER_STATUS_ENTITY_DB_CONTRACT, UserEntity::setStatus)
                     .dependsOn(GLOBAL_ROLE_ENTITY_DB_CONTRACT, UserEntity::setGlobalRole)
                     .withDefaultBody("defaultUserEntity.json")
+                    .cleanupPolicy(CleanupPolicy.DELETE_ALL)
+                    .build();
+
+    public static final DbContract<OutboxEventEntity> OUTBOX_EVENT_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(OutboxEventEntity.class)
+                    .dependsOn(OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setAggregateType)
+                    .dependsOn(OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setEventType)
+                    .dependsOn(OUTBOX_STATUS_ENTITY_DB_CONTRACT, OutboxEventEntity::setStatus)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 

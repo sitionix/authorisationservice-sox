@@ -11,6 +11,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+
+import com.sitionix.athssox.application.event.UserRegisteredEvent;
 
 import java.util.UUID;
 
@@ -21,8 +25,10 @@ public class RegisterUserImpl implements RegisterUser {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
+    @Transactional
     public ResponseRegisterUser execute(@Valid final RegisterUserDO registerUserDO) {
 
         this.passwordPolicyValidator.validate(registerUserDO.getPassword());
@@ -30,6 +36,9 @@ public class RegisterUserImpl implements RegisterUser {
         registerUserDO.setPassword(this.passwordEncoder.encode(registerUserDO.getPassword()));
 
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
+        this.eventPublisher.publishEvent(new UserRegisteredEvent(createdUser.getUserId(),
+                registerUserDO.getEmail(),
+                registerUserDO.getSiteId()));
         createdUser.setMessage("Registration successful. Please verify your email.");
         return createdUser;
     }

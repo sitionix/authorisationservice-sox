@@ -7,6 +7,7 @@ import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
+import com.sitionix.athssox.application.event.UserRegisteredEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
@@ -42,18 +44,23 @@ class RegisterUserImplTest {
     @Mock
     private PasswordPolicyValidator passwordPolicyValidator;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
-                this.passwordPolicyValidator);
+                this.passwordPolicyValidator,
+                this.eventPublisher);
     }
 
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.userRepository,
                 this.passwordEncoder,
-                this.passwordPolicyValidator);
+                this.passwordPolicyValidator,
+                this.eventPublisher);
     }
 
     @Test
@@ -87,6 +94,7 @@ class RegisterUserImplTest {
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
+        final ArgumentCaptor<UserRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(UserRegisteredEvent.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -96,6 +104,8 @@ class RegisterUserImplTest {
                 .encode(rawPassword);
         verify(this.userRepository)
                 .createUser(registerUserCaptor.capture());
+        verify(this.eventPublisher)
+                .publishEvent(eventCaptor.capture());
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
@@ -104,6 +114,10 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
+        this.assertUserRegisteredEvent(eventCaptor.getValue(),
+                createdUser.getUserId(),
+                DEFAULT_EMAIL,
+                siteId);
     }
 
     @Test
@@ -131,7 +145,8 @@ class RegisterUserImplTest {
                 .validate("StrongPassword123");
         verify(this.userRepository)
                 .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
-        verifyNoInteractions(this.passwordEncoder);
+        verifyNoInteractions(this.passwordEncoder,
+                this.eventPublisher);
     }
 
     @Test
@@ -158,7 +173,8 @@ class RegisterUserImplTest {
                 .validate("StrongPassword123");
         verify(this.userRepository)
                 .existsGlobalByEmail(DEFAULT_EMAIL);
-        verifyNoInteractions(this.passwordEncoder);
+        verifyNoInteractions(this.passwordEncoder,
+                this.eventPublisher);
     }
 
     @Test
@@ -185,7 +201,8 @@ class RegisterUserImplTest {
         verify(this.passwordPolicyValidator)
                 .validate("weak");
         verifyNoInteractions(this.passwordEncoder,
-                this.userRepository);
+                this.userRepository,
+                this.eventPublisher);
     }
 
     private RegisterUserDO getRegisterUserDO(final UUID siteId,
@@ -214,5 +231,14 @@ class RegisterUserImplTest {
 
     private RuntimeException getRuntimeException(final String message) {
         return new RuntimeException(message);
+    }
+
+    private void assertUserRegisteredEvent(final UserRegisteredEvent actual,
+                                           final Long userId,
+                                           final String email,
+                                           final UUID siteId) {
+        assertThat(actual.getUserId()).isEqualTo(userId);
+        assertThat(actual.getEmail()).isEqualTo(email);
+        assertThat(actual.getSiteId()).isEqualTo(siteId);
     }
 }
