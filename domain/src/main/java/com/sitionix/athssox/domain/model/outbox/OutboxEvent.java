@@ -12,7 +12,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class OutboxEventCreate {
+public class OutboxEvent<P> {
 
     private OutboxAggregateType aggregateType;
     private UUID aggregateId;
@@ -20,6 +20,6 @@ public class OutboxEventCreate {
     private OutboxStatus status;
     private int retryCount;
     private LocalDateTime nextRetryAt;
-    private String payload;
+    private P payload;
     private String lastError;
 }

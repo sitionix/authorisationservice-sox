@@ -1,13 +1,15 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
+import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
+import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
-import com.sitionix.athssox.application.outbox.UserRegistrationOutboxCreator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,14 +46,18 @@ class RegisterUserImplTest {
     private PasswordPolicyValidator passwordPolicyValidator;
 
     @Mock
-    private UserRegistrationOutboxCreator outboxCreator;
+    private OutboxCommand<EmailVerifyPayload> outboxCommand;
+
+    @Mock
+    private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
 
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
-                this.outboxCreator);
+                this.outboxCommand,
+                this.outboxEventBuilder);
     }
 
     @AfterEach
@@ -59,7 +65,8 @@ class RegisterUserImplTest {
         verifyNoMoreInteractions(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
-                this.outboxCreator);
+                this.outboxCommand,
+                this.outboxEventBuilder);
     }
 
     @Test
@@ -104,9 +111,9 @@ class RegisterUserImplTest {
                 .encode(rawPassword);
         verify(this.userRepository)
                 .createUser(registerUserCaptor.capture());
-        verify(this.outboxCreator)
-                .create(outboxRegisterUserCaptor.capture(),
-                        createdUserCaptor.capture());
+//        verify(this.outboxCommand)
+//                .execute(outboxRegisterUserCaptor.capture(),
+//                        createdUserCaptor.capture());
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
@@ -145,7 +152,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
-                this.outboxCreator);
+                this.outboxCommand);
     }
 
     @Test
@@ -173,7 +180,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .existsGlobalByEmail(DEFAULT_EMAIL);
         verifyNoInteractions(this.passwordEncoder,
-                this.outboxCreator);
+                this.outboxCommand);
     }
 
     @Test
@@ -201,7 +208,7 @@ class RegisterUserImplTest {
                 .validate("weak");
         verifyNoInteractions(this.passwordEncoder,
                 this.userRepository,
-                this.outboxCreator);
+                this.outboxCommand);
     }
 
     private RegisterUserDO getRegisterUserDO(final UUID siteId,

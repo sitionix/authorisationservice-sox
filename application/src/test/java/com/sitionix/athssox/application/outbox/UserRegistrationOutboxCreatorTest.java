@@ -3,7 +3,7 @@ package com.sitionix.athssox.application.outbox;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventCreate;
+import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.repository.OutboxEventRepository;
@@ -63,7 +63,7 @@ class UserRegistrationOutboxCreatorTest {
         this.outboxCreator.create(registerUserDO, createdUser);
 
         //then
-        final ArgumentCaptor<OutboxEventCreate> captor = ArgumentCaptor.forClass(OutboxEventCreate.class);
+        final ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
 
         verify(this.outboxEventRepository)
                 .create(captor.capture());
@@ -72,7 +72,7 @@ class UserRegistrationOutboxCreatorTest {
         verify(this.clock)
                 .getZone();
 
-        final OutboxEventCreate expected = this.getExpectedOutboxEventCreate(fixedClock,
+        final OutboxEvent expected = this.getExpectedOutboxEventCreate(fixedClock,
                 registerUserDO,
                 createdUser);
         assertThat(captor.getValue()).isEqualTo(expected);
@@ -105,10 +105,10 @@ class UserRegistrationOutboxCreatorTest {
         return UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     }
 
-    private OutboxEventCreate getExpectedOutboxEventCreate(final Clock fixedClock,
-                                                           final RegisterUserDO registerUserDO,
-                                                           final ResponseRegisterUser createdUser) {
-        return OutboxEventCreate.builder()
+    private OutboxEvent getExpectedOutboxEventCreate(final Clock fixedClock,
+                                                     final RegisterUserDO registerUserDO,
+                                                     final ResponseRegisterUser createdUser) {
+        return OutboxEvent.builder()
                 .aggregateType(OutboxAggregateType.USER)
                 .aggregateId(this.toAggregateId(createdUser.getUserId()))
                 .eventType(OutboxEventType.EMAIL_VERIFY)

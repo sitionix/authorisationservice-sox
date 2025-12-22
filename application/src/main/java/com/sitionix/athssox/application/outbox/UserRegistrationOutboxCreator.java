@@ -3,7 +3,7 @@ package com.sitionix.athssox.application.outbox;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventCreate;
+import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.repository.OutboxEventRepository;
@@ -24,7 +24,7 @@ public class UserRegistrationOutboxCreator {
 
     public void create(final RegisterUserDO registerUserDO,
                        final ResponseRegisterUser createdUser) {
-        final OutboxEventCreate outboxEvent = OutboxEventCreate.builder()
+        final OutboxEvent outboxEvent = OutboxEvent.builder()
                 .aggregateType(OutboxAggregateType.USER)
                 .aggregateId(this.toAggregateId(createdUser.getUserId()))
                 .eventType(OutboxEventType.EMAIL_VERIFY)

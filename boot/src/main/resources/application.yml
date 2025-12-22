@@ -17,3 +17,5 @@ auth:
     jwt-secret: change-me
     access-token-ttl-seconds: 3600
     refresh-token-ttl-seconds: 2592000
+bff:
+  base-url: http://localhost:8080/bffssox
