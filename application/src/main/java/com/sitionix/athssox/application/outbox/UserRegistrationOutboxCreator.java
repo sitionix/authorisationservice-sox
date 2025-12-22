@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.outbox;
 
-import com.sitionix.athssox.application.event.UserRegisteredEvent;
+import com.sitionix.athssox.domain.model.RegisterUserDO;
+import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventCreate;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
@@ -8,10 +9,6 @@ import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -20,22 +17,21 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class UserRegistrationOutboxListener {
+public class UserRegistrationOutboxCreator {
 
     private final OutboxEventRepository outboxEventRepository;
     private final Clock clock;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onUserRegistered(final UserRegisteredEvent event) {
+    public void create(final RegisterUserDO registerUserDO,
+                       final ResponseRegisterUser createdUser) {
         final OutboxEventCreate outboxEvent = OutboxEventCreate.builder()
                 .aggregateType(OutboxAggregateType.USER)
-                .aggregateId(this.toAggregateId(event.getUserId()))
+                .aggregateId(this.toAggregateId(createdUser.getUserId()))
                 .eventType(OutboxEventType.EMAIL_VERIFY)
                 .status(OutboxStatus.PENDING)
                 .retryCount(0)
                 .nextRetryAt(LocalDateTime.now(this.clock))
-                .payload(this.buildEmailVerifyPayload(event))
+                .payload(this.buildEmailVerifyPayload(registerUserDO, createdUser))
                 .build();
 
         this.outboxEventRepository.create(outboxEvent);
@@ -45,10 +41,13 @@ public class UserRegistrationOutboxListener {
         return UUID.nameUUIDFromBytes(("user:" + userId).getBytes(StandardCharsets.UTF_8));
     }
 
-    private String buildEmailVerifyPayload(final UserRegisteredEvent event) {
-        final String email = this.escapeJson(event.getEmail());
-        final String userId = this.escapeJson(String.valueOf(event.getUserId()));
-        final String siteId = event.getSiteId() == null ? null : this.escapeJson(event.getSiteId().toString());
+    private String buildEmailVerifyPayload(final RegisterUserDO registerUserDO,
+                                           final ResponseRegisterUser createdUser) {
+        final String email = this.escapeJson(registerUserDO.getEmail());
+        final String userId = this.escapeJson(String.valueOf(createdUser.getUserId()));
+        final String siteId = registerUserDO.getSiteId() == null
+                ? null
+                : this.escapeJson(registerUserDO.getSiteId().toString());
 
         final String siteIdValue = siteId == null ? "null" : "\"" + siteId + "\"";
 

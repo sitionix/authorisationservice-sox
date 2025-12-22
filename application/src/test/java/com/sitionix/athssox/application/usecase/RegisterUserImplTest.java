@@ -7,7 +7,7 @@ import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
-import com.sitionix.athssox.application.event.UserRegisteredEvent;
+import com.sitionix.athssox.application.outbox.UserRegistrationOutboxCreator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
@@ -45,14 +44,14 @@ class RegisterUserImplTest {
     private PasswordPolicyValidator passwordPolicyValidator;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private UserRegistrationOutboxCreator outboxCreator;
 
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
-                this.eventPublisher);
+                this.outboxCreator);
     }
 
     @AfterEach
@@ -60,7 +59,7 @@ class RegisterUserImplTest {
         verifyNoMoreInteractions(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
-                this.eventPublisher);
+                this.outboxCreator);
     }
 
     @Test
@@ -94,7 +93,8 @@ class RegisterUserImplTest {
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
-        final ArgumentCaptor<UserRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(UserRegisteredEvent.class);
+        final ArgumentCaptor<ResponseRegisterUser> createdUserCaptor = ArgumentCaptor.forClass(ResponseRegisterUser.class);
+        final ArgumentCaptor<RegisterUserDO> outboxRegisterUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -104,8 +104,9 @@ class RegisterUserImplTest {
                 .encode(rawPassword);
         verify(this.userRepository)
                 .createUser(registerUserCaptor.capture());
-        verify(this.eventPublisher)
-                .publishEvent(eventCaptor.capture());
+        verify(this.outboxCreator)
+                .create(outboxRegisterUserCaptor.capture(),
+                        createdUserCaptor.capture());
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
@@ -114,10 +115,8 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
-        this.assertUserRegisteredEvent(eventCaptor.getValue(),
-                createdUser.getUserId(),
-                DEFAULT_EMAIL,
-                siteId);
+        assertThat(outboxRegisterUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
+        assertThat(createdUserCaptor.getValue()).isEqualTo(createdUser);
     }
 
     @Test
@@ -146,7 +145,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
-                this.eventPublisher);
+                this.outboxCreator);
     }
 
     @Test
@@ -174,7 +173,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .existsGlobalByEmail(DEFAULT_EMAIL);
         verifyNoInteractions(this.passwordEncoder,
-                this.eventPublisher);
+                this.outboxCreator);
     }
 
     @Test
@@ -202,7 +201,7 @@ class RegisterUserImplTest {
                 .validate("weak");
         verifyNoInteractions(this.passwordEncoder,
                 this.userRepository,
-                this.eventPublisher);
+                this.outboxCreator);
     }
 
     private RegisterUserDO getRegisterUserDO(final UUID siteId,
@@ -233,12 +232,4 @@ class RegisterUserImplTest {
         return new RuntimeException(message);
     }
 
-    private void assertUserRegisteredEvent(final UserRegisteredEvent actual,
-                                           final Long userId,
-                                           final String email,
-                                           final UUID siteId) {
-        assertThat(actual.getUserId()).isEqualTo(userId);
-        assertThat(actual.getEmail()).isEqualTo(email);
-        assertThat(actual.getSiteId()).isEqualTo(siteId);
-    }
 }

@@ -17,6 +17,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import net.minidev.json.annotate.JsonIgnore;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -68,6 +70,7 @@ public class OutboxEventEntity {
     @Column(name = "next_retry_at", nullable = false)
     private LocalDateTime nextRetryAt;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private String payload;
 

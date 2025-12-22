@@ -1,0 +1,12 @@
+{
+  "aggregateType": {
+    "description": "USER"
+  },
+  "eventType": {
+    "description": "EMAIL_VERIFY"
+  },
+  "status": {
+    "description": "PENDING"
+  },
+  "retryCount": 0
+}

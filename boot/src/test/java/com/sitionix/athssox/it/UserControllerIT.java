@@ -4,7 +4,6 @@ import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,15 +12,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 
-import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @IntegrationTest
 class UserControllerIT {
@@ -32,10 +25,6 @@ class UserControllerIT {
     @Test
     @DisplayName("Should register a new user successfully and persist it")
     void givenValidUserData_whenRegisterUser_thenSuccessAndUserPersisted() {
-        //given
-        final UUID expectedSiteId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        final String rawPassword = "StrongPassword123";
-
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -45,16 +34,18 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertEquals(1, users.size());
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .containsAllWithJsons("registeredUserEntity.json");
 
-        final UserEntity user = users.getFirst();
-        assertEquals("email@sitionix.com", user.getEmail());
-        assertThat(user.getPasswordHash()).isNotEqualTo(rawPassword);
-        assertThat(Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8().matches(rawPassword, user.getPasswordHash())).isTrue();
-        assertEquals(expectedSiteId, user.getSiteId());
-        assertThat(user.getStatus().getId()).isEqualTo(1L);
-        assertThat(user.getGlobalRole().getId()).isEqualTo(1L);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("retryCount")
+                .containsAllWithJsons("outboxEventEmailVerifyEntity.json");
     }
 
     static Stream<Arguments> invalidRegisterUserRequests() {
@@ -93,8 +84,12 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertThat(users).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -108,8 +103,12 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertThat(users).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -123,8 +122,12 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertThat(users).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -146,9 +149,9 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-
-        assertThat(users).hasSize(2);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(2);
     }
 
     @Test
@@ -171,8 +174,12 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertThat(users).hasSize(1);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -195,8 +202,12 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertThat(users).hasSize(1);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -211,7 +222,11 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<UserEntity> users = this.testManager.postgresql().get(UserEntity.class).getAll();
-        assertThat(users).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 }
