@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -15,7 +14,7 @@ import java.util.UUID;
 public class OutboxEvent<P> {
 
     private OutboxAggregateType aggregateType;
-    private UUID aggregateId;
+    private Long aggregateId;
     private OutboxEventType eventType;
     private OutboxStatus status;
     private int retryCount;

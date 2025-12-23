@@ -48,7 +48,7 @@ public class OutboxEventEntity {
     private OutboxAggregateTypeEntity aggregateType;
 
     @Column(name = "aggregate_id", nullable = false)
-    private UUID aggregateId;
+    private Long aggregateId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "event_type_id", nullable = false, referencedColumnName = "id")

@@ -1,4 +1,4 @@
-package com.sitionix.athssox.application.outbox.builder;
+package com.sitionix.athssox.application.builder;
 
 import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
@@ -67,4 +67,3 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
                 .build();
     }
 }
-

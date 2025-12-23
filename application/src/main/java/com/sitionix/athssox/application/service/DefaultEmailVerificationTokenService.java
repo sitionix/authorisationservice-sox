@@ -17,7 +17,7 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
     private final TokenHasher tokenHasher;
 
     @Override
-    public String issue(final UUID userId, final UUID siteId) {
+    public String issue(final Long userId, final UUID siteId) {
         final String rawToken = generateToken();
         final String tokenHash = tokenHasher.hash(rawToken);
 

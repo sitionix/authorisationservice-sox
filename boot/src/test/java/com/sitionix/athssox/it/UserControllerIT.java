@@ -38,14 +38,15 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1)
                 .withFetchedRelations()
-                .containsAllWithJsons("registeredUserEntity.json");
+                .ignoreFields("createdAt", "id", "passwordHash", "updatedAt")
+                .containsWithJsonsStrict("registeredUserEntity.json");
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(1)
                 .withFetchedRelations()
-                .ignoreFields("retryCount")
-                .containsAllWithJsons("outboxEventEmailVerifyEntity.json");
+                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
+                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
     }
 
     static Stream<Arguments> invalidRegisterUserRequests() {

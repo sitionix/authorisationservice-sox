@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS outbox_events (
     id                BIGSERIAL PRIMARY KEY,
     aggregate_type_id BIGINT NOT NULL,
-    aggregate_id      UUID NOT NULL,
+    aggregate_id      BIGINT NOT NULL,
     event_type_id     BIGINT NOT NULL,
     status_id         BIGINT NOT NULL,
     retry_count       INT NOT NULL,
