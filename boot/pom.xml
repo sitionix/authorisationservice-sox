@@ -33,6 +33,11 @@
             <artifactId>postgresql</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipe-producer-email-verify-v1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- DEPENDENCY -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

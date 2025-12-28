@@ -28,6 +28,7 @@
         <module>domain</module>
         <module>api-rest</module>
         <module>application</module>
+        <module>pipe</module>
         <module>infrastructure</module>
         <module>jacoco-report</module>
     </modules>
@@ -46,7 +47,7 @@
         <jacoco.version>0.8.10</jacoco.version>
         <validation.version>2.0.1.Final</validation.version>
         <spring.version>3.3.4</spring.version>
-        <forgeit.version>0.0.20</forgeit.version>
+        <forgeit.version>0.0.25</forgeit.version>
     </properties>
     <dependencyManagement>
         <dependencies>
