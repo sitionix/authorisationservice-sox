@@ -1,10 +1,15 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
+import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
+import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
+import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
 import org.junit.jupiter.api.AfterEach;
@@ -16,10 +21,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -42,18 +50,28 @@ class RegisterUserImplTest {
     @Mock
     private PasswordPolicyValidator passwordPolicyValidator;
 
+    @Mock
+    private OutboxCommand<EmailVerifyPayload> outboxCommand;
+
+    @Mock
+    private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
-                this.passwordPolicyValidator);
+                this.passwordPolicyValidator,
+                this.outboxCommand,
+                this.outboxEventBuilder);
     }
 
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.userRepository,
                 this.passwordEncoder,
-                this.passwordPolicyValidator);
+                this.passwordPolicyValidator,
+                this.outboxCommand,
+                this.outboxEventBuilder);
     }
 
     @Test
@@ -74,6 +92,7 @@ class RegisterUserImplTest {
         final ResponseRegisterUser expected = this.getResponseRegisterUser(10L,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "Registration successful. Please verify your email.");
+        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
 
         when(this.userRepository.existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
                 .thenReturn(false);
@@ -81,12 +100,15 @@ class RegisterUserImplTest {
                 .thenReturn(encodedPassword);
         when(this.userRepository.createUser(given))
                 .thenReturn(createdUser);
+        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
+                .thenReturn(outboxEvent);
 
         //when
         final ResponseRegisterUser actual = this.registerUser.execute(given);
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
+        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -96,6 +118,10 @@ class RegisterUserImplTest {
                 .encode(rawPassword);
         verify(this.userRepository)
                 .createUser(registerUserCaptor.capture());
+        verify(this.outboxEventBuilder)
+                .build(buildContextCaptor.capture());
+        verify(this.outboxCommand)
+                .execute(outboxEvent);
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
@@ -104,6 +130,11 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
+        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
+        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(createdUser.getUserId(),
+                siteId,
+                DEFAULT_EMAIL,
+                buildContextCaptor.getValue().requestedAt()));
     }
 
     @Test
@@ -131,7 +162,9 @@ class RegisterUserImplTest {
                 .validate("StrongPassword123");
         verify(this.userRepository)
                 .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
-        verifyNoInteractions(this.passwordEncoder);
+        verifyNoInteractions(this.passwordEncoder,
+                this.outboxEventBuilder,
+                this.outboxCommand);
     }
 
     @Test
@@ -158,7 +191,9 @@ class RegisterUserImplTest {
                 .validate("StrongPassword123");
         verify(this.userRepository)
                 .existsGlobalByEmail(DEFAULT_EMAIL);
-        verifyNoInteractions(this.passwordEncoder);
+        verifyNoInteractions(this.passwordEncoder,
+                this.outboxEventBuilder,
+                this.outboxCommand);
     }
 
     @Test
@@ -185,7 +220,9 @@ class RegisterUserImplTest {
         verify(this.passwordPolicyValidator)
                 .validate("weak");
         verifyNoInteractions(this.passwordEncoder,
-                this.userRepository);
+                this.userRepository,
+                this.outboxEventBuilder,
+                this.outboxCommand);
     }
 
     private RegisterUserDO getRegisterUserDO(final UUID siteId,
@@ -212,7 +249,20 @@ class RegisterUserImplTest {
                 .build();
     }
 
+    private OutboxBuildContext getOutboxBuildContext(final Long userId,
+                                                     final UUID siteId,
+                                                     final String email,
+                                                     final Instant requestedAt) {
+        return new OutboxBuildContext(userId,
+                siteId,
+                email,
+                null,
+                null,
+                requestedAt);
+    }
+
     private RuntimeException getRuntimeException(final String message) {
         return new RuntimeException(message);
     }
+
 }

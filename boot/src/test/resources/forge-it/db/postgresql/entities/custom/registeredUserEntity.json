@@ -1,0 +1,12 @@
+{
+  "email": "email@sitionix.com",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "globalRole": {
+    "id": 1,
+    "description": "SITE USER"
+  },
+  "status": {
+    "id": 1,
+    "description": "PENDING EMAIL VERIFY"
+  }
+}
