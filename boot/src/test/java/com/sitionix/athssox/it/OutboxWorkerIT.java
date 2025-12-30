@@ -1,9 +1,9 @@
 package com.sitionix.athssox.it;
 
+import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.OutboxKafkaContracts;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.it.infra.DatabaseContract;
-import com.sitionix.athssox.worker.EmailVerifyOutboxWorker;
+import com.sitionix.athssox.application.outbox.OutboxWorker;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,17 +12,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Duration;
 
 @IntegrationTest
-class EmailVerifyWorkerIT {
+class OutboxWorkerIT {
 
     @Autowired
-    private EmailVerifyOutboxWorker worker;
+    private OutboxWorker worker;
 
     @Autowired
     private TestManager testManager;
 
     @Test
-    @DisplayName("given one outbox pattern when worker start then publish and verify event")
-    void givenOutboxEventInDB_whenDispatchPendingEmailVerifyEvents_thenPublishEvent() {
+    @DisplayName("given one outbox pattern when worker starts then publish verify event")
+    void givenOutboxEventInDB_whenDispatchPendingEvents_thenPublishEvent() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -33,7 +33,7 @@ class EmailVerifyWorkerIT {
                 .build();
 
         //when
-        this.worker.dispatchPendingEmailVerifyEvents();
+        this.worker.dispatchPendingEvents();
 
         //then
         this.testManager.kafka()
@@ -44,7 +44,7 @@ class EmailVerifyWorkerIT {
 
     @Test
     @DisplayName("given non email verify outbox event when worker starts then ignore event")
-    void givenNonEmailVerifyOutboxEvent_whenDispatchPendingEmailVerifyEvents_thenIgnoreEvent() {
+    void givenNonEmailVerifyOutboxEvent_whenDispatchPendingEvents_thenIgnoreEvent() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -55,7 +55,7 @@ class EmailVerifyWorkerIT {
                 .build();
 
         //when
-        this.worker.dispatchPendingEmailVerifyEvents();
+        this.worker.dispatchPendingEvents();
 
         //then
         this.testManager.kafka()

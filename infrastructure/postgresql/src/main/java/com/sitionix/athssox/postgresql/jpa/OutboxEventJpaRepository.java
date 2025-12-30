@@ -18,12 +18,12 @@ public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventEntit
     @Query("""
             select e from OutboxEventEntity e
             where e.status.description in :statuses
-              and e.eventType.description = :eventType
+              and e.eventType.description in :eventTypes
               and e.nextRetryAt <= :now
             order by e.nextRetryAt asc
             """)
     List<OutboxEventEntity> findPendingForUpdate(@Param("statuses") List<String> statuses,
-                                                 @Param("eventType") String eventType,
+                                                 @Param("eventTypes") List<String> eventTypes,
                                                  @Param("now") LocalDateTime now,
                                                  Pageable pageable);
 }

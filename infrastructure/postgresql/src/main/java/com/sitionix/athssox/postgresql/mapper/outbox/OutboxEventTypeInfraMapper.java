@@ -19,4 +19,8 @@ public interface OutboxEventTypeInfraMapper {
                 .description(eventType.getDescription())
                 .build();
     }
+
+    default OutboxEventType asEventType(final OutboxEventTypeEntity eventType) {
+        return OutboxEventType.fromId(eventType.getId());
+    }
 }

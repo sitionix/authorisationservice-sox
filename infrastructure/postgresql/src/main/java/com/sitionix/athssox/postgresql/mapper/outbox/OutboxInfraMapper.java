@@ -2,6 +2,7 @@ package com.sitionix.athssox.postgresql.mapper.outbox;
 
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
@@ -22,4 +23,9 @@ public interface OutboxInfraMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "payload", source = "payload", qualifiedByName = "toJson")
     OutboxEventEntity toEntity(OutboxEvent<?> outboxEvent);
+
+
+    @Mapping(target = "payload", expression = "java(this.outboxEventTypeInfraMapper.asEventType(event.getEventType()).getPayload(event.getPayload()))")
+    OutboxEvent<Object> toOutboxEvent(OutboxEventEntity event);
+
 }

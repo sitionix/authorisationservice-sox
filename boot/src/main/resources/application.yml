@@ -23,7 +23,7 @@ auth:
 bff:
   base-url: http://localhost:8080/bffssox
 outbox:
-  email-verify:
+  worker:
     poll-delay-ms: 5000
     batch-size: 50
     retry-delay-seconds: 60

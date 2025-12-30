@@ -1,16 +1,17 @@
-package com.sitionix.athssox.worker;
+package com.sitionix.athssox.application.outbox;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sitionix.athssox.domain.config.OutboxWorkerConfig;
+import com.sitionix.athssox.domain.event.EventHandler;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
+import com.sitionix.athssox.domain.model.outbox.OutboxPendingEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
-import com.sitionix.athssox.pipe.producer.EmailVerifyPublisherV1;
-import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
+import com.sitionix.athssox.domain.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,59 +23,85 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j
+//@Slf4j
 @Component
 @RequiredArgsConstructor
-public class EmailVerifyOutboxWorker {
+public class OutboxWorker {
 
-    private final EmailVerifyOutboxEventService eventService;
-    private final EmailVerifyOutboxWorkerConfig config;
-    private final EmailVerifyPublisherV1 publisher;
+    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxWorkerConfig config;
+    private final EventHandler<EmailVerifyPayload> emailVerifyPublisher;
     private final ObjectMapper objectMapper;
 
-    @Scheduled(fixedDelayString = "${outbox.email-verify.poll-delay-ms:5000}")
-    public void dispatchPendingEmailVerifyEvents() {
-        final List<OutboxEventEntity> events = this.eventService.claimPendingEvents(this.config.getBatchSize());
+    @Scheduled(fixedDelayString = "#{@outboxWorkerConfig.pollDelayMs}")
+    public void dispatchPendingEvents() {
+        final List<OutboxPendingEvent> events = this.outboxEventRepository.claimPendingEvents(
+                this.supportedEventTypes(),
+                this.config.getBatchSize(),
+                LocalDateTime.now());
         if (events.isEmpty()) {
             return;
         }
 
-        for (final OutboxEventEntity event : events) {
+        for (final OutboxPendingEvent event : events) {
             this.handleEvent(event);
         }
     }
 
-    private void handleEvent(final OutboxEventEntity event) {
+    private void handleEvent(final OutboxPendingEvent event) {
         try {
-            final EmailVerifyPayload payload = this.parsePayload(event.getPayload(), event.getAggregateId());
-            if (payload == null) {
-                throw new IllegalStateException("Outbox payload is missing");
-            }
-
-            final Event<EmailVerifyPayload> domainEvent = this.buildEvent(payload, event);
-            this.publisher.publish(domainEvent);
-
-            this.eventService.markSent(event.getId());
+            this.publishEvent(event);
+            this.outboxEventRepository.markSent(event.id());
         } catch (final Exception exception) {
-            log.warn("Failed to publish email verify outbox event id={}", event.getId(), exception);
-            this.eventService.markFailed(
-                    event.getId(),
+//            log.warn("Failed to publish outbox event id={}", event.id(), exception);
+            this.outboxEventRepository.markFailed(
+                    event.id(),
                     this.formatErrorMessage(exception),
                     Duration.ofSeconds(this.config.getRetryDelaySeconds()),
                     this.config.getMaxRetries());
         }
     }
 
-    private EmailVerifyPayload parsePayload(final String payloadJson,
-                                            final Long aggregateId) throws IOException {
+    private List<OutboxEventType> supportedEventTypes() {
+        return List.of(OutboxEventType.EMAIL_VERIFY);
+    }
+
+    private void publishEvent(final OutboxPendingEvent event) {
+        if (event.eventType() == null) {
+            throw new IllegalStateException("Outbox event type is missing");
+        }
+
+        switch (event.eventType()) {
+            case EMAIL_VERIFY -> this.publishEmailVerifyEvent(event);
+            default -> throw new IllegalStateException("No publisher configured for eventType=" + event.eventType());
+        }
+    }
+
+    private void publishEmailVerifyEvent(final OutboxPendingEvent event) {
+        final EmailVerifyPayload payload = this.parseEmailVerifyPayload(event.payload(), event.aggregateId());
+        if (payload == null) {
+            throw new IllegalStateException("Outbox payload is missing");
+        }
+
+        final Event<EmailVerifyPayload> domainEvent = this.buildEmailVerifyEvent(payload, event);
+        this.emailVerifyPublisher.publish(domainEvent);
+    }
+
+    private EmailVerifyPayload parseEmailVerifyPayload(final String payloadJson,
+                                                       final Long aggregateId) {
         if (payloadJson == null) {
             return null;
         }
 
-        final EmailVerifyPayloadDto dto = this.objectMapper
-                .readerFor(EmailVerifyPayloadDto.class)
-                .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .readValue(payloadJson);
+        final EmailVerifyPayloadDto dto;
+        try {
+            dto = this.objectMapper
+                    .readerFor(EmailVerifyPayloadDto.class)
+                    .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .readValue(payloadJson);
+        } catch (final IOException exception) {
+            throw new IllegalStateException("Failed to parse outbox payload", exception);
+        }
         final EmailVerifyPayloadDto.Meta meta = dto.meta;
 
         return EmailVerifyPayload.builder()
@@ -146,13 +173,13 @@ public class EmailVerifyOutboxWorker {
         return Instant.parse(requestedAt);
     }
 
-    private Event<EmailVerifyPayload> buildEvent(final EmailVerifyPayload payload,
-                                                 final OutboxEventEntity event) {
+    private Event<EmailVerifyPayload> buildEmailVerifyEvent(final EmailVerifyPayload payload,
+                                                            final OutboxPendingEvent event) {
         return new Event<>(
                 payload,
                 this.resolveUser(payload),
-                this.resolveEventType(),
-                this.resolveCreatedAt(event.getCreatedAt()));
+                this.resolveEventType(event),
+                this.resolveCreatedAt(event.createdAt()));
     }
 
     private String resolveUser(final EmailVerifyPayload payload) {
@@ -165,8 +192,11 @@ public class EmailVerifyOutboxWorker {
         return null;
     }
 
-    private String resolveEventType() {
-        return OutboxEventType.EMAIL_VERIFY.getDescription();
+    private String resolveEventType(final OutboxPendingEvent event) {
+        if (event.eventType() == null) {
+            return null;
+        }
+        return event.eventType().getDescription();
     }
 
     private Instant resolveCreatedAt(final LocalDateTime createdAt) {
