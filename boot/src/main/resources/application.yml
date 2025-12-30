@@ -22,3 +22,9 @@ auth:
     refresh-token-ttl-seconds: 2592000
 bff:
   base-url: http://localhost:8080/bffssox
+outbox:
+  email-verify:
+    poll-delay-ms: 5000
+    batch-size: 50
+    retry-delay-seconds: 60
+    max-retries: 5

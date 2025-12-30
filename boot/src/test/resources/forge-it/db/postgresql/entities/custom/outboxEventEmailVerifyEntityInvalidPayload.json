@@ -1,0 +1,16 @@
+{
+  "aggregateType": {
+    "id": 1
+  },
+  "aggregateId": 1,
+  "eventType": {
+    "id": 1
+  },
+  "status": {
+    "id": 1
+  },
+  "retryCount": 0,
+  "nextRetryAt": "2020-01-01T00:00:00",
+  "payload": "[]",
+  "lastError": null
+}

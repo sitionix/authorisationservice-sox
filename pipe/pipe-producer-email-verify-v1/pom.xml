@@ -14,6 +14,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.afesox</groupId>
+            <artifactId>app-afesox-athssox-event-emailverify-producer-stable</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>domain</artifactId>
             <version>${project.version}</version>
@@ -29,11 +34,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.afesox</groupId>
-            <artifactId>app-afesox-athssox-event-emailverify-producer-sitionix-50-unstable</artifactId>
-            <version>0.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.mapstruct</groupId>
