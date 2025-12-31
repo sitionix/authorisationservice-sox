@@ -13,22 +13,22 @@ import org.springframework.stereotype.Service;
 
 @Service("emailVerifyHandler")
 @RequiredArgsConstructor
-public class EmailVerifyHandler implements EventTypeHandler {
+public class EmailVerifyHandler implements EventTypeHandler<EmailVerifyPayload> {
 
     private final ObjectMapper objectMapper;
 
     private final EventHandler<EmailVerifyPayload> eventHandler;
 
     @Override
-    public <P> void doHandle(final OutboxEvent<P> event) {
+    public void doHandle(final OutboxEvent<EmailVerifyPayload> event) {
         final Event<EmailVerifyPayload> payloadEvent = Event.create(event);
+        this.eventHandler.publish(payloadEvent);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <P> P getPayload(final String payload) {
+    public EmailVerifyPayload getPayload(final String payload) {
         try {
-            return (P) this.objectMapper.readValue(payload, EmailVerifyPayload.class);
+            return this.objectMapper.readValue(payload, EmailVerifyPayload.class);
         } catch (final JsonProcessingException e) {
             throw new OutboxPayloadParseException("Payload cannot be parsed into EmailVerifyPayload due to error: " + e);
         }

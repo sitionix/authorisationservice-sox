@@ -2,10 +2,10 @@ package com.sitionix.athssox.domain.model.outbox.payload.handler;
 
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 
-public interface EventTypeHandler {
+public interface EventTypeHandler<P> {
 
-   <P> void doHandle(OutboxEvent<P> event);
+    void doHandle(OutboxEvent<P> event);
 
-   <P> P getPayload(String payload);
+    P getPayload(String payload);
 
 }
