@@ -63,7 +63,7 @@ class OutboxInfraMapperImplTest {
     }
 
     @Test
-    void given_outbox_event_when_to_entity_then_return_mapped_entity() {
+    void givenOutboxEvent_whenToEntity_thenReturnMappedEntity() {
         //given
         final LocalDateTime dateTime = LocalDateTime.now();
         final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);

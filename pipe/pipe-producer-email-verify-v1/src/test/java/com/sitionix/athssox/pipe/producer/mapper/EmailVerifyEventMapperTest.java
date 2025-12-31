@@ -35,7 +35,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void given_email_verify_payload_when_as_event_then_return_email_verify_event() {
+    void givenEmailVerifyPayload_whenAsEvent_thenReturnEmailVerifyEvent() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.now();
@@ -51,7 +51,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void given_event_when_as_envelope_then_return_email_verify_event_envelope() {
+    void givenEvent_whenAsEnvelope_thenReturnEmailVerifyEventEnvelope() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.parse("2024-04-22T08:15:30Z");
@@ -74,7 +74,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void given_event_when_as_metadata_then_return_metadata() {
+    void givenEvent_whenAsMetadata_thenReturnMetadata() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.parse("2024-04-23T08:15:30Z");
@@ -94,7 +94,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void given_instant_when_to_date_time_then_return_date_time_string() {
+    void givenInstant_whenToDateTime_thenReturnDateTimeString() {
         //given
         final Instant given = Instant.parse("2024-04-24T08:15:30Z");
         final String expected = given.toString();
@@ -107,7 +107,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void given_instant_when_to_epoch_millis_then_return_epoch_millis() {
+    void givenInstant_whenToEpochMillis_thenReturnEpochMillis() {
         //given
         final Instant given = Instant.parse("2024-04-25T08:15:30Z");
         final Long expected = given.toEpochMilli();

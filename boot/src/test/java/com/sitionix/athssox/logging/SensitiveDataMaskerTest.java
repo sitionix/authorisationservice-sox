@@ -26,7 +26,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void given_json_with_to_when_mask_then_hide_email() {
+    void givenJsonWithTo_whenMask_thenHideEmail() {
         //given
         final String given = this.getPayloadWithTo();
         final String expected = this.getPayloadWithMaskedTo();
@@ -39,7 +39,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void given_json_with_whitespace_and_multiple_to_when_mask_then_hide_all_emails() {
+    void givenJsonWithWhitespaceAndMultipleTo_whenMask_thenHideAllEmails() {
         //given
         final String given = this.getPayloadWithMultipleTo();
         final String expected = this.getPayloadWithMultipleMaskedTo();
@@ -52,7 +52,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void given_message_without_to_when_mask_then_return_original() {
+    void givenMessageWithoutTo_whenMask_thenReturnOriginal() {
         //given
         final String given = this.getMessageWithoutTo();
 

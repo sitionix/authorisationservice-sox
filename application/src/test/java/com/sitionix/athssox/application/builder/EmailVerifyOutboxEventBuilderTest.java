@@ -49,7 +49,7 @@ class EmailVerifyOutboxEventBuilderTest {
     }
 
     @Test
-    void given_context_when_build_then_return_email_verify_outbox_event() {
+    void givenContext_whenBuild_thenReturnEmailVerifyOutboxEvent() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.now();
@@ -77,7 +77,7 @@ class EmailVerifyOutboxEventBuilderTest {
     }
 
     @Test
-    void given_builder_when_event_type_then_return_email_verify() {
+    void givenBuilder_whenEventType_thenReturnEmailVerify() {
         //given
 
         //when
