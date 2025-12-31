@@ -1,14 +1,12 @@
 package com.sitionix.athssox.domain.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public interface OutboxWorkerConfig {
 
-@Getter
-@AllArgsConstructor
-public class OutboxWorkerConfig {
+    int getBatchSize();
 
-    private final int batchSize;
-    private final long retryDelaySeconds;
-    private final int maxRetries;
-    private final long pollDelayMs;
+    long getRetryDelaySeconds();
+
+    int getMaxRetries();
+
+    long getPollDelayMs();
 }
