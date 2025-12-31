@@ -9,6 +9,11 @@
   "status": {
     "id": 1
   },
+  "initiatorType": {
+    "id": 2,
+    "description": "SYSTEM"
+  },
+  "initiatorId": null,
   "retryCount": 0,
   "nextRetryAt": "2020-01-01T00:00:00",
   "payload": "[]",

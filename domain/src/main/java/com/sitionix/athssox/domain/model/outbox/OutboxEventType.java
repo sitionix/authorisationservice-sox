@@ -10,8 +10,8 @@ import java.util.stream.Stream;
 @Getter
 @RequiredArgsConstructor
 public enum OutboxEventType implements EventTypeHandler {
-    EMAIL_VERIFY(1L, "EMAIL_VERIFY", "emailVerifyHandler"),
-    PASSWORD_RESET(2L, "PASSWORD_RESET", "passwordResetHandler");
+
+    EMAIL_VERIFY(1L, "EMAIL_VERIFY", "emailVerifyHandler");
 
     private final Long id;
     private final String description;
@@ -21,7 +21,12 @@ public enum OutboxEventType implements EventTypeHandler {
     private EventTypeHandler handler;
 
     @Override
-    public <T> T getPayload(final String payload) {
+    public <P> void doHandle(final OutboxEvent<P> event) {
+        handler.doHandle(event);
+    }
+
+    @Override
+    public <P> P getPayload(final String payload) {
         return handler.getPayload(payload);
     }
 

@@ -29,6 +29,7 @@ class OutboxWorkerIT {
                 .to(DatabaseContract.OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.OUTBOX_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("outboxEventEmailVerifyEntityPending.json"))
                 .build();
 
@@ -51,6 +52,7 @@ class OutboxWorkerIT {
                 .to(DatabaseContract.OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.OUTBOX_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("outboxEventPasswordResetEntityPending.json"))
                 .build();
 

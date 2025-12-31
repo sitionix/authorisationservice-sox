@@ -8,7 +8,5 @@ public interface DomainEvent<P> {
 
     Instant getCreatedAt();
 
-    String getUser();
-
     String getEventType();
 }

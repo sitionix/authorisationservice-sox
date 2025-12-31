@@ -4,9 +4,10 @@ import com.app_afesox.athssox.events.emailverify.Delivery;
 import com.app_afesox.athssox.events.emailverify.EmailVerifyEvent;
 import com.app_afesox.athssox.events.emailverify.EmailVerifyEventEnvelope;
 import com.app_afesox.athssox.events.emailverify.Meta;
-import com.app_afesox.athssox.events.emailverify.OutboxEventType;
 import com.app_afesox.athssox.events.emailverify.Params;
 import com.app_afesox.events.Metadata;
+import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.app_afesox.athssox.events.emailverify.OutboxEventType.EMAIL_VERIFY;
 import static com.app_afesox.athssox.events.emailverify.VerifyChannel.EMAIL;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +35,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void givenEmailVerifyPayload_whenAsEvent_thenReturnEmailVerifyEvent() {
+    void given_email_verify_payload_when_as_event_then_return_email_verify_event() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.now();
@@ -49,7 +51,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void givenEvent_whenAsEnvelope_thenReturnEmailVerifyEventEnvelope() {
+    void given_event_when_as_envelope_then_return_email_verify_event_envelope() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.parse("2024-04-22T08:15:30Z");
@@ -72,7 +74,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void givenEvent_whenAsMetadata_thenReturnMetadata() {
+    void given_event_when_as_metadata_then_return_metadata() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.parse("2024-04-23T08:15:30Z");
@@ -92,7 +94,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void givenInstant_whenToDateTime_thenReturnDateTimeString() {
+    void given_instant_when_to_date_time_then_return_date_time_string() {
         //given
         final Instant given = Instant.parse("2024-04-24T08:15:30Z");
         final String expected = given.toString();
@@ -105,7 +107,7 @@ class EmailVerifyEventMapperTest {
     }
 
     @Test
-    void givenInstant_whenToEpochMillis_thenReturnEpochMillis() {
+    void given_instant_when_to_epoch_millis_then_return_epoch_millis() {
         //given
         final Instant given = Instant.parse("2024-04-25T08:15:30Z");
         final Long expected = given.toEpochMilli();
@@ -154,7 +156,7 @@ class EmailVerifyEventMapperTest {
                                                  final Instant requestedAt) {
         return EmailVerifyEvent.newBuilder()
                 .setDelivery(this.getDelivery())
-                .setTemplate(this.getOutboxEventType())
+                .setTemplate(EMAIL_VERIFY)
                 .setParams(this.getParams())
                 .setMeta(this.getMeta(siteId, requestedAt))
                 .build();
@@ -165,10 +167,6 @@ class EmailVerifyEventMapperTest {
                 .setChannel(EMAIL)
                 .setTo("user@sitionix.com")
                 .build();
-    }
-
-    private OutboxEventType getOutboxEventType() {
-        return OutboxEventType.EMAIL_VERIFY;
     }
 
     private Params getParams() {
@@ -189,10 +187,17 @@ class EmailVerifyEventMapperTest {
 
     private Event<EmailVerifyPayload> getEvent(final EmailVerifyPayload payload,
                                                final Instant createdAt) {
-        return new Event<>(payload,
-                "user@sitionix.com",
-                "email.verify",
-                createdAt);
+        return Event.create(this.getOutboxEvent(payload, createdAt));
+    }
+
+    private OutboxEvent<EmailVerifyPayload> getOutboxEvent(final EmailVerifyPayload payload,
+                                                          final Instant createdAt) {
+        return OutboxEvent.<EmailVerifyPayload>builder()
+                .id(1L)
+                .payload(payload)
+                .eventType(OutboxEventType.EMAIL_VERIFY)
+                .createdAt(createdAt)
+                .build();
     }
 
     private Metadata getMetadata(final UUID idempotencyId,

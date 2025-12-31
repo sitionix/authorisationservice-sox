@@ -6,6 +6,7 @@ import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
@@ -48,7 +49,7 @@ class EmailVerifyOutboxEventBuilderTest {
     }
 
     @Test
-    void givenContext_whenBuild_thenReturnEmailVerifyOutboxEvent() {
+    void given_context_when_build_then_return_email_verify_outbox_event() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.now();
@@ -76,7 +77,7 @@ class EmailVerifyOutboxEventBuilderTest {
     }
 
     @Test
-    void givenBuilder_whenEventType_thenReturnEmailVerify() {
+    void given_builder_when_event_type_then_return_email_verify() {
         //given
 
         //when
@@ -101,6 +102,8 @@ class EmailVerifyOutboxEventBuilderTest {
         return OutboxEvent.<EmailVerifyPayload>builder()
                 .aggregateType(OutboxAggregateType.USER)
                 .aggregateId(1L)
+                .initiatorType(InitiatorType.USER)
+                .initiatorId("1")
                 .eventType(OutboxEventType.EMAIL_VERIFY)
                 .status(OutboxStatus.PENDING)
                 .retryCount(0)

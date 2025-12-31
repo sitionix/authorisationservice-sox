@@ -4,6 +4,7 @@ import com.sitionix.athssox.postgresql.entity.GlobalRoleEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxAggregateTypeEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxEventTypeEntity;
+import com.sitionix.athssox.postgresql.entity.OutboxInitiatorTypeEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxStatusEntity;
 import com.sitionix.athssox.postgresql.entity.RefreshTokenEntity;
 import com.sitionix.athssox.postgresql.entity.UserEntity;
@@ -31,6 +32,11 @@ public class DatabaseContract {
                     .cleanupPolicy(CleanupPolicy.NONE)
                     .build();
 
+    public static final DbContract<OutboxInitiatorTypeEntity> OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(OutboxInitiatorTypeEntity.class)
+                    .cleanupPolicy(CleanupPolicy.NONE)
+                    .build();
+
     public static final DbContract<UserStatusEntity> USER_STATUS_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(UserStatusEntity.class)
                     .cleanupPolicy(CleanupPolicy.NONE)
@@ -54,6 +60,7 @@ public class DatabaseContract {
                     .dependsOn(OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setAggregateType)
                     .dependsOn(OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setEventType)
                     .dependsOn(OUTBOX_STATUS_ENTITY_DB_CONTRACT, OutboxEventEntity::setStatus)
+                    .dependsOn(OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setInitiatorType)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 

@@ -35,6 +35,9 @@ class OutboxInfraMapperImplTest {
     private OutboxEventTypeInfraMapper outboxEventTypeInfraMapper;
 
     @Mock
+    private OutboxInitiatorTypeInfraMapper outboxInitiatorTypeInfraMapper;
+
+    @Mock
     private OutboxStatusInfraMapper outboxStatusInfraMapper;
 
     @Mock
@@ -45,6 +48,7 @@ class OutboxInfraMapperImplTest {
         this.mapper = new OutboxInfraMapperImpl(
                 this.outboxAggregateTypeInfraMapper,
                 this.outboxEventTypeInfraMapper,
+                this.outboxInitiatorTypeInfraMapper,
                 this.outboxStatusInfraMapper,
                 this.outboxPayloadJsonMapper);
     }
@@ -53,12 +57,13 @@ class OutboxInfraMapperImplTest {
     void tearDown() {
         verifyNoMoreInteractions(this.outboxAggregateTypeInfraMapper,
                 this.outboxEventTypeInfraMapper,
+                this.outboxInitiatorTypeInfraMapper,
                 this.outboxStatusInfraMapper,
                 this.outboxPayloadJsonMapper);
     }
 
     @Test
-    void givenOutboxEvent_whenToEntity_thenReturnMappedEntity() {
+    void given_outbox_event_when_to_entity_then_return_mapped_entity() {
         //given
         final LocalDateTime dateTime = LocalDateTime.now();
         final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
@@ -93,17 +98,15 @@ class OutboxInfraMapperImplTest {
     }
 
     private OutboxEvent<EmailVerifyPayload> buildOutboxEvent(final LocalDateTime dateTime, final EmailVerifyPayload payload) {
-    return OutboxEvent.<EmailVerifyPayload>builder()
-            .aggregateType(OutboxAggregateType.USER)
-            .aggregateId(1L)
-            .eventType(OutboxEventType.EMAIL_VERIFY)
-            .status(OutboxStatus.PENDING)
-            .retryCount(0)
-            .nextRetryAt(dateTime.plusMinutes(5))
-            .payload(payload)
-            .lastError("error")
-            .build();
-}
-
-
+        return OutboxEvent.<EmailVerifyPayload>builder()
+                .aggregateType(OutboxAggregateType.USER)
+                .aggregateId(1L)
+                .eventType(OutboxEventType.EMAIL_VERIFY)
+                .status(OutboxStatus.PENDING)
+                .retryCount(0)
+                .nextRetryAt(dateTime.plusMinutes(5))
+                .payload(payload)
+                .lastError("error")
+                .build();
+    }
 }

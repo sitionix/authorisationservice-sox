@@ -30,7 +30,7 @@ public class EmailVerifyPublisherV1 implements EventHandler<EmailVerifyPayload> 
 
         final EmailVerifyEventEnvelope envelope = this.mapper.asEnvelope(event);
 
-        this.producer.send(event.getPayload().getId().toString(), envelope);
+        this.producer.send(event.getId(), envelope);
         log.info("Event email verify published: {}", envelope);
     }
 

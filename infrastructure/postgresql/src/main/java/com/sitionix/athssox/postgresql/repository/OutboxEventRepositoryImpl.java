@@ -1,13 +1,12 @@
 package com.sitionix.athssox.postgresql.repository;
 
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
-import com.sitionix.athssox.domain.model.outbox.OutboxPendingEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.repository.OutboxEventRepository;
 import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxStatusEntity;
 import com.sitionix.athssox.postgresql.jpa.OutboxEventJpaRepository;
+import com.sitionix.athssox.postgresql.jpa.OutboxInitiatorTypeJpaRepository;
 import com.sitionix.athssox.postgresql.jpa.OutboxStatusJpaRepository;
 import com.sitionix.athssox.postgresql.mapper.outbox.OutboxInfraMapper;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +23,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OutboxEventRepositoryImpl implements OutboxEventRepository {
 
+    private static final long DEFAULT_INITIATOR_TYPE_ID = 2L;
+
     private final OutboxEventJpaRepository outboxEventJpaRepository;
     private final OutboxStatusJpaRepository outboxStatusJpaRepository;
+    private final OutboxInitiatorTypeJpaRepository outboxInitiatorTypeJpaRepository;
     private final OutboxInfraMapper outboxInfraMapper;
 
     @Override
     @Transactional
     public void create(final OutboxEvent<?> outboxEventCreate) {
         final OutboxEventEntity entity = this.outboxInfraMapper.toEntity(outboxEventCreate);
+        if (entity.getInitiatorType() == null) {
+            entity.setInitiatorType(this.outboxInitiatorTypeJpaRepository.getReferenceById(DEFAULT_INITIATOR_TYPE_ID));
+        }
         this.outboxEventJpaRepository.save(entity);
     }
 
     @Override
     @Transactional
-    public List<OutboxPendingEvent> claimPendingEvents(final List<OutboxEventType> eventTypes,
+    public List<OutboxEvent<Object>> claimPendingEvents(final List<String> eventStatuses,
+                                                        final List<String> eventTypes,
                                                        final int batchSize,
                                                        final LocalDateTime now) {
         if (eventTypes == null || eventTypes.isEmpty()) {
@@ -45,12 +51,9 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepository {
         }
 
         final Pageable pageable = PageRequest.of(0, batchSize);
-        final List<String> statuses = List.of(OutboxStatus.PENDING.getDescription(), OutboxStatus.FAILED.getDescription());
-        final List<String> types = eventTypes.stream().map(OutboxEventType::getDescription).toList();
-
         final List<OutboxEventEntity> events = this.outboxEventJpaRepository.findPendingForUpdate(
-                statuses,
-                types,
+                eventStatuses,
+                eventTypes,
                 now,
                 pageable);
 
@@ -66,7 +69,7 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepository {
         }
 
         return this.outboxEventJpaRepository.saveAll(events).stream()
-                .map(this::toPendingEvent)
+                .map(this.outboxInfraMapper::toOutboxEvent)
                 .toList();
     }
 
@@ -101,14 +104,5 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepository {
 
                     this.outboxEventJpaRepository.save(event);
                 });
-    }
-
-    private OutboxPendingEvent toPendingEvent(final OutboxEventEntity entity) {
-        return new OutboxPendingEvent(
-                entity.getId(),
-                entity.getAggregateId(),
-                OutboxEventType.valueOf(entity.getEventType().getDescription()),
-                entity.getPayload(),
-                entity.getCreatedAt());
     }
 }

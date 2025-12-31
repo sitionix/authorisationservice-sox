@@ -63,6 +63,16 @@ public class OutboxEventEntity {
     @ToString.Exclude
     private OutboxStatusEntity status;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "initiator_type_id", nullable = false, referencedColumnName = "id")
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private OutboxInitiatorTypeEntity initiatorType;
+
+    @Column(name = "initiator_id")
+    private String initiatorId;
+
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
 

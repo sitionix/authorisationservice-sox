@@ -9,3 +9,7 @@ ALTER TABLE outbox_events
 ALTER TABLE outbox_events
     ADD CONSTRAINT fk_outbox_events_status
         FOREIGN KEY (status_id) REFERENCES outbox_statuses (id);
+
+ALTER TABLE outbox_events
+    ADD CONSTRAINT fk_outbox_events_initiator_type
+        FOREIGN KEY (initiator_type_id) REFERENCES outbox_initiator_types (id);

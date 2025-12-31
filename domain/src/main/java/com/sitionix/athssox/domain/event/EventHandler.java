@@ -2,7 +2,7 @@ package com.sitionix.athssox.domain.event;
 
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 
-public interface EventHandler<P> {
+public interface EventHandler<E> {
 
-    void publish(Event<P> event);
+    void publish(Event<E> event);
 }

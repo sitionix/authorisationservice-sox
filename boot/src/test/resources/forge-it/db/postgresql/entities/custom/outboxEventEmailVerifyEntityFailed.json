@@ -12,6 +12,11 @@
     "id": 4,
     "description": "FAILED"
   },
+  "initiatorType": {
+    "id": 2,
+    "description": "SYSTEM"
+  },
+  "initiatorId": null,
   "retryCount": 1,
   "payload": "[]"
 }
