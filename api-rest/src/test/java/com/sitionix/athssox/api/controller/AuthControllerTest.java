@@ -59,7 +59,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_login_request_dto_when_login_then_return_login_response_dto() {
+    void givenLoginRequestDto_whenLogin_thenReturnLoginResponseDto() {
         //given
         final LoginRequestDTO given = mock(LoginRequestDTO.class);
         final LoginRequest loginRequest = mock(LoginRequest.class);
@@ -87,7 +87,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_email_verification_dto_when_verify_email_and_verified_then_return_ok() {
+    void givenEmailVerificationDto_whenVerifyEmailAndVerified_thenReturnOk() {
         //given
         final EmailVerificationDTO given = mock(EmailVerificationDTO.class);
         final EmailVerification emailVerification = mock(EmailVerification.class);
@@ -111,7 +111,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_email_verification_dto_when_verify_email_and_not_verified_then_return_accepted() {
+    void givenEmailVerificationDto_whenVerifyEmailAndNotVerified_thenReturnAccepted() {
         //given
         final EmailVerificationDTO given = mock(EmailVerificationDTO.class);
         final EmailVerification emailVerification = mock(EmailVerification.class);

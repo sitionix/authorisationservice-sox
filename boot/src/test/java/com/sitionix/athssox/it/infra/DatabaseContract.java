@@ -73,6 +73,7 @@ public class DatabaseContract {
 
     public static final DbContract<RefreshTokenEntity> REFRESH_TOKEN_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(RefreshTokenEntity.class)
+                    .dependsOn(USER_ENTITY_DB_CONTRACT, RefreshTokenEntity::setUser)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 

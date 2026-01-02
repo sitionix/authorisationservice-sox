@@ -1,20 +1,16 @@
 package com.sitionix.athssox.it;
 
+import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.postgresql.entity.RefreshTokenEntity;
-import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 class AuthControllerIT {
@@ -32,11 +28,6 @@ class AuthControllerIT {
                 .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
                 .build();
-        final UserEntity createdUser = this.testManager.postgresql()
-                .get(UserEntity.class)
-                .getAll()
-                .getFirst();
-
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
@@ -46,15 +37,19 @@ class AuthControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<RefreshTokenEntity> refreshTokens = this.testManager.postgresql()
-                .get(RefreshTokenEntity.class)
-                .getAll();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserActiveStatusEntity.json");
 
-        assertThat(refreshTokens).hasSize(1);
-
-        final RefreshTokenEntity refreshToken = refreshTokens.getFirst();
-
-        assertThat(refreshToken.getUser().getId()).isEqualTo(createdUser.getId());
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
+                .containsAllWithJsons("refreshTokenEntityExpected.json");
     }
 
     @Test
@@ -77,9 +72,9 @@ class AuthControllerIT {
                 .assertAndCreate();
 
         //then
-        assertThat(this.testManager.postgresql()
-                .get(RefreshTokenEntity.class)
-                .getAll()).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -102,9 +97,9 @@ class AuthControllerIT {
                 .assertAndCreate();
 
         //then
-        assertThat(this.testManager.postgresql()
-                .get(RefreshTokenEntity.class)
-                .getAll()).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -119,9 +114,9 @@ class AuthControllerIT {
                 .assertAndCreate();
 
         //then
-        assertThat(this.testManager.postgresql()
-                .get(RefreshTokenEntity.class)
-                .getAll()).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
@@ -135,8 +130,254 @@ class AuthControllerIT {
                 .assertAndCreate();
 
         //then
-        assertThat(this.testManager.postgresql()
-                .get(RefreshTokenEntity.class)
-                .getAll()).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should verify email successfully and activate user")
+    void givenPendingUserAndValidToken_whenVerifyEmail_thenOkAndUserActivatedAndTokenUsed() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenValid.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailOk())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-valid"))
+                .expectResponse("verifyEmailResponse_ok.json")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserActiveStatusEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user", "usedAt")
+                .containsWithJsonsStrict("emailVerificationTokenUsedAfterVerifyExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should accept repeated verification attempt for active user")
+    void givenActiveUserAndUsedToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenUsed.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailAccepted())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-used"))
+                .expectResponse("verifyEmailResponse_accepted.json")
+                .expectStatus(HttpStatus.ACCEPTED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserActiveStatusEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user")
+                .containsWithJsonsStrict("emailVerificationTokenUsedExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should accept verification attempt with expired token")
+    void givenPendingUserAndExpiredToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenExpired.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailAccepted())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-expired"))
+                .expectResponse("verifyEmailResponse_accepted.json")
+                .expectStatus(HttpStatus.ACCEPTED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserPendingEmailVerifyEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user")
+                .containsWithJsonsStrict("emailVerificationTokenExpiredExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should accept verification attempt with unknown token")
+    void givenPendingUserAndUnknownToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailAccepted())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-unknown"))
+                .expectResponse("verifyEmailResponse_accepted.json")
+                .expectStatus(HttpStatus.ACCEPTED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserPendingEmailVerifyEntity.json");
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should accept verification attempt when token belongs to different site")
+    void givenPendingUserAndMismatchedSite_whenVerifyEmail_thenAcceptedAndNoChanges() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenSiteMismatch.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailAccepted())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-mismatch"))
+                .expectResponse("verifyEmailResponse_accepted.json")
+                .expectStatus(HttpStatus.ACCEPTED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserPendingEmailVerifyEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user")
+                .containsWithJsonsStrict("emailVerificationTokenSiteMismatchExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should accept verification attempt with revoked token")
+    void givenPendingUserAndRevokedToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(3L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenRevoked.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailAccepted())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-revoked"))
+                .expectResponse("verifyEmailResponse_accepted.json")
+                .expectStatus(HttpStatus.ACCEPTED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserPendingEmailVerifyEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user")
+                .containsWithJsonsStrict("emailVerificationTokenRevokedExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should reject verification when token is missing")
+    void givenMissingToken_whenVerifyEmail_thenBadRequest() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailBadRequest())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken(null))
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should reject verification when siteId is missing")
+    void givenMissingSiteId_whenVerifyEmail_thenBadRequest() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailBadRequest())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setSiteId(null))
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
+
+        //then
     }
 }
