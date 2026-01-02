@@ -16,10 +16,6 @@ class SensitiveDataMaskerTest {
     @Mock
     private Object dependency;
 
-    @BeforeEach
-    void setUp() {
-    }
-
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.dependency);

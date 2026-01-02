@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -48,6 +49,7 @@ class EmailVerifyPublisherV1Test {
         this.emailVerifyPublisherV1.publish(given);
 
         //then
+        verify(this.mapper, never()).asEnvelope(given);
     }
 
     @Test
