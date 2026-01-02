@@ -28,4 +28,15 @@ public class AuthUserRepositoryImpl implements AuthUserRepository {
         return this.userJpaRepository.findByEmailAndSiteIdIsNull(email)
                 .map(this.userInfraMapper::asAuthUser);
     }
+
+    @Override
+    public Optional<AuthUser> findById(final Long userId) {
+        return this.userJpaRepository.findById(userId)
+                .map(this.userInfraMapper::asAuthUser);
+    }
+
+    @Override
+    public void save(final AuthUser user) {
+        this.userJpaRepository.save(this.userInfraMapper.asUserEntity(user));
+    }
 }
