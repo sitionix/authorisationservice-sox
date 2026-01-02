@@ -18,8 +18,8 @@ public class EmailVerificationTokenRepositoryImpl implements EmailVerificationTo
     private final EmailVerificationTokenInfraMapper emailVerificationTokenInfraMapper;
 
     @Override
-    public void save(final EmailVerificationTokenRecord record) {
-        final EmailVerificationTokenEntity entity = this.emailVerificationTokenInfraMapper.asEntity(record);
+    public void save(final EmailVerificationTokenRecord tokenRecord) {
+        final EmailVerificationTokenEntity entity = this.emailVerificationTokenInfraMapper.asEntity(tokenRecord);
 
         this.emailVerificationTokenJpaRepository.save(entity);
     }

@@ -31,18 +31,18 @@ public class VerifyEmailImpl implements VerifyEmail {
     @Transactional
     public boolean execute(final EmailVerification emailVerification) {
         final String hashedToken = this.tokenHasher.hash(emailVerification.getToken());
-        final Optional<EmailVerificationTokenRecord> tokenRecord = this.verificationTokenRepository.findByHashedToken(hashedToken);
-        if (tokenRecord.isEmpty()) {
+        final Optional<EmailVerificationTokenRecord> tokenRecordOptional = this.verificationTokenRepository.findByHashedToken(hashedToken);
+        if (tokenRecordOptional.isEmpty()) {
             return false;
         }
 
-        final EmailVerificationTokenRecord record = tokenRecord.get();
+        final EmailVerificationTokenRecord tokenRecord = tokenRecordOptional.get();
         final Instant now = this.clock.instant();
-        if (isExpired(record, now) || isTokenInvalid(record) || isSiteMismatch(record.getSiteId(), emailVerification.getSiteId())) {
+        if (isExpired(tokenRecord, now) || isTokenInvalid(tokenRecord) || isSiteMismatch(tokenRecord.getSiteId(), emailVerification.getSiteId())) {
             return false;
         }
 
-        final Optional<AuthUser> user = this.authUserRepository.findById(record.getUserId());
+        final Optional<AuthUser> user = this.authUserRepository.findById(tokenRecord.getUserId());
         if (user.isEmpty()) {
             return false;
         }
@@ -52,31 +52,30 @@ public class VerifyEmailImpl implements VerifyEmail {
         if (verified) {
             authUser.setStatus(UserStatus.ACTIVE);
             this.authUserRepository.save(authUser);
+            this.markTokenUsed(tokenRecord, now);
         }
-
-        this.markTokenUsed(record, now);
 
         return verified;
     }
 
-    private boolean isExpired(final EmailVerificationTokenRecord record, final Instant now) {
-        return record.getExpiresAt() == null || !record.getExpiresAt().isAfter(now);
+    private boolean isExpired(final EmailVerificationTokenRecord tokenRecord, final Instant now) {
+        return tokenRecord.getExpiresAt() == null || !tokenRecord.getExpiresAt().isAfter(now);
     }
 
-    private boolean isTokenInvalid(final EmailVerificationTokenRecord record) {
-        return record.getStatus() != EmailVerificationTokenStatus.ACTIVE;
+    private boolean isTokenInvalid(final EmailVerificationTokenRecord tokenRecord) {
+        return tokenRecord.getStatus() != EmailVerificationTokenStatus.ACTIVE;
     }
 
     private boolean isSiteMismatch(final UUID tokenSiteId, final UUID requestSiteId) {
         if (tokenSiteId == null) {
-            return requestSiteId != null;
+            return false;
         }
         return !tokenSiteId.equals(requestSiteId);
     }
 
-    private void markTokenUsed(final EmailVerificationTokenRecord record, final Instant usedAt) {
-        record.setStatus(EmailVerificationTokenStatus.USED);
-        record.setUsedAt(usedAt);
-        this.verificationTokenRepository.save(record);
+    private void markTokenUsed(final EmailVerificationTokenRecord tokenRecord, final Instant usedAt) {
+        tokenRecord.setStatus(EmailVerificationTokenStatus.USED);
+        tokenRecord.setUsedAt(usedAt);
+        this.verificationTokenRepository.save(tokenRecord);
     }
 }
