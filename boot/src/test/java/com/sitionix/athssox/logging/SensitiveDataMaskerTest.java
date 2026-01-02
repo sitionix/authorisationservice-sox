@@ -113,6 +113,6 @@ class SensitiveDataMaskerTest {
     }
 
     private String getBlankMessage() {
-        return \" \";
+        return " ";
     }
 }
