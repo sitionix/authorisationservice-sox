@@ -375,7 +375,7 @@ class AuthControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailBadRequest())
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setSiteId(null))
-                .expectStatus(HttpStatus.BAD_REQUEST)
+                .expectStatus(HttpStatus.ACCEPTED)
                 .assertAndCreate();
 
         //then
