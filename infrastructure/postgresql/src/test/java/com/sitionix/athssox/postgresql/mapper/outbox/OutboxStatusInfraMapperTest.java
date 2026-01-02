@@ -45,6 +45,19 @@ class OutboxStatusInfraMapperTest {
         assertThat(actual).isEqualTo(expected);
     }
 
+    @Test
+    void givenStatusEntity_whenAsEventType_thenReturnStatus() {
+        //given
+        final OutboxStatusEntity given = this.getOutboxStatusEntity(1L, "PENDING");
+        final OutboxStatus expected = OutboxStatus.PENDING;
+
+        //when
+        final OutboxStatus actual = this.mapper.asEventType(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private OutboxStatusEntity getOutboxStatusEntity(final Long id, final String description) {
         return OutboxStatusEntity.builder()
                 .id(id)

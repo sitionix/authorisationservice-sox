@@ -100,17 +100,14 @@ class OutboxWorkerTest {
         this.outboxWorker.dispatchPendingEvents();
 
         //then
-        verify(this.outboxWorkerConfig)
-                .getBatchSize();
-        verify(this.eventTypeHandler)
-                .doHandle(event);
-        verify(this.outboxEventRepository)
-                .claimPendingEvents(eq(statuses),
+        verify(this.outboxWorkerConfig).getBatchSize();
+        verify(this.eventTypeHandler).doHandle(event);
+        verify(this.outboxEventRepository).claimPendingEvents(eq(statuses),
                         eq(eventTypes),
                         eq(batchSize),
                         any(LocalDateTime.class));
-        verify(this.outboxEventRepository)
-                .markSent(1L);
+
+        verify(this.outboxEventRepository).markSent(1L);
     }
 
     @Test
@@ -143,21 +140,15 @@ class OutboxWorkerTest {
         this.outboxWorker.dispatchPendingEvents();
 
         //then
-        verify(this.outboxWorkerConfig)
-                .getBatchSize();
-        verify(this.outboxWorkerConfig)
-                .getRetryDelaySeconds();
-        verify(this.outboxWorkerConfig)
-                .getMaxRetries();
-        verify(this.eventTypeHandler)
-                .doHandle(event);
-        verify(this.outboxEventRepository)
-                .claimPendingEvents(eq(statuses),
+        verify(this.outboxWorkerConfig).getBatchSize();
+        verify(this.outboxWorkerConfig).getRetryDelaySeconds();
+        verify(this.outboxWorkerConfig).getMaxRetries();
+        verify(this.eventTypeHandler).doHandle(event);
+        verify(this.outboxEventRepository).claimPendingEvents(eq(statuses),
                         eq(eventTypes),
                         eq(batchSize),
                         any(LocalDateTime.class));
-        verify(this.outboxEventRepository)
-                .markFailed(eq(5L),
+        verify(this.outboxEventRepository).markFailed(eq(5L),
                         eq("boom"),
                         eq(Duration.ofSeconds(retryDelaySeconds)),
                         eq(maxRetries));

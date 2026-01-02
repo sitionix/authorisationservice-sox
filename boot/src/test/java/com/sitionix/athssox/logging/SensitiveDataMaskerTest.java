@@ -63,6 +63,31 @@ class SensitiveDataMaskerTest {
         assertThat(actual).isEqualTo(given);
     }
 
+    @Test
+    void givenNullMessage_whenMask_thenReturnNull() {
+        //given
+        final String given = this.getNullMessage();
+        final String expected = null;
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenBlankMessage_whenMask_thenReturnBlank() {
+        //given
+        final String given = this.getBlankMessage();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(given);
+    }
+
     private String getPayloadWithTo() {
         return "{\"delivery\":{\"to\":\"email@sitionix.com\"}}";
     }
@@ -81,5 +106,13 @@ class SensitiveDataMaskerTest {
 
     private String getMessageWithoutTo() {
         return "{\"delivery\":{\"channel\":\"EMAIL\"}}";
+    }
+
+    private String getNullMessage() {
+        return null;
+    }
+
+    private String getBlankMessage() {
+        return \" \";
     }
 }

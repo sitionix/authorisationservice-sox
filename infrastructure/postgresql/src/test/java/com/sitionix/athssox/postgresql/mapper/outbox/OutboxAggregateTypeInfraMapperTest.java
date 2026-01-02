@@ -45,6 +45,19 @@ class OutboxAggregateTypeInfraMapperTest {
         assertThat(actual).isEqualTo(expected);
     }
 
+    @Test
+    void givenAggregateTypeEntity_whenAsEventType_thenReturnAggregateType() {
+        //given
+        final OutboxAggregateTypeEntity given = this.getOutboxAggregateTypeEntity(1L, "USER");
+        final OutboxAggregateType expected = OutboxAggregateType.USER;
+
+        //when
+        final OutboxAggregateType actual = this.mapper.asEventType(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private OutboxAggregateTypeEntity getOutboxAggregateTypeEntity(final Long id, final String description) {
         return OutboxAggregateTypeEntity.builder()
                 .id(id)
