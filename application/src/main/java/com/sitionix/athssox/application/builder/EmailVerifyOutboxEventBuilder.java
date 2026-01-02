@@ -7,6 +7,7 @@ import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
@@ -39,6 +40,8 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
         return OutboxEvent.<EmailVerifyPayload>builder()
                 .aggregateType(OutboxAggregateType.USER)
                 .aggregateId(ctx.userId())
+                .initiatorType(InitiatorType.USER)
+                .initiatorId(ctx.userId().toString())
                 .eventType(OutboxEventType.EMAIL_VERIFY)
                 .status(OutboxStatus.PENDING)
                 .retryCount(0)

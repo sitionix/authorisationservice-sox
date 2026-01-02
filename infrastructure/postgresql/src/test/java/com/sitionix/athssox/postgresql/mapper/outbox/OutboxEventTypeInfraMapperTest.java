@@ -45,6 +45,19 @@ class OutboxEventTypeInfraMapperTest {
         assertThat(actual).isEqualTo(expected);
     }
 
+    @Test
+    void givenEventTypeEntity_whenAsEventType_thenReturnEventType() {
+        //given
+        final OutboxEventTypeEntity given = this.getOutboxEventTypeEntity(1L, "EMAIL_VERIFY");
+        final OutboxEventType expected = OutboxEventType.EMAIL_VERIFY;
+
+        //when
+        final OutboxEventType actual = this.mapper.asEventType(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private OutboxEventTypeEntity getOutboxEventTypeEntity(final Long id, final String description) {
         return OutboxEventTypeEntity.builder()
                 .id(id)

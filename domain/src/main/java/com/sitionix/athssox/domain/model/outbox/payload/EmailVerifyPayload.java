@@ -1,39 +1,48 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.ToString;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
 import java.util.UUID;
 
 
-@Getter
+@Data
 @Builder
+@Jacksonized
 @EqualsAndHashCode
 public class EmailVerifyPayload {
+
     private Delivery delivery;
     private NotificationTemplate template;
     private Params params;
     private Meta meta;
 
-    @Getter
+    @Data
     @Builder
+    @Jacksonized
     @EqualsAndHashCode
     public static class Delivery {
         private VerifyChannel channel;
+
+        @ToString.Exclude
         private String to;
     }
 
-    @Getter
+    @Data
     @Builder
+    @Jacksonized
     @EqualsAndHashCode
     public static class Params {
         private String verifyUrl;
     }
 
-    @Getter
+    @Data
     @Builder
+    @Jacksonized
     @EqualsAndHashCode
     public static class Meta {
         private Long userId;

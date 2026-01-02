@@ -1,0 +1,16 @@
+{
+  "delivery": {
+    "channel": "EMAIL",
+    "to": "email@sitionix.com"
+  },
+  "template": "EMAIL_VERIFY",
+  "params": {
+    "verifyUrl": "https://verify.sitionix.com/token"
+  },
+  "meta": {
+    "userId": 1,
+    "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "traceId": "trace-123",
+    "requestedAt": "2025-12-23T18:31:16.740787Z"
+  }
+}

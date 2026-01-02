@@ -1,2 +1,6 @@
+environment: it
 server:
   port: 9090
+forge-it:
+  kafka:
+    email-verify-topic: athssox.it.email-verify.public.v1

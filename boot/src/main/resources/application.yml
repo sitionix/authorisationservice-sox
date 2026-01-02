@@ -1,8 +1,11 @@
+environment: localhost
 server:
   port: 9090
   servlet:
     context-path: /authsox
 spring:
+  kafka:
+      bootstrap-servers: localhost:9092
   datasource:
     url: jdbc:postgresql://localhost:5433/AUTHS_SOX
     username: postgres
@@ -19,3 +22,9 @@ auth:
     refresh-token-ttl-seconds: 2592000
 bff:
   base-url: http://localhost:8080/bffssox
+outbox:
+  worker:
+    poll-delay-ms: 5000
+    batch-size: 50
+    retry-delay-seconds: 60
+    max-retries: 5
