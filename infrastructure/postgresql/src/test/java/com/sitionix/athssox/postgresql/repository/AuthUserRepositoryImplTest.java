@@ -126,4 +126,67 @@ class AuthUserRepositoryImplTest {
         verify(this.userJpaRepository)
                 .existsByEmailAndGlobalRole_IdIn(email, UserRole.siteScopedIds());
     }
+
+    @Test
+    void givenUserId_whenFindById_thenReturnAuthUser() {
+        //given
+        final Long userId = this.getUserId();
+        final UserEntity userEntity = mock(UserEntity.class);
+        final AuthUser expected = mock(AuthUser.class);
+
+        when(this.userJpaRepository.findById(userId))
+                .thenReturn(Optional.of(userEntity));
+        when(this.userInfraMapper.asAuthUser(userEntity))
+                .thenReturn(expected);
+
+        //when
+        final Optional<AuthUser> actual = this.authUserRepository.findById(userId);
+
+        //then
+        assertThat(actual).isEqualTo(Optional.of(expected));
+        verify(this.userJpaRepository)
+                .findById(userId);
+        verify(this.userInfraMapper)
+                .asAuthUser(userEntity);
+    }
+
+    @Test
+    void givenUserId_whenFindByIdEmpty_thenReturnEmpty() {
+        //given
+        final Long userId = this.getUserId();
+
+        when(this.userJpaRepository.findById(userId))
+                .thenReturn(Optional.empty());
+
+        //when
+        final Optional<AuthUser> actual = this.authUserRepository.findById(userId);
+
+        //then
+        assertThat(actual).isEmpty();
+        verify(this.userJpaRepository)
+                .findById(userId);
+    }
+
+    @Test
+    void givenAuthUser_whenSave_thenPersistEntity() {
+        //given
+        final AuthUser given = mock(AuthUser.class);
+        final UserEntity userEntity = mock(UserEntity.class);
+
+        when(this.userInfraMapper.asUserEntity(given))
+                .thenReturn(userEntity);
+
+        //when
+        this.authUserRepository.save(given);
+
+        //then
+        verify(this.userInfraMapper)
+                .asUserEntity(given);
+        verify(this.userJpaRepository)
+                .save(userEntity);
+    }
+
+    private Long getUserId() {
+        return 10L;
+    }
 }
