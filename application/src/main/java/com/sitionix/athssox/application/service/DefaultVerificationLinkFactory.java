@@ -11,7 +11,7 @@ import java.util.UUID;
 @Service
 public class DefaultVerificationLinkFactory implements VerificationLinkFactory {
 
-    @Value("${bff:base-url}")
+    @Value("${bff.base-url}")
     private String baseUrl;
 
     @Override

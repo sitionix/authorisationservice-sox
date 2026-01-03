@@ -1,7 +1,6 @@
 package com.sitionix.athssox.logging;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -22,7 +21,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithTo_whenMask_thenHideEmail() {
+    void given_json_with_to_when_mask_then_hide_email() {
         //given
         final String given = this.getPayloadWithTo();
         final String expected = this.getPayloadWithMaskedTo();
@@ -35,7 +34,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithWhitespaceAndMultipleTo_whenMask_thenHideAllEmails() {
+    void given_json_with_whitespace_and_multiple_to_when_mask_then_hide_all_emails() {
         //given
         final String given = this.getPayloadWithMultipleTo();
         final String expected = this.getPayloadWithMultipleMaskedTo();
@@ -48,7 +47,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenMessageWithoutTo_whenMask_thenReturnOriginal() {
+    void given_message_without_to_when_mask_then_return_original() {
         //given
         final String given = this.getMessageWithoutTo();
 
@@ -60,7 +59,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenNullMessage_whenMask_thenReturnNull() {
+    void given_null_message_when_mask_then_return_null() {
         //given
         final String given = this.getNullMessage();
         final String expected = null;
@@ -73,7 +72,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenBlankMessage_whenMask_thenReturnBlank() {
+    void given_blank_message_when_mask_then_return_blank() {
         //given
         final String given = this.getBlankMessage();
 
@@ -82,6 +81,45 @@ class SensitiveDataMaskerTest {
 
         //then
         assertThat(actual).isEqualTo(given);
+    }
+
+    @Test
+    void given_json_with_token_when_mask_then_hide_token() {
+        //given
+        final String given = this.getPayloadWithToken();
+        final String expected = this.getPayloadWithMaskedToken();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void given_json_with_verify_url_when_mask_then_hide_token_in_url() {
+        //given
+        final String given = this.getPayloadWithVerifyUrl();
+        final String expected = this.getPayloadWithMaskedVerifyUrl();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void given_message_with_token_query_param_when_mask_then_hide_token_value() {
+        //given
+        final String given = this.getMessageWithTokenQueryParam();
+        final String expected = this.getMessageWithMaskedTokenQueryParam();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
     }
 
     private String getPayloadWithTo() {
@@ -110,5 +148,29 @@ class SensitiveDataMaskerTest {
 
     private String getBlankMessage() {
         return " ";
+    }
+
+    private String getPayloadWithToken() {
+        return "{\"token\":\"secret-token\"}";
+    }
+
+    private String getPayloadWithMaskedToken() {
+        return "{\"token\":\"***\"}";
+    }
+
+    private String getPayloadWithVerifyUrl() {
+        return "{\"params\":{\"verifyUrl\":\"https://frontend.sitionix.com/auth/email/verify?token=secret-token&siteId=site-id\"}}";
+    }
+
+    private String getPayloadWithMaskedVerifyUrl() {
+        return "{\"params\":{\"verifyUrl\":\"https://frontend.sitionix.com/auth/email/verify?token=***&siteId=site-id\"}}";
+    }
+
+    private String getMessageWithTokenQueryParam() {
+        return "https://frontend.sitionix.com/auth/email/verify?token=secret-token";
+    }
+
+    private String getMessageWithMaskedTokenQueryParam() {
+        return "https://frontend.sitionix.com/auth/email/verify?token=***";
     }
 }
