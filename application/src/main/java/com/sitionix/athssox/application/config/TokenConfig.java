@@ -18,4 +18,6 @@ public class TokenConfig {
     private long accessTokenTtlSeconds = 3600L;
 
     private long refreshTokenTtlSeconds = 2592000L;
+
+    private long emailVerificationTokenTtlSeconds = 86400L;
 }

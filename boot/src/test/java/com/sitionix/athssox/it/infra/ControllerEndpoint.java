@@ -1,5 +1,7 @@
 package com.sitionix.athssox.it.infra;
 
+import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
+import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
@@ -82,6 +84,42 @@ public class ControllerEndpoint {
                 "/api/v1/auth/login",
                 HttpMethod.POST,
                 LoginRequestDTO.class,
+                ErrorDTO.class,
+                (MockmvcDefault) context -> context.expectStatus(400)
+        );
+    }
+
+    public static Endpoint<EmailVerificationDTO, EmailVerificationResponseDTO> verifyEmailOk() {
+        return Endpoint.createContract(
+                "/api/v1/auth/email/verify",
+                HttpMethod.POST,
+                EmailVerificationDTO.class,
+                EmailVerificationResponseDTO.class,
+                (MockmvcDefault) context -> context
+                        .withRequest("verifyEmailRequest.json")
+                        .expectResponse("verifyEmailResponse_ok.json")
+                        .expectStatus(200)
+        );
+    }
+
+    public static Endpoint<EmailVerificationDTO, EmailVerificationResponseDTO> verifyEmailAccepted() {
+        return Endpoint.createContract(
+                "/api/v1/auth/email/verify",
+                HttpMethod.POST,
+                EmailVerificationDTO.class,
+                EmailVerificationResponseDTO.class,
+                (MockmvcDefault) context -> context
+                        .withRequest("verifyEmailRequest.json")
+                        .expectResponse("verifyEmailResponse_accepted.json")
+                        .expectStatus(202)
+        );
+    }
+
+    public static Endpoint<EmailVerificationDTO, ErrorDTO> verifyEmailBadRequest() {
+        return Endpoint.createContract(
+                "/api/v1/auth/email/verify",
+                HttpMethod.POST,
+                EmailVerificationDTO.class,
                 ErrorDTO.class,
                 (MockmvcDefault) context -> context.expectStatus(400)
         );

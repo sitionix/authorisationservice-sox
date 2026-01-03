@@ -1,0 +1,11 @@
+{
+  "id": "77777777-7777-7777-7777-777777777777",
+  "tokenHash": "bc199e5596e4f9ddeaa1417fcb876790d4973a8452b65e8ceece6a8106dd2670",
+  "siteId": null,
+  "status": {
+    "id": 2,
+    "description": "USED"
+  },
+  "expiresAt": "2099-01-02T12:00:00Z",
+  "usedAt": null
+}

@@ -1,0 +1,12 @@
+{
+  "email": "global-admin@sitionix.com",
+  "siteId": null,
+  "globalRole": {
+    "id": 2,
+    "description": "SUPER ADMIN"
+  },
+  "status": {
+    "id": 1,
+    "description": "PENDING EMAIL VERIFY"
+  }
+}

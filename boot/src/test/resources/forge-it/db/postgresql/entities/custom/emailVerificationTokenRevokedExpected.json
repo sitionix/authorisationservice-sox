@@ -1,0 +1,11 @@
+{
+  "id": "44444444-4444-4444-4444-444444444444",
+  "tokenHash": "4da24382f5f36b74c67817cc5183d5235bf4c71855108499f6536cc69120f55a",
+  "siteId": "c9b1f3f4-12c7-11ec-82a8-0242ac130003",
+  "status": {
+    "id": 3,
+    "description": "REVOKED"
+  },
+  "expiresAt": "2099-01-02T12:00:00Z",
+  "usedAt": null
+}

@@ -1,0 +1,12 @@
+{
+  "email": "global-pending@sitionix.com",
+  "siteId": null,
+  "globalRole": {
+    "id": 2,
+    "description": "SUPER ADMIN"
+  },
+  "status": {
+    "id": 2,
+    "description": "ACTIVE"
+  }
+}

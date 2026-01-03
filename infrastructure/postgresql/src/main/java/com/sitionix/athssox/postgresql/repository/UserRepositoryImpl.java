@@ -10,7 +10,6 @@ import com.sitionix.athssox.postgresql.mapper.UserInfraMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -34,15 +33,13 @@ public class UserRepositoryImpl implements UserRepository {
     public boolean existsSiteScopedByEmailAndSiteId(final String email, final UUID siteId) {
         return this.userJpaRepository.existsByEmailAndSiteIdAndGlobalRole_IdIn(email,
                 siteId,
-                List.of(UserRole.SITE_USER.getId(),
-                        UserRole.SITE_ADMIN.getId()));
+                UserRole.siteScopedIds());
     }
 
     @Override
     public boolean existsGlobalByEmail(final String email) {
         return this.userJpaRepository.existsByEmailAndGlobalRole_IdIn(email,
-                List.of(UserRole.SUPER_ADMIN.getId(),
-                        UserRole.ECOSYSTEM_OWNER.getId()));
+                UserRole.globalScopedIds());
     }
 
 }

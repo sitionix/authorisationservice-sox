@@ -11,13 +11,17 @@ import java.util.UUID;
 @Service
 public class DefaultVerificationLinkFactory implements VerificationLinkFactory {
 
-    @Value("${bff:base-url}")
+    @Value("${bff.base-url}")
     private String baseUrl;
 
     @Override
     public String buildEmailVerifyUrl(String rawToken, UUID siteId) {
         final String token = URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+        if (siteId == null) {
+            return baseUrl + "/api/v1/auth/email/verify?token=" + token;
+        }
         final String sid = URLEncoder.encode(siteId.toString(), StandardCharsets.UTF_8);
 
-        return baseUrl + "/api/v1/auth/email/verify?token=" + token + "&siteId=" + sid;    }
+        return baseUrl + "/api/v1/auth/email/verify?token=" + token + "&siteId=" + sid;
+    }
 }

@@ -1,6 +1,7 @@
 package com.sitionix.athssox.postgresql.repository;
 
 import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.postgresql.jpa.UserJpaRepository;
 import com.sitionix.athssox.postgresql.mapper.UserInfraMapper;
@@ -27,5 +28,22 @@ public class AuthUserRepositoryImpl implements AuthUserRepository {
     public Optional<AuthUser> findGlobalByEmail(final String email) {
         return this.userJpaRepository.findByEmailAndSiteIdIsNull(email)
                 .map(this.userInfraMapper::asAuthUser);
+    }
+
+    @Override
+    public boolean existsSiteScopedByEmail(final String email) {
+        return this.userJpaRepository.existsByEmailAndGlobalRole_IdIn(email,
+                UserRole.siteScopedIds());
+    }
+
+    @Override
+    public Optional<AuthUser> findById(final Long userId) {
+        return this.userJpaRepository.findById(userId)
+                .map(this.userInfraMapper::asAuthUser);
+    }
+
+    @Override
+    public void save(final AuthUser user) {
+        this.userJpaRepository.save(this.userInfraMapper.asUserEntity(user));
     }
 }

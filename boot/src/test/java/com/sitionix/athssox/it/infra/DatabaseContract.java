@@ -1,6 +1,8 @@
 package com.sitionix.athssox.it.infra;
 
 import com.sitionix.athssox.postgresql.entity.GlobalRoleEntity;
+import com.sitionix.athssox.postgresql.entity.EmailVerificationTokenEntity;
+import com.sitionix.athssox.postgresql.entity.EmailVerificationTokenStatusEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxAggregateTypeEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.OutboxEventTypeEntity;
@@ -37,6 +39,11 @@ public class DatabaseContract {
                     .cleanupPolicy(CleanupPolicy.NONE)
                     .build();
 
+    public static final DbContract<EmailVerificationTokenStatusEntity> EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(EmailVerificationTokenStatusEntity.class)
+                    .cleanupPolicy(CleanupPolicy.NONE)
+                    .build();
+
     public static final DbContract<UserStatusEntity> USER_STATUS_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(UserStatusEntity.class)
                     .cleanupPolicy(CleanupPolicy.NONE)
@@ -66,6 +73,14 @@ public class DatabaseContract {
 
     public static final DbContract<RefreshTokenEntity> REFRESH_TOKEN_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(RefreshTokenEntity.class)
+                    .dependsOn(USER_ENTITY_DB_CONTRACT, RefreshTokenEntity::setUser)
+                    .cleanupPolicy(CleanupPolicy.DELETE_ALL)
+                    .build();
+
+    public static final DbContract<EmailVerificationTokenEntity> EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(EmailVerificationTokenEntity.class)
+                    .dependsOn(USER_ENTITY_DB_CONTRACT, EmailVerificationTokenEntity::setUser)
+                    .dependsOn(EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT, EmailVerificationTokenEntity::setStatus)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 }

@@ -7,6 +7,7 @@ import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
+import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
@@ -225,6 +226,92 @@ class RegisterUserImplTest {
                 this.outboxCommand);
     }
 
+    @Test
+    void givenSiteScopedRoleWithoutSiteId_whenExecute_thenThrowMissingSiteIdException() {
+        //given
+        final RegisterUserDO given = this.getRegisterUserDO(null,
+                DEFAULT_EMAIL,
+                UserRole.SITE_USER,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                this.getPassword());
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.registerUser.execute(given));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(MissingSiteIdException.class)
+                .hasMessage("siteId is required for site-scoped roles");
+        verifyNoInteractions(this.passwordPolicyValidator,
+                this.passwordEncoder,
+                this.userRepository,
+                this.outboxEventBuilder,
+                this.outboxCommand);
+    }
+
+    @Test
+    void givenGlobalRoleWithSiteId_whenExecute_thenClearSiteIdAndUseGlobalUniqueness() {
+        //given
+        final String rawPassword = this.getPassword();
+        final String encodedPassword = this.getEncodedPassword();
+        final UUID siteId = this.getSiteId();
+        final RegisterUserDO given = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SUPER_ADMIN,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                rawPassword);
+
+        final ResponseRegisterUser createdUser = this.getResponseRegisterUser(11L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                null);
+        final ResponseRegisterUser expected = this.getResponseRegisterUser(11L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "Registration successful. Please verify your email.");
+        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
+
+        when(this.userRepository.existsGlobalByEmail(DEFAULT_EMAIL))
+                .thenReturn(false);
+        when(this.passwordEncoder.encode(rawPassword))
+                .thenReturn(encodedPassword);
+        when(this.userRepository.createUser(given))
+                .thenReturn(createdUser);
+        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
+                .thenReturn(outboxEvent);
+
+        //when
+        final ResponseRegisterUser actual = this.registerUser.execute(given);
+
+        //then
+        final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
+        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
+
+        verify(this.passwordPolicyValidator)
+                .validate(rawPassword);
+        verify(this.userRepository)
+                .existsGlobalByEmail(DEFAULT_EMAIL);
+        verify(this.passwordEncoder)
+                .encode(rawPassword);
+        verify(this.userRepository)
+                .createUser(registerUserCaptor.capture());
+        verify(this.outboxEventBuilder)
+                .build(buildContextCaptor.capture());
+        verify(this.outboxCommand)
+                .execute(outboxEvent);
+
+        final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(null,
+                DEFAULT_EMAIL,
+                UserRole.SUPER_ADMIN,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                encodedPassword);
+        assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
+        assertThat(actual).isEqualTo(expected);
+        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
+        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(createdUser.getUserId(),
+                null,
+                DEFAULT_EMAIL,
+                buildContextCaptor.getValue().requestedAt()));
+    }
+
     private RegisterUserDO getRegisterUserDO(final UUID siteId,
                                              final String email,
                                              final UserRole role,
@@ -263,6 +350,18 @@ class RegisterUserImplTest {
 
     private RuntimeException getRuntimeException(final String message) {
         return new RuntimeException(message);
+    }
+
+    private UUID getSiteId() {
+        return UUID.randomUUID();
+    }
+
+    private String getPassword() {
+        return "StrongPassword123";
+    }
+
+    private String getEncodedPassword() {
+        return "encoded";
     }
 
 }

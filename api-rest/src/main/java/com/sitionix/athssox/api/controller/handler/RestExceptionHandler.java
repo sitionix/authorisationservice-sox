@@ -4,6 +4,7 @@ import com.app_afesox.athssox.api_first.dto.ErrorDTO;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.InvalidPasswordException;
+import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -29,6 +30,16 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(InvalidPasswordException.class)
     public ResponseEntity<ErrorDTO> handleInvalidPassword(final InvalidPasswordException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.BAD_REQUEST.value())
+                        .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(MissingSiteIdException.class)
+    public ResponseEntity<ErrorDTO> handleMissingSiteId(final MissingSiteIdException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorDTO.builder()
                         .code(HttpStatus.BAD_REQUEST.value())

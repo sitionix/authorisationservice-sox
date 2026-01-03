@@ -5,12 +5,12 @@
   },
   "template": "EMAIL_VERIFY",
   "params": {
-    "verifyUrl": "https://verify.sitionix.com/token"
+    "verifyUrl": "base-url/api/v1/auth/email/verify?token=YUScKCwVeN9CgzROymgdTJTT1agZvvWc798elW-kyBI&siteId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
   },
   "meta": {
     "userId": 1,
     "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    "traceId": "trace-123",
+    "traceId": null,
     "requestedAt": "2025-12-23T18:31:16.740787Z"
   }
 }

@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.security;
 
 import com.sitionix.athssox.domain.exception.InactiveUserException;
+import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
@@ -51,6 +52,9 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
             }
         } else {
             user = this.authUserRepository.findGlobalByEmail(email);
+            if (user.isEmpty() && this.authUserRepository.existsSiteScopedByEmail(email)) {
+                throw new MissingSiteIdException("siteId is required for site-scoped roles");
+            }
         }
 
         return user.orElseThrow(() -> new BadCredentialsException("Invalid email or password"));

@@ -3,6 +3,7 @@ package com.sitionix.athssox.domain.model;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 @Getter
@@ -16,6 +17,24 @@ public enum UserRole {
 
     private final Long id;
     private final String description;
+
+    public boolean isSiteScoped() {
+        return this == SITE_USER || this == SITE_ADMIN;
+    }
+
+    public boolean isGlobalScoped() {
+        return this == SUPER_ADMIN || this == ECOSYSTEM_OWNER;
+    }
+
+    public static List<Long> siteScopedIds() {
+        return List.of(SITE_USER.getId(),
+                SITE_ADMIN.getId());
+    }
+
+    public static List<Long> globalScopedIds() {
+        return List.of(SUPER_ADMIN.getId(),
+                ECOSYSTEM_OWNER.getId());
+    }
 
     public static UserRole fromId(final Long id) {
         return Stream.of(UserRole.values())
