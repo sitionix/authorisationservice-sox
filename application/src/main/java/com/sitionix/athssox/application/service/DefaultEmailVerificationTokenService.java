@@ -33,7 +33,7 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
         final Instant expiresAt = this.clock.instant()
                 .plusSeconds(this.tokenConfig.getEmailVerificationTokenTtlSeconds());
 
-        final EmailVerificationTokenRecord record = EmailVerificationTokenRecord.builder()
+        final EmailVerificationTokenRecord tokenRecord = EmailVerificationTokenRecord.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
                 .siteId(siteId)
@@ -43,7 +43,7 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
                 .usedAt(null)
                 .build();
 
-        this.emailVerificationTokenRepository.save(record);
+        this.emailVerificationTokenRepository.save(tokenRecord);
 
         return rawToken;
     }

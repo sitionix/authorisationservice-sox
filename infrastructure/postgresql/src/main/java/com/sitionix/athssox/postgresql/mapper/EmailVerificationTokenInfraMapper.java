@@ -15,7 +15,7 @@ public interface EmailVerificationTokenInfraMapper {
 
     @Mapping(target = "user", source = "userId")
     @Mapping(target = "createdAt", ignore = true)
-    EmailVerificationTokenEntity asEntity(final EmailVerificationTokenRecord record);
+    EmailVerificationTokenEntity asEntity(final EmailVerificationTokenRecord tokenRecord);
 
     @Mapping(target = "userId", source = "user.id")
     EmailVerificationTokenRecord asRecord(EmailVerificationTokenEntity entity);
