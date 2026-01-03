@@ -1,6 +1,7 @@
 package com.sitionix.athssox.postgresql.repository;
 
 import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.postgresql.entity.UserEntity;
 import com.sitionix.athssox.postgresql.jpa.UserJpaRepository;
@@ -107,5 +108,22 @@ class AuthUserRepositoryImplTest {
                 .findByEmailAndSiteIdIsNull(email);
         verify(this.userInfraMapper)
                 .asAuthUser(userEntity);
+    }
+
+    @Test
+    void givenEmail_whenExistsSiteScopedByEmail_thenReturnResult() {
+        //given
+        final String email = "user@sitionix.com";
+
+        when(this.userJpaRepository.existsByEmailAndGlobalRole_IdIn(email, UserRole.siteScopedIds()))
+                .thenReturn(true);
+
+        //when
+        final boolean actual = this.authUserRepository.existsSiteScopedByEmail(email);
+
+        //then
+        assertThat(actual).isTrue();
+        verify(this.userJpaRepository)
+                .existsByEmailAndGlobalRole_IdIn(email, UserRole.siteScopedIds());
     }
 }

@@ -132,6 +132,70 @@ class UserControllerIT {
     }
 
     @Test
+    @DisplayName("Should reject registration when siteId is missing for site-scoped role")
+    void givenSiteScopedRoleAndMissingSiteId_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUserBadRequest())
+                .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> request.setSiteId(null))
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should allow registration for global role without siteId")
+    void givenGlobalRoleAndMissingSiteId_whenRegisterUser_thenCreatedAndUserPersisted() {
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> {
+                    request.setEmail("global-admin@sitionix.com");
+                    request.setRole(RegisterUserDTO.RoleEnum.SUPER_ADMIN);
+                    request.setSiteId(null);
+                })
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "id", "passwordHash", "updatedAt")
+                .containsWithJsonsStrict("registeredUserGlobalEntity.json");
+    }
+
+    @Test
+    @DisplayName("Should ignore siteId for global role registration")
+    void givenGlobalRoleWithSiteId_whenRegisterUser_thenCreatedAndSiteIdIgnored() {
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> {
+                    request.setEmail("global-admin@sitionix.com");
+                    request.setRole(RegisterUserDTO.RoleEnum.SUPER_ADMIN);
+                })
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "id", "passwordHash", "updatedAt")
+                .containsWithJsonsStrict("registeredUserGlobalEntity.json");
+    }
+
+    @Test
     @DisplayName("Should allow same email in different sites for site-scoped roles")
     void givenExistingEmailDifferentSiteId_whenRegisterUser_thenRegistrationSucceeds() {
         //given

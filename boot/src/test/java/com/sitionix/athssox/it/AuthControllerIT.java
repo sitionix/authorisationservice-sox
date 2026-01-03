@@ -136,6 +136,58 @@ class AuthControllerIT {
     }
 
     @Test
+    @DisplayName("Should reject login when siteId is missing for site-scoped user")
+    void givenSiteScopedUserAndMissingSiteId_whenLogin_thenBadRequest() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.loginBadRequest())
+                .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setSiteId(null))
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should allow login for global user without siteId")
+    void givenGlobalUserAndMissingSiteId_whenLogin_thenOkAndRefreshTokenSaved() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActiveGlobal.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json", (LoginRequestDTO request) -> {
+                    request.setEmail("global-user@sitionix.com");
+                    request.setSiteId(null);
+                })
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+    }
+
+    @Test
     @DisplayName("Should verify email successfully and activate user")
     void givenPendingUserAndValidToken_whenVerifyEmail_thenOkAndUserActivatedAndTokenUsed() {
         //given
@@ -170,6 +222,86 @@ class AuthControllerIT {
                 .withFetchedRelations()
                 .ignoreFields("createdAt", "user", "usedAt")
                 .containsWithJsonsStrict("emailVerificationTokenUsedAfterVerifyExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should accept verification when siteId is missing for site-scoped token")
+    void givenPendingUserAndMissingSiteId_whenVerifyEmail_thenAcceptedAndNoChanges() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenValid.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailAccepted())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> {
+                    request.setToken("verify-token-valid");
+                    request.setSiteId(null);
+                })
+                .expectResponse("verifyEmailResponse_accepted.json")
+                .expectStatus(HttpStatus.ACCEPTED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserPendingEmailVerifyEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user")
+                .containsWithJsonsStrict("emailVerificationTokenValidExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should verify email for global token without siteId")
+    void givenPendingGlobalUserAndGlobalToken_whenVerifyEmail_thenOkAndUserActivatedAndTokenUsed() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserPendingGlobal.json"))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenGlobal.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.verifyEmailOk())
+                .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> {
+                    request.setToken("verify-token-global");
+                    request.setSiteId(null);
+                })
+                .expectResponse("verifyEmailResponse_ok.json")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "updatedAt", "id", "passwordHash")
+                .containsWithJsonsStrict("authUserActiveGlobalStatusEntity.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "user", "usedAt")
+                .containsWithJsonsStrict("emailVerificationTokenGlobalUsedExpected.json");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.security;
 
 import com.sitionix.athssox.domain.exception.InactiveUserException;
+import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
@@ -22,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -150,6 +152,32 @@ class LoginAuthenticationProviderTest {
                 .findGlobalByEmail(email);
         verify(this.passwordEncoder)
                 .matches(password, user.getPasswordHash());
+    }
+
+    @Test
+    void givenSiteScopedUserAndMissingSiteId_whenAuthenticate_thenThrowMissingSiteIdException() {
+        //given
+        final String email = "user@sitionix.com";
+        final String password = "StrongPassword123";
+        final Authentication given = LoginAuthenticationToken.unauthenticated(email, password, null);
+
+        when(this.authUserRepository.findGlobalByEmail(email))
+                .thenReturn(Optional.empty());
+        when(this.authUserRepository.existsSiteScopedByEmail(email))
+                .thenReturn(true);
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.loginAuthenticationProvider.authenticate(given));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(MissingSiteIdException.class)
+                .hasMessage("siteId is required for site-scoped roles");
+        verify(this.authUserRepository)
+                .findGlobalByEmail(email);
+        verify(this.authUserRepository)
+                .existsSiteScopedByEmail(email);
+        verifyNoInteractions(this.passwordEncoder);
     }
 
     @Test
