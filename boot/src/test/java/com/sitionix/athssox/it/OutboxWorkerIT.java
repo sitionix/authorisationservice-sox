@@ -39,7 +39,6 @@ class OutboxWorkerIT {
         //then
         this.testManager.kafka()
                 .consume(OutboxKafkaContracts.EMAIL_VERIFY_EVENT_ENVELOPE_KAFKA_CONTRACT)
-                .ignoreFields("verifyUrl", "traceId")
                 .assertPayload();
     }
 
