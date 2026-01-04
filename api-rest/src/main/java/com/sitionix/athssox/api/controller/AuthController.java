@@ -44,7 +44,7 @@ public class AuthController implements AuthApi {
 
     @Override
     public ResponseEntity<EmailVerificationResponseDTO> verifyEmail(@Valid final EmailVerificationDTO emailVerificationDTO) {
-        log.info("Received email verification request");
+        log.info("Received email verification request for siteId: {}", emailVerificationDTO.getSiteId());
         final EmailVerification emailVerification = this.emailVerifyApiMapper.asEmailVerification(emailVerificationDTO);
 
         final boolean verified = this.verifyEmail.execute(emailVerification);
