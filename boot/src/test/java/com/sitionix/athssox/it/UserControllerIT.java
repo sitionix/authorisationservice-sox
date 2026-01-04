@@ -23,6 +23,42 @@ class UserControllerIT {
     private TestManager testManager;
 
     @Test
+    @DisplayName("Should register new user successfully without siteId for global role")
+    void givenGlobalRoleWithoutSiteId_whenRegisterUser_thenSuccessAndUserPersisted() {
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest_globalRoleNoSiteId.json")
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("createdAt", "id", "passwordHash", "updatedAt")
+                .containsWithJsonsStrict("registeredUserGlobalEntity.json");
+    }
+
+    @Test
+    @DisplayName("Should return 400 without siteId for SITE_ADMIN role")
+    void givenSiteAdminRoleWithoutSiteId_whenRegisterUser_thenReturnBadRequest() {
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest_siteAdminRoleNoSiteId.json")
+                .expectStatus(HttpStatus.BAD_REQUEST)
+                .expectResponse("responseBadRequest.json")
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
     @DisplayName("Should register a new user successfully and persist it")
     void givenValidUserData_whenRegisterUser_thenSuccessAndUserPersisted() {
         //when

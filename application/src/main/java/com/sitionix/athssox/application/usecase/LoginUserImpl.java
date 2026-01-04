@@ -13,6 +13,7 @@ import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.application.security.LoginAuthenticationToken;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoginUserImpl implements LoginUser {

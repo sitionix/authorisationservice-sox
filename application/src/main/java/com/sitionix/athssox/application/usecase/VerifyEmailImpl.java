@@ -10,6 +10,7 @@ import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VerifyEmailImpl implements VerifyEmail {
@@ -39,11 +41,13 @@ public class VerifyEmailImpl implements VerifyEmail {
         final EmailVerificationTokenRecord tokenRecord = tokenRecordOptional.get();
         final Instant now = this.clock.instant();
         if (isExpired(tokenRecord, now) || isTokenInvalid(tokenRecord) || isSiteMismatch(tokenRecord.getSiteId(), emailVerification.getSiteId())) {
+            log.info("Token is invalid due to expiration, status, or site mismatch.");
             return false;
         }
 
         final Optional<AuthUser> user = this.authUserRepository.findById(tokenRecord.getUserId());
         if (user.isEmpty()) {
+            log.info("User not found for token record: {}", tokenRecord);
             return false;
         }
 
