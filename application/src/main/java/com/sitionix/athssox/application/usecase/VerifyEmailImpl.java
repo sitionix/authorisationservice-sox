@@ -34,7 +34,6 @@ public class VerifyEmailImpl implements VerifyEmail {
     public boolean execute(final EmailVerification emailVerification) {
         final String hashedToken = this.tokenHasher.hash(emailVerification.getToken());
         final Optional<EmailVerificationTokenRecord> tokenRecordOptional = this.verificationTokenRepository.findByHashedToken(hashedToken);
-        log.info("Found token record: {}", tokenRecordOptional);
         if (tokenRecordOptional.isEmpty()) {
             return false;
         }

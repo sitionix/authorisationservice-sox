@@ -38,14 +38,9 @@ public class RegisterUserImpl implements RegisterUser {
     @Transactional
     public ResponseRegisterUser execute(@Valid final RegisterUserDO registerUserDO) {
 
-        log.info("Starting user registration for: {}", registerUserDO);
         this.validateSiteScope(registerUserDO);
-        log.info("Site scope validation passed for email: {}", registerUserDO.getEmail());
         this.passwordPolicyValidator.validate(registerUserDO.getPassword());
-        log.info("Password policy validation passed for email: {}", registerUserDO.getEmail());
         this.validateEmailUniqueness(registerUserDO);
-
-        log.info("Registering user after validations for email: {}", registerUserDO.getEmail());
         registerUserDO.setPassword(this.passwordEncoder.encode(registerUserDO.getPassword()));
 
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
@@ -55,7 +50,6 @@ public class RegisterUserImpl implements RegisterUser {
         this.command.execute(outboxEvent);
 
         createdUser.setMessage("Registration successful. Please verify your email.");
-        log.info("User registered successfully with userId: {}", createdUser.getUserId());
         return createdUser;
     }
 
@@ -65,7 +59,6 @@ public class RegisterUserImpl implements RegisterUser {
             return;
         }
         if (role.isSiteScoped() && registerUserDO.getSiteId() == null) {
-            log.error("Missing siteId for site-scoped role: {}", role);
             throw new MissingSiteIdException("siteId is required for site-scoped roles");
         }
         if (role.isGlobalScoped()) {
