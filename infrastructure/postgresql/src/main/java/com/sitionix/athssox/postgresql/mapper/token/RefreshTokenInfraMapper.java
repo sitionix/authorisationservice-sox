@@ -7,13 +7,13 @@ import com.sitionix.athssox.postgresql.mapper.session.DeviceSessionInfraMapper;
 import com.sitionix.athssox.postgresql.mapper.user.UserInfraMapper;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
-        uses = {UserInfraMapper.class, DeviceSessionInfraMapper.class})
+        uses = {UserInfraMapper.class, DeviceSessionInfraMapper.class, RefreshTokenStatusInfraMapper.class})
 public interface RefreshTokenInfraMapper {
 
-    @Mapping(target = "id", ignore = true)
     RefreshTokenEntity asRefreshTokenEntity(final RefreshTokenRecord refreshTokenRecord);
+
+    RefreshTokenRecord asRefreshTokenRecord(final RefreshTokenEntity refreshTokenEntity);
 }

@@ -1,0 +1,12 @@
+{
+  "id": "22222222-2222-2222-2222-222222222222",
+  "sessionSourceId": "device-999",
+  "status": {
+    "id": 1,
+    "description": "ACTIVE"
+  },
+  "createdAt": "2099-01-01T11:00:00Z",
+  "lastUsedAt": "2099-01-01T11:00:00Z",
+  "initialUserAgent": "Mozilla/5.0",
+  "lastUserAgent": "Mozilla/5.0"
+}

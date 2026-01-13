@@ -12,6 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -46,17 +49,43 @@ class RefreshTokenRepositoryImplTest {
 
     @Test
     void givenRefreshTokenRecord_whenSave_thenVerify() {
-        // Given
+        //given
         final RefreshTokenRecord refreshTokenRecord = mock(RefreshTokenRecord.class);
         final RefreshTokenEntity entity = mock(RefreshTokenEntity.class);
 
         when(this.refreshTokenInfraMapper.asRefreshTokenEntity(refreshTokenRecord))
                 .thenReturn(entity);
 
-        // When
+        //when
         this.repository.save(refreshTokenRecord);
 
-        // Then
-        verify(this.refreshTokenJpaRepository).save(entity);
+        //then
+        verify(this.refreshTokenInfraMapper)
+                .asRefreshTokenEntity(refreshTokenRecord);
+        verify(this.refreshTokenJpaRepository)
+                .save(entity);
+    }
+
+    @Test
+    void givenTokenHash_whenFindByTokenHash_thenReturnRefreshTokenRecord() {
+        //given
+        final String tokenHash = "token-hash";
+        final RefreshTokenEntity entity = mock(RefreshTokenEntity.class);
+        final RefreshTokenRecord refreshTokenRecord = mock(RefreshTokenRecord.class);
+
+        when(this.refreshTokenJpaRepository.findByTokenHash(tokenHash))
+                .thenReturn(Optional.of(entity));
+        when(this.refreshTokenInfraMapper.asRefreshTokenRecord(entity))
+                .thenReturn(refreshTokenRecord);
+
+        //when
+        final Optional<RefreshTokenRecord> actual = this.repository.findByTokenHash(tokenHash);
+
+        //then
+        assertThat(actual).isEqualTo(Optional.of(refreshTokenRecord));
+        verify(this.refreshTokenJpaRepository)
+                .findByTokenHash(tokenHash);
+        verify(this.refreshTokenInfraMapper)
+                .asRefreshTokenRecord(entity);
     }
 }

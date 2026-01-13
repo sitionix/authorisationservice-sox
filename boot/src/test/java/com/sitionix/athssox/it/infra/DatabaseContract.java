@@ -11,6 +11,7 @@ import com.sitionix.athssox.postgresql.entity.outbox.OutboxStatusEntity;
 import com.sitionix.athssox.postgresql.entity.session.DeviceSessionEntity;
 import com.sitionix.athssox.postgresql.entity.session.SessionStatusEntity;
 import com.sitionix.athssox.postgresql.entity.token.RefreshTokenEntity;
+import com.sitionix.athssox.postgresql.entity.token.RefreshTokenStatusEntity;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
 import com.sitionix.athssox.postgresql.entity.user.UserStatusEntity;
 import com.sitionix.forgeit.core.contract.ForgeDbContracts;
@@ -56,6 +57,11 @@ public class DatabaseContract {
                     .cleanupPolicy(CleanupPolicy.NONE)
                     .build();
 
+    public static final DbContract<RefreshTokenStatusEntity> REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT =
+            DbContractsDsl.entity(RefreshTokenStatusEntity.class)
+                    .cleanupPolicy(CleanupPolicy.NONE)
+                    .build();
+
     public static final DbContract<GlobalRoleEntity> GLOBAL_ROLE_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(GlobalRoleEntity.class)
                     .cleanupPolicy(CleanupPolicy.NONE)
@@ -89,6 +95,7 @@ public class DatabaseContract {
             DbContractsDsl.entity(RefreshTokenEntity.class)
                     .dependsOn(USER_ENTITY_DB_CONTRACT, RefreshTokenEntity::setUser)
                     .dependsOn(DEVICE_SESSION_ENTITY_DB_CONTRACT, RefreshTokenEntity::setSession)
+                    .dependsOn(REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT, RefreshTokenEntity::setStatus)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 

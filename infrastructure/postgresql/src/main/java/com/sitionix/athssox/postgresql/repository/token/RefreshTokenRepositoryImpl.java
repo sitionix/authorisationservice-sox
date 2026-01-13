@@ -8,6 +8,8 @@ import com.sitionix.athssox.postgresql.mapper.token.RefreshTokenInfraMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 @RequiredArgsConstructor
 public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
@@ -20,5 +22,11 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
         final RefreshTokenEntity entity = this.refreshTokenInfraMapper.asRefreshTokenEntity(refreshTokenRecord);
 
         this.refreshTokenJpaRepository.save(entity);
+    }
+
+    @Override
+    public Optional<RefreshTokenRecord> findByTokenHash(final String tokenHash) {
+        return this.refreshTokenJpaRepository.findByTokenHash(tokenHash)
+                .map(this.refreshTokenInfraMapper::asRefreshTokenRecord);
     }
 }

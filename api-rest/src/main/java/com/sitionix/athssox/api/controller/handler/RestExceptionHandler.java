@@ -5,6 +5,10 @@ import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.InvalidPasswordException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
+import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
+import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
+import com.sitionix.athssox.domain.exception.SessionMismatchException;
+import com.sitionix.athssox.domain.exception.SessionNotActiveException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -70,6 +74,26 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(InactiveUserException.class)
     public ResponseEntity<ErrorDTO> handleInactiveUser(final InactiveUserException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.FORBIDDEN.value())
+                        .title(HttpStatus.FORBIDDEN.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<ErrorDTO> handleRefreshTokenExpired(final RefreshTokenExpiredException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.UNAUTHORIZED.value())
+                        .title(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler({RefreshTokenInvalidException.class, SessionNotActiveException.class, SessionMismatchException.class})
+    public ResponseEntity<ErrorDTO> handleRefreshTokenForbidden(final RuntimeException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorDTO.builder()
                         .code(HttpStatus.FORBIDDEN.value())

@@ -41,9 +41,6 @@ public class DeviceSessionEntity {
     @Column(name = "SESSION_SOURCE_ID", nullable = false, updatable = false)
     private String sessionSourceId;
 
-    @Column(name = "INITIAL_IP_ADDRESS")
-    private String initialIpAddress;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "status_id", nullable = false)
     private SessionStatusEntity status;

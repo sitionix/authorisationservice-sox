@@ -9,6 +9,7 @@ import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshToken;
 import com.sitionix.athssox.domain.model.RefreshTokenRecord;
+import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.model.SessionStatus;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
@@ -156,6 +157,7 @@ class LoginUserImplTest {
         final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
                 user,
                 actualSession,
+                RefreshTokenStatus.ACTIVE,
                 refreshToken.getExpiresAt(),
                 NOW,
                 NOW);
@@ -256,6 +258,7 @@ class LoginUserImplTest {
     private RefreshTokenRecord getRefreshTokenRecord(final String tokenHash,
                                                      final AuthUser user,
                                                      final DeviceSession session,
+                                                     final RefreshTokenStatus status,
                                                      final Instant expiresAt,
                                                      final Instant createdAt,
                                                      final Instant updatedAt) {
@@ -263,6 +266,7 @@ class LoginUserImplTest {
                 .tokenHash(tokenHash)
                 .user(user)
                 .session(session)
+                .status(status)
                 .expiresAt(expiresAt)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -281,7 +285,6 @@ class LoginUserImplTest {
                 .id(sessionId)
                 .user(user)
                 .sessionSourceId(sessionSourceId)
-                .initialIpAddress(null)
                 .status(status)
                 .createdAt(createdAt)
                 .lastUsedAt(lastUsedAt)

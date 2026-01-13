@@ -16,7 +16,7 @@
     }
   },
   "session": {
-    "sessionSourceId": "device-123",
+    "sessionSourceId": "device-999",
     "status": {
       "id": 1,
       "description": "ACTIVE"

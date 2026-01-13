@@ -1,7 +1,8 @@
 {
+  "sessionSourceId": "device-123",
   "status": {
-    "id": 1,
-    "description": "ACTIVE"
+    "id": 3,
+    "description": "REVOKED BY USER"
   },
   "user": {
     "email": "user@sitionix.com",
@@ -12,13 +13,6 @@
     },
     "status": {
       "id": 2,
-      "description": "ACTIVE"
-    }
-  },
-  "session": {
-    "sessionSourceId": "device-123",
-    "status": {
-      "id": 1,
       "description": "ACTIVE"
     }
   }

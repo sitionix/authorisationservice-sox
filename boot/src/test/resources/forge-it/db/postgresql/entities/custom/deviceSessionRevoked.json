@@ -1,0 +1,12 @@
+{
+  "id": "33333333-3333-3333-3333-333333333333",
+  "sessionSourceId": "device-123",
+  "status": {
+    "id": 3,
+    "description": "REVOKED BY USER"
+  },
+  "createdAt": "2099-01-01T10:00:00Z",
+  "lastUsedAt": "2099-01-01T10:00:00Z",
+  "initialUserAgent": "Mozilla/5.0",
+  "lastUserAgent": "Mozilla/5.0"
+}

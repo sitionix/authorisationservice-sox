@@ -1,4 +1,5 @@
 {
+  "sessionSourceId": "device-999",
   "status": {
     "id": 1,
     "description": "ACTIVE"
@@ -12,13 +13,6 @@
     },
     "status": {
       "id": 2,
-      "description": "ACTIVE"
-    }
-  },
-  "session": {
-    "sessionSourceId": "device-123",
-    "status": {
-      "id": 1,
       "description": "ACTIVE"
     }
   }

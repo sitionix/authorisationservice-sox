@@ -4,12 +4,18 @@ import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
+import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
+import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
+import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
+import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
+import com.sitionix.athssox.domain.model.RefreshAccessTokenResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.usecase.LoginUser;
+import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -47,12 +53,20 @@ class AuthControllerTest {
     @Mock
     private HttpServletRequest httpServletRequest;
 
+    @Mock
+    private RefreshAccessToken refreshAccessToken;
+
+    @Mock
+    private RefreshAccessTokenApiMapper refreshAccessTokenApiMapper;
+
     @BeforeEach
     void setUp() {
         this.authController = new AuthController(this.authApiMapper,
                 this.emailVerifyApiMapper,
                 this.verifyEmail,
                 this.loginUser,
+                this.refreshAccessToken,
+                this.refreshAccessTokenApiMapper,
                 this.httpServletRequest);
     }
 
@@ -62,6 +76,8 @@ class AuthControllerTest {
                 this.emailVerifyApiMapper,
                 this.verifyEmail,
                 this.loginUser,
+                this.refreshAccessToken,
+                this.refreshAccessTokenApiMapper,
                 this.httpServletRequest);
     }
 
@@ -143,6 +159,40 @@ class AuthControllerTest {
                 .asEmailVerification(given);
         verify(this.verifyEmail)
                 .execute(emailVerification);
+    }
+
+    @Test
+    void givenRefreshAccessTokenRequestDto_whenRefreshAccessToken_thenReturnRefreshAccessTokenResponseDto() {
+        //given
+        final RefreshAccessTokenRequestDTO given = mock(RefreshAccessTokenRequestDTO.class);
+        final RefreshAccessTokenRequest refreshAccessTokenRequest = mock(RefreshAccessTokenRequest.class);
+        final RefreshAccessTokenResponse refreshAccessTokenResponse = mock(RefreshAccessTokenResponse.class);
+        final RefreshAccessTokenResponseDTO expected = mock(RefreshAccessTokenResponseDTO.class);
+
+        when(this.refreshAccessTokenApiMapper.asRefreshAccessTokenRequest(given))
+                .thenReturn(refreshAccessTokenRequest);
+        when(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT))
+                .thenReturn("Mozilla/5.0");
+        when(this.refreshAccessToken.execute(refreshAccessTokenRequest))
+                .thenReturn(refreshAccessTokenResponse);
+        when(this.refreshAccessTokenApiMapper.asRefreshAccessTokenResponseDTO(refreshAccessTokenResponse))
+                .thenReturn(expected);
+
+        //when
+        final ResponseEntity<RefreshAccessTokenResponseDTO> actual = this.authController.refreshAccessToken(given);
+
+        //then
+        assertThat(actual).isEqualTo(ResponseEntity.ok(expected));
+        verify(this.refreshAccessTokenApiMapper)
+                .asRefreshAccessTokenRequest(given);
+        verify(this.httpServletRequest)
+                .getHeader(HttpHeaders.USER_AGENT);
+        verify(refreshAccessTokenRequest)
+                .setUserAgent("Mozilla/5.0");
+        verify(this.refreshAccessToken)
+                .execute(refreshAccessTokenRequest);
+        verify(this.refreshAccessTokenApiMapper)
+                .asRefreshAccessTokenResponseDTO(refreshAccessTokenResponse);
     }
 
     private EmailVerificationResponseDTO getEmailVerificationResponseDTO(final String message,

@@ -1,0 +1,10 @@
+{
+  "tokenHash": "9afd429f9748ae041fba7ee646aa621143fdbe07bf5477e6b96f64638e248ef9",
+  "expiresAt": "2099-01-02T12:00:00Z",
+  "createdAt": "2099-01-01T12:00:00Z",
+  "updatedAt": "2099-01-01T12:00:00Z",
+  "rotatedFromTokenId": null,
+  "usedAt": "2099-01-01T13:00:00Z",
+  "revokedAt": "2099-01-01T13:00:00Z",
+  "revokedReason": "ROTATED"
+}

@@ -1,0 +1,6 @@
+{
+  "accessToken": "ignored",
+  "refreshToken": "ignored",
+  "expiresIn": 3600,
+  "tokenType": "Bearer"
+}
