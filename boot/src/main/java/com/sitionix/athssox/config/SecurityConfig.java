@@ -17,6 +17,13 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/api/v1/auth/login",
+            "/api/v1/auth/email/verify",
+            "/api/v1/auth/refresh",
+            "/api/v1/users"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http,
                                                    final SecurityErrorHandler securityErrorHandler) throws Exception {
@@ -24,7 +31,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // NOSONAR
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/email/verify", "/api/v1/auth/refresh", "/api/v1/users").permitAll()
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(securityErrorHandler)

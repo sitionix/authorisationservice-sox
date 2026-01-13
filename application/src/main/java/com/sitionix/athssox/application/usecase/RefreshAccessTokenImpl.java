@@ -46,10 +46,12 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         final Instant now = this.clock.instant();
         final RefreshTokenRecord tokenRecord = this.findTokenRecord(refreshAccessTokenRequest, now);
         final DeviceSession session = this.getTokenSession(tokenRecord);
+
         this.ensureSessionActive(session);
         this.ensureSessionSourceMatches(session, refreshAccessTokenRequest, now);
         this.ensureTokenNotReplayed(tokenRecord, session, refreshAccessTokenRequest, now);
         this.detectSessionAnomaly(session, refreshAccessTokenRequest);
+
         final AuthUser user = tokenRecord.getUser();
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken newRefreshToken = this.tokenProvider.generateRefreshToken(user);
