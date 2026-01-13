@@ -1,0 +1,49 @@
+package com.sitionix.athssox.postgresql.repository.user;
+
+import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.UserRole;
+import com.sitionix.athssox.domain.repository.AuthUserRepository;
+import com.sitionix.athssox.postgresql.jpa.user.UserJpaRepository;
+import com.sitionix.athssox.postgresql.mapper.user.UserInfraMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+@RequiredArgsConstructor
+public class AuthUserRepositoryImpl implements AuthUserRepository {
+
+    private final UserJpaRepository userJpaRepository;
+    private final UserInfraMapper userInfraMapper;
+
+    @Override
+    public Optional<AuthUser> findByEmailAndSiteId(final String email, final UUID siteId) {
+        return this.userJpaRepository.findByEmailAndSiteId(email, siteId)
+                .map(this.userInfraMapper::asAuthUser);
+    }
+
+    @Override
+    public Optional<AuthUser> findGlobalByEmail(final String email) {
+        return this.userJpaRepository.findByEmailAndSiteIdIsNull(email)
+                .map(this.userInfraMapper::asAuthUser);
+    }
+
+    @Override
+    public boolean existsSiteScopedByEmail(final String email) {
+        return this.userJpaRepository.existsByEmailAndGlobalRole_IdIn(email,
+                UserRole.siteScopedIds());
+    }
+
+    @Override
+    public Optional<AuthUser> findById(final Long userId) {
+        return this.userJpaRepository.findById(userId)
+                .map(this.userInfraMapper::asAuthUser);
+    }
+
+    @Override
+    public void save(final AuthUser user) {
+        this.userJpaRepository.save(this.userInfraMapper.asUserEntity(user));
+    }
+}

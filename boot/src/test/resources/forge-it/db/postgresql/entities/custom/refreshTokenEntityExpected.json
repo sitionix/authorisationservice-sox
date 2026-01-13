@@ -10,5 +10,12 @@
       "id": 2,
       "description": "ACTIVE"
     }
+  },
+  "session": {
+    "sessionSourceId": "device-123",
+    "status": {
+      "id": 1,
+      "description": "ACTIVE"
+    }
   }
 }

@@ -4,12 +4,15 @@ import com.sitionix.athssox.application.security.LoginAuthenticationToken;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.model.AccessToken;
 import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.DeviceSession;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshToken;
 import com.sitionix.athssox.domain.model.RefreshTokenRecord;
+import com.sitionix.athssox.domain.model.SessionStatus;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
+import com.sitionix.athssox.domain.repository.DeviceSessionRepository;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
 import com.sitionix.athssox.domain.service.TokenProvider;
@@ -26,6 +29,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -40,6 +44,9 @@ class LoginUserImplTest {
     private static final Instant NOW = Instant.parse("2024-05-01T10:15:30Z");
 
     private LoginUserImpl loginUser;
+
+    @Mock
+    private DeviceSessionRepository deviceSessionRepository;
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
@@ -58,7 +65,8 @@ class LoginUserImplTest {
 
     @BeforeEach
     void setUp() {
-        this.loginUser = new LoginUserImpl(this.refreshTokenRepository,
+        this.loginUser = new LoginUserImpl(this.deviceSessionRepository,
+                this.refreshTokenRepository,
                 this.tokenProvider,
                 this.tokenHasher,
                 this.authenticationManager,
@@ -67,7 +75,8 @@ class LoginUserImplTest {
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.refreshTokenRepository,
+        verifyNoMoreInteractions(this.deviceSessionRepository,
+                this.refreshTokenRepository,
                 this.tokenProvider,
                 this.tokenHasher,
                 this.authenticationManager,
@@ -91,6 +100,10 @@ class LoginUserImplTest {
                 .thenReturn(NOW);
         when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
                 .thenReturn(LoginAuthenticationToken.authenticated(user));
+        when(this.deviceSessionRepository.findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId()))
+                .thenReturn(Optional.empty());
+        when(this.deviceSessionRepository.save(any(DeviceSession.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(this.tokenProvider.generateAccessToken(user))
                 .thenReturn(accessToken);
         when(this.tokenProvider.generateRefreshToken(user))
@@ -104,11 +117,16 @@ class LoginUserImplTest {
         //then
         final ArgumentCaptor<LoginAuthenticationToken> tokenCaptor = ArgumentCaptor.forClass(LoginAuthenticationToken.class);
         final ArgumentCaptor<RefreshTokenRecord> recordCaptor = ArgumentCaptor.forClass(RefreshTokenRecord.class);
+        final ArgumentCaptor<DeviceSession> sessionCaptor = ArgumentCaptor.forClass(DeviceSession.class);
 
         verify(this.clock)
                 .instant();
         verify(this.authenticationManager)
                 .authenticate(tokenCaptor.capture());
+        verify(this.deviceSessionRepository)
+                .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
+        verify(this.deviceSessionRepository)
+                .save(sessionCaptor.capture());
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
@@ -123,9 +141,24 @@ class LoginUserImplTest {
         assertThat(actualToken.getCredentials()).isEqualTo(given.getPassword());
         assertThat(actualToken.getSiteId()).isEqualTo(given.getSiteId());
 
+        final DeviceSession actualSession = sessionCaptor.getValue();
+        final DeviceSession expectedSession = this.getDeviceSession(actualSession.getId(),
+                user,
+                given.getSessionSourceId(),
+                SessionStatus.ACTIVE,
+                NOW,
+                NOW,
+                given.getUserAgent(),
+                given.getUserAgent());
+
+        assertThat(actualSession).isEqualTo(expectedSession);
+
         final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
                 user,
-                refreshToken.getExpiresAt());
+                actualSession,
+                refreshToken.getExpiresAt(),
+                NOW,
+                NOW);
 
         assertThat(recordCaptor.getValue()).isEqualTo(expectedRecord);
         assertThat(actual).isEqualTo(expected);
@@ -222,11 +255,38 @@ class LoginUserImplTest {
 
     private RefreshTokenRecord getRefreshTokenRecord(final String tokenHash,
                                                      final AuthUser user,
-                                                     final Instant expiresAt) {
+                                                     final DeviceSession session,
+                                                     final Instant expiresAt,
+                                                     final Instant createdAt,
+                                                     final Instant updatedAt) {
         return RefreshTokenRecord.builder()
                 .tokenHash(tokenHash)
                 .user(user)
+                .session(session)
                 .expiresAt(expiresAt)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
+    }
+
+    private DeviceSession getDeviceSession(final UUID sessionId,
+                                           final AuthUser user,
+                                           final String sessionSourceId,
+                                           final SessionStatus status,
+                                           final Instant createdAt,
+                                           final Instant lastUsedAt,
+                                           final String initialUserAgent,
+                                           final String lastUserAgent) {
+        return DeviceSession.builder()
+                .id(sessionId)
+                .user(user)
+                .sessionSourceId(sessionSourceId)
+                .initialIpAddress(null)
+                .status(status)
+                .createdAt(createdAt)
+                .lastUsedAt(lastUsedAt)
+                .initialUserAgent(initialUserAgent)
+                .lastUserAgent(lastUserAgent)
                 .build();
     }
 }

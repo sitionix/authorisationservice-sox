@@ -1,10 +1,8 @@
 package com.sitionix.athssox.postgresql.mapper.outbox;
 
 import com.sitionix.athssox.domain.config.MapstructComponent;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
-import com.sitionix.athssox.postgresql.entity.OutboxEventTypeEntity;
-import com.sitionix.athssox.postgresql.entity.OutboxStatusEntity;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxStatusEntity;
 import org.mapstruct.Mapper;
 
 import static java.util.Objects.isNull;

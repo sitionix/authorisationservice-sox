@@ -1,7 +1,7 @@
 package com.sitionix.athssox.postgresql.mapper.outbox;
 
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
-import com.sitionix.athssox.postgresql.entity.OutboxStatusEntity;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxStatusEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

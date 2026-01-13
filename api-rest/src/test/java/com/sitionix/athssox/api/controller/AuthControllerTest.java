@@ -11,12 +11,14 @@ import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,12 +44,16 @@ class AuthControllerTest {
     @Mock
     private LoginUser loginUser;
 
+    @Mock
+    private HttpServletRequest httpServletRequest;
+
     @BeforeEach
     void setUp() {
         this.authController = new AuthController(this.authApiMapper,
                 this.emailVerifyApiMapper,
                 this.verifyEmail,
-                this.loginUser);
+                this.loginUser,
+                this.httpServletRequest);
     }
 
     @AfterEach
@@ -55,7 +61,8 @@ class AuthControllerTest {
         verifyNoMoreInteractions(this.authApiMapper,
                 this.emailVerifyApiMapper,
                 this.verifyEmail,
-                this.loginUser);
+                this.loginUser,
+                this.httpServletRequest);
     }
 
     @Test
@@ -68,6 +75,8 @@ class AuthControllerTest {
 
         when(this.authApiMapper.asLoginRequest(given))
                 .thenReturn(loginRequest);
+        when(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT))
+                .thenReturn("Mozilla/5.0");
         when(this.loginUser.execute(loginRequest))
                 .thenReturn(loginResponse);
         when(this.authApiMapper.asLoginResponseDTO(loginResponse))
@@ -80,6 +89,8 @@ class AuthControllerTest {
         assertThat(actual).isEqualTo(ResponseEntity.ok(expected));
         verify(this.authApiMapper)
                 .asLoginRequest(given);
+        verify(this.httpServletRequest)
+                .getHeader(HttpHeaders.USER_AGENT);
         verify(this.loginUser)
                 .execute(loginRequest);
         verify(this.authApiMapper)

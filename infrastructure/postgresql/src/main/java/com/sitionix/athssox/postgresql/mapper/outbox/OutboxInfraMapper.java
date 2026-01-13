@@ -2,7 +2,7 @@ package com.sitionix.athssox.postgresql.mapper.outbox;
 
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
-import com.sitionix.athssox.postgresql.entity.OutboxEventEntity;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

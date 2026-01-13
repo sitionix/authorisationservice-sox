@@ -1,7 +1,8 @@
 package com.sitionix.athssox.postgresql.mapper;
 
 import com.sitionix.athssox.domain.model.UserRole;
-import com.sitionix.athssox.postgresql.entity.GlobalRoleEntity;
+import com.sitionix.athssox.postgresql.entity.user.GlobalRoleEntity;
+import com.sitionix.athssox.postgresql.mapper.user.UserRoleInfraMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

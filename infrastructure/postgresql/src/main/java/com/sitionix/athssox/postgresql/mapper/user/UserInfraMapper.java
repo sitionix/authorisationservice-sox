@@ -1,0 +1,33 @@
+package com.sitionix.athssox.postgresql.mapper.user;
+
+import com.sitionix.athssox.domain.config.MapstructComponent;
+import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.RegisterUserDO;
+import com.sitionix.athssox.domain.model.ResponseRegisterUser;
+import com.sitionix.athssox.postgresql.entity.user.UserEntity;
+import org.mapstruct.InjectionStrategy;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = MapstructComponent.SPRING_COMPONENT,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR,
+        uses = {UserRoleInfraMapper.class,
+                UserStatusInfraMapper.class
+        })
+public interface UserInfraMapper {
+
+    @Mapping(target = "passwordHash", source = "registerUserDO.password")
+    @Mapping(target = "globalRole", source = "registerUserDO.role")
+    UserEntity asUserEntity(final RegisterUserDO registerUserDO);
+
+    @Mapping(target = "userId", source = "id")
+    ResponseRegisterUser asResponseRegisterUser(final UserEntity userEntity);
+
+    @Mapping(target = "role", source = "globalRole")
+    AuthUser asAuthUser(final UserEntity userEntity);
+
+    @Mapping(target = "globalRole", source = "role")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    UserEntity asUserEntity(final AuthUser authUser);
+}

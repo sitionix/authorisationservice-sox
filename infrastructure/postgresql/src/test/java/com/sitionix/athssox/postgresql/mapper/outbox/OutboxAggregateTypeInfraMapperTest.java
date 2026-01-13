@@ -1,7 +1,7 @@
 package com.sitionix.athssox.postgresql.mapper.outbox;
 
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
-import com.sitionix.athssox.postgresql.entity.OutboxAggregateTypeEntity;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxAggregateTypeEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
