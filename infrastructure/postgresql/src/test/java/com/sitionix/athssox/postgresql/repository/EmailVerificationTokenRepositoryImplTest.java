@@ -1,9 +1,10 @@
 package com.sitionix.athssox.postgresql.repository;
 
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
-import com.sitionix.athssox.postgresql.entity.EmailVerificationTokenEntity;
-import com.sitionix.athssox.postgresql.jpa.EmailVerificationTokenJpaRepository;
-import com.sitionix.athssox.postgresql.mapper.EmailVerificationTokenInfraMapper;
+import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
+import com.sitionix.athssox.postgresql.jpa.token.EmailVerificationTokenJpaRepository;
+import com.sitionix.athssox.postgresql.mapper.token.EmailVerificationTokenInfraMapper;
+import com.sitionix.athssox.postgresql.repository.token.EmailVerificationTokenRepositoryImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

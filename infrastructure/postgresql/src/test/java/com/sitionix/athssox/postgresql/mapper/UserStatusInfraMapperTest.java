@@ -1,7 +1,8 @@
 package com.sitionix.athssox.postgresql.mapper;
 
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.postgresql.entity.UserStatusEntity;
+import com.sitionix.athssox.postgresql.entity.user.UserStatusEntity;
+import com.sitionix.athssox.postgresql.mapper.user.UserStatusInfraMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

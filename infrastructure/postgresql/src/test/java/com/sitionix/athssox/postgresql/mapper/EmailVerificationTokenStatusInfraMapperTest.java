@@ -1,7 +1,8 @@
 package com.sitionix.athssox.postgresql.mapper;
 
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
-import com.sitionix.athssox.postgresql.entity.EmailVerificationTokenStatusEntity;
+import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenStatusEntity;
+import com.sitionix.athssox.postgresql.mapper.token.EmailVerificationTokenStatusInfraMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -17,5 +17,11 @@ public class RefreshTokenRecord {
 
     private AuthUser user;
 
+    private DeviceSession session;
+
     private Instant expiresAt;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
 }
