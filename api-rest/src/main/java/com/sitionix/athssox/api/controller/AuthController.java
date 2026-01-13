@@ -12,11 +12,9 @@ import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,14 +31,11 @@ public class AuthController implements AuthApi {
 
     private final LoginUser loginUser;
 
-    private final HttpServletRequest httpServletRequest;
-
     @Override
     public ResponseEntity<LoginResponseDTO> login(@Valid final LoginRequestDTO loginRequestDTO) {
         log.info("Received login request for email: {}", loginRequestDTO.getEmail());
 
         final LoginRequest loginRequest = this.authApiMapper.asLoginRequest(loginRequestDTO);
-        loginRequest.setUserAgent(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT));
         final LoginResponse loginResponse = this.loginUser.execute(loginRequest);
 
         log.info("Login completed for email: {}", loginRequestDTO.getEmail());
