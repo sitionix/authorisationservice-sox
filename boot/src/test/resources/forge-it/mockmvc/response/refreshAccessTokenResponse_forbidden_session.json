@@ -1,0 +1,5 @@
+{
+  "code": 403,
+  "title": "Forbidden",
+  "details": "Session is not active or does not exist"
+}

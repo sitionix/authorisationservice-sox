@@ -1,0 +1,5 @@
+{
+  "code": 403,
+  "title": "Forbidden",
+  "details": "Refresh token is invalid or revoked"
+}

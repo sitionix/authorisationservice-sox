@@ -5,6 +5,8 @@ import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
+import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
+import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
 import com.sitionix.forgeit.domain.endpoint.Endpoint;
@@ -125,4 +127,16 @@ public class ControllerEndpoint {
         );
     }
 
+    public static Endpoint<RefreshAccessTokenRequestDTO, RefreshAccessTokenResponseDTO> refreshAccessToken() {
+        return Endpoint.createContract(
+                "/api/v1/auth/refresh",
+                HttpMethod.POST,
+                RefreshAccessTokenRequestDTO.class,
+                RefreshAccessTokenResponseDTO.class,
+                (MockmvcDefault) context -> context
+                        .withRequest("refreshAccessTokenRequest.json")
+                        .expectResponse("refreshAccessTokenResponse.json")
+                        .expectStatus(200)
+        );
+    }
 }

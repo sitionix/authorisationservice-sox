@@ -1,0 +1,9 @@
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "sessionSourceId": "device-123",
+  "initialIpAddress": null,
+  "createdAt": "2099-01-01T10:00:00Z",
+  "lastUsedAt": "2099-01-01T10:00:00Z",
+  "initialUserAgent": "Mozilla/5.0",
+  "lastUserAgent": "Mozilla/5.0"
+}

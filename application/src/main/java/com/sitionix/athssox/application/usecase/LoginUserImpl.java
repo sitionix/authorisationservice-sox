@@ -7,6 +7,7 @@ import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshToken;
 import com.sitionix.athssox.domain.model.RefreshTokenRecord;
+import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.model.SessionStatus;
 import com.sitionix.athssox.domain.repository.DeviceSessionRepository;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
@@ -115,6 +116,7 @@ public class LoginUserImpl implements LoginUser {
                 .tokenHash(this.tokenHasher.hash(refreshToken.getToken()))
                 .user(user)
                 .session(session)
+                .status(RefreshTokenStatus.ACTIVE)
                 .expiresAt(refreshToken.getExpiresAt())
                 .createdAt(now)
                 .updatedAt(now)

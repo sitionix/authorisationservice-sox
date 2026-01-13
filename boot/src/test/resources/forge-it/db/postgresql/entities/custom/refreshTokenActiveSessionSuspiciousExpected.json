@@ -18,8 +18,8 @@
   "session": {
     "sessionSourceId": "device-123",
     "status": {
-      "id": 1,
-      "description": "ACTIVE"
+      "id": 2,
+      "description": "SUSPICIOUS"
     }
   }
 }

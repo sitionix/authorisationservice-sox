@@ -5,12 +5,18 @@ import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
+import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
+import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
+import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
+import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
+import com.sitionix.athssox.domain.model.RefreshAccessTokenResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.usecase.LoginUser;
+import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -32,6 +38,10 @@ public class AuthController implements AuthApi {
     private final VerifyEmail verifyEmail;
 
     private final LoginUser loginUser;
+
+    private final RefreshAccessToken refreshAccessToken;
+
+    private final RefreshAccessTokenApiMapper refreshAccessTokenApiMapper;
 
     private final HttpServletRequest httpServletRequest;
 
@@ -62,5 +72,16 @@ public class AuthController implements AuthApi {
         return verified
                 ? ResponseEntity.ok(response)
                 : ResponseEntity.accepted().body(response);
+    }
+
+    @Override
+    public ResponseEntity<RefreshAccessTokenResponseDTO> refreshAccessToken(@Valid final RefreshAccessTokenRequestDTO refreshAccessTokenRequest) {
+        final RefreshAccessTokenRequest request = this.refreshAccessTokenApiMapper.asRefreshAccessTokenRequest(refreshAccessTokenRequest);
+
+        request.setUserAgent(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT));
+
+        final RefreshAccessTokenResponse response = this.refreshAccessToken.execute(request);
+
+        return ResponseEntity.ok(this.refreshAccessTokenApiMapper.asRefreshAccessTokenResponseDTO(response));
     }
 }

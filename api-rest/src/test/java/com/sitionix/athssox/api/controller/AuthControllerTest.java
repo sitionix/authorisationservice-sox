@@ -6,10 +6,12 @@ import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
+import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.usecase.LoginUser;
+import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -47,12 +49,20 @@ class AuthControllerTest {
     @Mock
     private HttpServletRequest httpServletRequest;
 
+    @Mock
+    private RefreshAccessToken refreshAccessToken;
+
+    @Mock
+    private RefreshAccessTokenApiMapper refreshAccessTokenApiMapper;
+
     @BeforeEach
     void setUp() {
         this.authController = new AuthController(this.authApiMapper,
                 this.emailVerifyApiMapper,
                 this.verifyEmail,
                 this.loginUser,
+                this.refreshAccessToken,
+                this.refreshAccessTokenApiMapper,
                 this.httpServletRequest);
     }
 
@@ -62,6 +72,8 @@ class AuthControllerTest {
                 this.emailVerifyApiMapper,
                 this.verifyEmail,
                 this.loginUser,
+                this.refreshAccessToken,
+                this.refreshAccessTokenApiMapper,
                 this.httpServletRequest);
     }
 

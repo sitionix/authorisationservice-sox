@@ -1,0 +1,5 @@
+{
+  "code": 403,
+  "title": "Forbidden",
+  "details": "Session does not match original token context"
+}
