@@ -12,6 +12,7 @@ public class RefreshTokenStatusEntity {
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
+
     @Column(name = "description", nullable = false, length = 256)
     private String description;
 }
