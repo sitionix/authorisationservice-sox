@@ -13,6 +13,7 @@ import com.sitionix.athssox.domain.model.RefreshToken;
 import com.sitionix.athssox.domain.model.RefreshTokenRecord;
 import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.model.SessionStatus;
+import com.sitionix.athssox.domain.model.TokenType;
 import com.sitionix.athssox.domain.repository.DeviceSessionRepository;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
@@ -39,11 +40,11 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     private final Clock clock;
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = {RefreshTokenInvalidException.class, SessionMismatchException.class})
     public RefreshAccessTokenResponse execute(final RefreshAccessTokenRequest refreshAccessTokenRequest) {
         final Instant now = this.clock.instant();
         final RefreshTokenRecord tokenRecord = this.findValidToken(refreshAccessTokenRequest, now);
-        final DeviceSession session = this.validateSession(tokenRecord, refreshAccessTokenRequest);
+        final DeviceSession session = this.validateSession(tokenRecord, refreshAccessTokenRequest, now);
         final AuthUser user = tokenRecord.getUser();
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken newRefreshToken = this.tokenProvider.generateRefreshToken(user);
@@ -56,7 +57,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
                 .accessToken(accessToken.getToken())
                 .refreshToken(newRefreshToken.getToken())
                 .expiresIn(expiresIn)
-                .tokenType("Bearer")
+                .tokenType(TokenType.BEARER)
                 .build();
     }
 
@@ -70,7 +71,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         }
 
         if (isRevoked(tokenRecord)) {
-            this.markSessionSuspicious(tokenRecord, request, now);
+            this.markSessionSuspicious(tokenRecord.getSession(), request, now);
             throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
         }
 
@@ -78,7 +79,8 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     }
 
     private DeviceSession validateSession(final RefreshTokenRecord tokenRecord,
-                                          final RefreshAccessTokenRequest request) {
+                                          final RefreshAccessTokenRequest request,
+                                          final Instant now) {
         final DeviceSession session = this.deviceSessionRepository
                 .findByUserIdAndSessionSourceId(tokenRecord.getUser().getId(), request.getSessionSourceId())
                 .orElseThrow(() -> new SessionNotActiveException("Session is not active or does not exist"));
@@ -92,6 +94,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         }
 
         if (!tokenRecord.getSession().getId().equals(session.getId())) {
+            this.markSessionSuspicious(tokenRecord.getSession(), request, now);
             throw new SessionMismatchException("Session does not match original token context");
         }
 
@@ -129,14 +132,10 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         this.deviceSessionRepository.save(session);
     }
 
-    private void markSessionSuspicious(final RefreshTokenRecord tokenRecord,
+    private void markSessionSuspicious(final DeviceSession session,
                                        final RefreshAccessTokenRequest request,
                                        final Instant now) {
-        if (tokenRecord.getSession() == null) {
-            return;
-        }
-        final DeviceSession session = tokenRecord.getSession();
-        if (session.getStatus() == SessionStatus.SUSPICIOUS) {
+        if (session == null || session.getStatus() == SessionStatus.SUSPICIOUS) {
             return;
         }
         session.setStatus(SessionStatus.SUSPICIOUS);

@@ -17,5 +17,5 @@ public class RefreshAccessTokenResponse {
 
     private long expiresIn;
 
-    private String tokenType;
+    private TokenType tokenType;
 }

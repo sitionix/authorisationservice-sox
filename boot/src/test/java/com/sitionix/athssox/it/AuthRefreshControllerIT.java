@@ -83,7 +83,7 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionRevokedExpected.json");
+                .containsAllWithJsons("refreshTokenActiveExpected.json");
     }
 
     @Test
@@ -123,7 +123,7 @@ class AuthRefreshControllerIT {
                 .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
                 .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(3L))
-                .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionActive.json"))
+                .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionRevoked.json"))
                 .to(DatabaseContract.REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT.withJson("refreshTokenActive.json"))
                 .build();
@@ -149,7 +149,7 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveExpected.json");
+                .containsAllWithJsons("refreshTokenActiveSessionRevokedExpected.json");
     }
 
     @Test
@@ -200,11 +200,11 @@ class AuthRefreshControllerIT {
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
-                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT)
                 .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionActive.json"))
-                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT)
                 .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionActiveOther.json"))
-                .to(DatabaseContract.REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT)
                 .to(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT.withJson("refreshTokenActive.json"))
                 .build();
 
@@ -260,7 +260,7 @@ class AuthRefreshControllerIT {
                 .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
                 .hasSize(1)
                 .withFetchedRelations()
-                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveExpected.json");
+                .ignoreFields("tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
+                .containsAllWithJsons("refreshTokenActiveSessionSuspiciousExpected.json");
     }
 }

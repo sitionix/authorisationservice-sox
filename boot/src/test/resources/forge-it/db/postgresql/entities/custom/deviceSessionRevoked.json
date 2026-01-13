@@ -1,9 +1,9 @@
 {
-  "id": "11111111-1111-1111-1111-111111111111",
+  "id": "33333333-3333-3333-3333-333333333333",
   "sessionSourceId": "device-123",
   "status": {
-    "id": 1,
-    "description": "ACTIVE"
+    "id": 3,
+    "description": "REVOKED BY USER"
   },
   "initialIpAddress": null,
   "createdAt": "2099-01-01T10:00:00Z",
