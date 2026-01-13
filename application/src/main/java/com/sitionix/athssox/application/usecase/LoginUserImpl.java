@@ -99,7 +99,6 @@ public class LoginUserImpl implements LoginUser {
                 .id(UUID.randomUUID())
                 .user(user)
                 .sessionSourceId(loginRequest.getSessionSourceId())
-                .initialIpAddress(null)
                 .status(SessionStatus.ACTIVE)
                 .createdAt(now)
                 .lastUsedAt(now)

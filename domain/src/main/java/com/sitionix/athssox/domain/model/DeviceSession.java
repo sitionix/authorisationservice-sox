@@ -20,8 +20,6 @@ public class DeviceSession {
 
     private String sessionSourceId;
 
-    private String initialIpAddress;
-
     private SessionStatus status;
 
     private Instant createdAt;

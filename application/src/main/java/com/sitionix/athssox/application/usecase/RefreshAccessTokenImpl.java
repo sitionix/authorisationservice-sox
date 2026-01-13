@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -43,8 +44,12 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     @Transactional(noRollbackFor = {RefreshTokenInvalidException.class, SessionMismatchException.class})
     public RefreshAccessTokenResponse execute(final RefreshAccessTokenRequest refreshAccessTokenRequest) {
         final Instant now = this.clock.instant();
-        final RefreshTokenRecord tokenRecord = this.findValidToken(refreshAccessTokenRequest, now);
-        final DeviceSession session = this.validateSession(tokenRecord, refreshAccessTokenRequest, now);
+        final RefreshTokenRecord tokenRecord = this.findTokenRecord(refreshAccessTokenRequest, now);
+        final DeviceSession session = this.getTokenSession(tokenRecord);
+        this.ensureSessionActive(session);
+        this.ensureSessionSourceMatches(session, refreshAccessTokenRequest, now);
+        this.ensureTokenNotReplayed(tokenRecord, session, refreshAccessTokenRequest, now);
+        this.detectSessionAnomaly(session, refreshAccessTokenRequest);
         final AuthUser user = tokenRecord.getUser();
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken newRefreshToken = this.tokenProvider.generateRefreshToken(user);
@@ -61,7 +66,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
                 .build();
     }
 
-    private RefreshTokenRecord findValidToken(final RefreshAccessTokenRequest request, final Instant now) {
+    private RefreshTokenRecord findTokenRecord(final RefreshAccessTokenRequest request, final Instant now) {
         final String hashedToken = this.tokenHasher.hash(request.getRefreshToken());
         final RefreshTokenRecord tokenRecord = this.refreshTokenRepository.findByTokenHash(hashedToken)
                 .orElseThrow(() -> new RefreshTokenInvalidException("Refresh token is invalid or revoked"));
@@ -70,35 +75,49 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
             throw new RefreshTokenExpiredException("Refresh token has expired");
         }
 
-        if (isRevoked(tokenRecord)) {
-            this.markSessionSuspicious(tokenRecord.getSession(), request, now);
-            throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
-        }
-
         return tokenRecord;
     }
 
-    private DeviceSession validateSession(final RefreshTokenRecord tokenRecord,
-                                          final RefreshAccessTokenRequest request,
-                                          final Instant now) {
-        final DeviceSession session = this.deviceSessionRepository
-                .findByUserIdAndSessionSourceId(tokenRecord.getUser().getId(), request.getSessionSourceId())
-                .orElseThrow(() -> new SessionNotActiveException("Session is not active or does not exist"));
+    private DeviceSession getTokenSession(final RefreshTokenRecord tokenRecord) {
+        final DeviceSession session = tokenRecord.getSession();
+        if (session == null || session.getId() == null) {
+            throw new SessionNotActiveException("Session is not active or does not exist");
+        }
+        return session;
+    }
 
+    private void ensureSessionActive(final DeviceSession session) {
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new SessionNotActiveException("Session is not active or does not exist");
         }
+    }
 
-        if (tokenRecord.getSession() == null || tokenRecord.getSession().getId() == null) {
+    private void ensureSessionSourceMatches(final DeviceSession session,
+                                            final RefreshAccessTokenRequest request,
+                                            final Instant now) {
+        if (!Objects.equals(session.getSessionSourceId(), request.getSessionSourceId())) {
+            // TODO: emit session_context_mismatch_detected
+            this.markSessionSuspicious(session, request, now);
             throw new SessionMismatchException("Session does not match original token context");
         }
+    }
 
-        if (!tokenRecord.getSession().getId().equals(session.getId())) {
-            this.markSessionSuspicious(tokenRecord.getSession(), request, now);
-            throw new SessionMismatchException("Session does not match original token context");
+    private void ensureTokenNotReplayed(final RefreshTokenRecord tokenRecord,
+                                        final DeviceSession session,
+                                        final RefreshAccessTokenRequest request,
+                                        final Instant now) {
+        if (isReplayed(tokenRecord)) {
+            // TODO: emit replay_attack_detected
+            this.markSessionSuspicious(session, request, now);
+            throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
         }
+    }
 
-        return session;
+    private void detectSessionAnomaly(final DeviceSession session,
+                                      final RefreshAccessTokenRequest request) {
+        if (isUserAgentChanged(session, request.getUserAgent())) {
+            // TODO: emit audit event session_user_agent_changed
+        }
     }
 
     private void rotateRefreshToken(final RefreshTokenRecord tokenRecord,
@@ -135,7 +154,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     private void markSessionSuspicious(final DeviceSession session,
                                        final RefreshAccessTokenRequest request,
                                        final Instant now) {
-        if (session == null || session.getStatus() == SessionStatus.SUSPICIOUS) {
+        if (session == null || session.getStatus() != SessionStatus.ACTIVE) {
             return;
         }
         session.setStatus(SessionStatus.SUSPICIOUS);
@@ -148,13 +167,20 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         return tokenRecord.getExpiresAt() == null || !tokenRecord.getExpiresAt().isAfter(now);
     }
 
-    private boolean isRevoked(final RefreshTokenRecord tokenRecord) {
+    private boolean isReplayed(final RefreshTokenRecord tokenRecord) {
+        if (tokenRecord.getUsedAt() != null) {
+            return true;
+        }
         if (tokenRecord.getRevokedAt() != null) {
             return true;
         }
-        if (tokenRecord.getStatus() == null) {
+        return tokenRecord.getStatus() == RefreshTokenStatus.REVOKED;
+    }
+
+    private boolean isUserAgentChanged(final DeviceSession session, final String userAgent) {
+        if (userAgent == null || session.getLastUserAgent() == null) {
             return false;
         }
-        return tokenRecord.getStatus() == RefreshTokenStatus.REVOKED;
+        return !session.getLastUserAgent().equals(userAgent);
     }
 }

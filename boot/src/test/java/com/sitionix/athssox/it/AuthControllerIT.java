@@ -55,7 +55,7 @@ class AuthControllerIT {
                 .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
                 .hasSize(1)
                 .withFetchedRelations()
-                .ignoreFields("id", "createdAt", "lastUsedAt", "initialIpAddress", "initialUserAgent", "lastUserAgent")
+                .ignoreFields("id", "createdAt", "lastUsedAt", "initialUserAgent", "lastUserAgent")
                 .containsAllWithJsons("deviceSessionActiveExpected.json");
     }
 
@@ -115,12 +115,91 @@ class AuthControllerIT {
                 .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
                 .hasSize(1)
                 .withFetchedRelations()
-                .ignoreFields("id", "createdAt", "lastUsedAt", "initialIpAddress", "initialUserAgent", "lastUserAgent")
+                .ignoreFields("id", "createdAt", "lastUsedAt", "initialUserAgent", "lastUserAgent")
                 .containsAllWithJsons("deviceSessionActiveExpected.json");
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
                 .hasSize(2)
+                .withFetchedRelations()
+                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
+                .containsAllWithJsons("refreshTokenEntityExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should create second session when logging in from new device")
+    void givenActiveUserAndNewDevice_whenLogin_thenCreateSecondSessionAndRefreshToken() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json", request -> request.setSessionSourceId("device-999"))
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
+                .hasSize(2)
+                .withFetchedRelations()
+                .ignoreFields("id", "createdAt", "lastUsedAt", "initialUserAgent", "lastUserAgent")
+                .containsAllWithJsons("deviceSessionActiveExpected.json", "deviceSessionActiveOtherExpected.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(2)
+                .withFetchedRelations()
+                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
+                .containsAllWithJsons("refreshTokenEntityExpected.json", "refreshTokenEntityExpectedOther.json");
+    }
+
+    @Test
+    @DisplayName("Should reactivate session when logging in with inactive session")
+    void givenInactiveSession_whenLogin_thenReactivateSessionAndIssueRefreshToken() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(3L))
+                .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionRevoked.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "createdAt", "lastUsedAt", "initialUserAgent", "lastUserAgent")
+                .containsAllWithJsons("deviceSessionActiveExpected.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
                 .containsAllWithJsons("refreshTokenEntityExpected.json");

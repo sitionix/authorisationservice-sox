@@ -285,7 +285,6 @@ class LoginUserImplTest {
                 .id(sessionId)
                 .user(user)
                 .sessionSourceId(sessionSourceId)
-                .initialIpAddress(null)
                 .status(status)
                 .createdAt(createdAt)
                 .lastUsedAt(lastUsedAt)
