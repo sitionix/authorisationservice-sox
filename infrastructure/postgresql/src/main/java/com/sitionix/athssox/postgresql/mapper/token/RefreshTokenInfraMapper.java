@@ -7,7 +7,6 @@ import com.sitionix.athssox.postgresql.mapper.session.DeviceSessionInfraMapper;
 import com.sitionix.athssox.postgresql.mapper.user.UserInfraMapper;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
