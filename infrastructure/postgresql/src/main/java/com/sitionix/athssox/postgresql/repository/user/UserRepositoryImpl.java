@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -40,6 +41,21 @@ public class UserRepositoryImpl implements UserRepository {
     public boolean existsGlobalByEmail(final String email) {
         return this.userJpaRepository.existsByEmailAndGlobalRole_IdIn(email,
                 UserRole.globalScopedIds());
+    }
+
+    @Override
+    public Optional<ResponseRegisterUser> findSiteScopedByEmailAndSiteId(final String email, final UUID siteId) {
+        return this.userJpaRepository.findByEmailAndSiteIdAndGlobalRole_IdIn(email,
+                        siteId,
+                        UserRole.siteScopedIds())
+                .map(this.userInfraMapper::asResponseRegisterUser);
+    }
+
+    @Override
+    public Optional<ResponseRegisterUser> findGlobalByEmail(final String email) {
+        return this.userJpaRepository.findByEmailAndGlobalRole_IdIn(email,
+                        UserRole.globalScopedIds())
+                .map(this.userInfraMapper::asResponseRegisterUser);
     }
 
 }

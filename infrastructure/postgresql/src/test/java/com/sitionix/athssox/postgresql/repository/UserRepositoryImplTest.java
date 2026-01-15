@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -114,6 +115,57 @@ class UserRepositoryImplTest {
                 .existsByEmailAndGlobalRole_IdIn(email, roleIds);
     }
 
+    @Test
+    void givenEmailAndSiteId_whenFindSiteScopedByEmailAndSiteId_thenReturnUser() {
+        //given
+        final String email = "email@sitionix.com";
+        final UUID siteId = this.getSiteId();
+        final List<Long> roleIds = this.getSiteScopedRoleIds();
+        final UserEntity entity = mock(UserEntity.class);
+        final ResponseRegisterUser expected = mock(ResponseRegisterUser.class);
+
+        when(this.userJpaRepository.findByEmailAndSiteIdAndGlobalRole_IdIn(email, siteId, roleIds))
+                .thenReturn(Optional.of(entity));
+        when(this.userInfraMapper.asResponseRegisterUser(entity))
+                .thenReturn(expected);
+
+        //when
+        final Optional<ResponseRegisterUser> actual =
+                this.userRepository.findSiteScopedByEmailAndSiteId(email, siteId);
+
+        //then
+        assertThat(actual).isEqualTo(Optional.of(expected));
+        verify(this.userJpaRepository)
+                .findByEmailAndSiteIdAndGlobalRole_IdIn(email, siteId, roleIds);
+        verify(this.userInfraMapper)
+                .asResponseRegisterUser(entity);
+    }
+
+    @Test
+    void givenEmail_whenFindGlobalByEmail_thenReturnUser() {
+        //given
+        final String email = "email@sitionix.com";
+        final List<Long> roleIds = this.getGlobalRoleIds();
+        final UserEntity entity = mock(UserEntity.class);
+        final ResponseRegisterUser expected = mock(ResponseRegisterUser.class);
+
+        when(this.userJpaRepository.findByEmailAndGlobalRole_IdIn(email, roleIds))
+                .thenReturn(Optional.of(entity));
+        when(this.userInfraMapper.asResponseRegisterUser(entity))
+                .thenReturn(expected);
+
+        //when
+        final Optional<ResponseRegisterUser> actual =
+                this.userRepository.findGlobalByEmail(email);
+
+        //then
+        assertThat(actual).isEqualTo(Optional.of(expected));
+        verify(this.userJpaRepository)
+                .findByEmailAndGlobalRole_IdIn(email, roleIds);
+        verify(this.userInfraMapper)
+                .asResponseRegisterUser(entity);
+    }
+
     private UUID getSiteId() {
         return UUID.randomUUID();
     }
@@ -128,4 +180,3 @@ class UserRepositoryImplTest {
                 UserRole.ECOSYSTEM_OWNER.getId());
     }
 }
-
