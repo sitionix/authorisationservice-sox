@@ -256,6 +256,67 @@ class UserControllerIT {
     }
 
     @Test
+    @DisplayName("Should return 201 and resend verification when pending user re-registers in same site")
+    void givenPendingEmailSameSite_whenRegisterUser_thenCreatedAndResendVerification() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest_duplicateEmailSameSite.json")
+                .expectResponse("registerUserResponse_pendingEmailVerify.json", "userId")
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
+                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+    }
+
+    @Test
+    @DisplayName("Should return 201 without resend when pending user is on cooldown")
+    void givenPendingEmailSameSiteWithRecentToken_whenRegisterUser_thenCreatedWithoutResend() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenRecent.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest_duplicateEmailSameSite.json")
+                .expectResponse("registerUserResponse_pendingEmailVerify.json", "userId")
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
     @DisplayName("Should return 409 Conflict when email is already registered in the same site for site-scoped roles")
     void givenExistingEmailSameSite_whenRegisterUser_thenConflict() {
         //given

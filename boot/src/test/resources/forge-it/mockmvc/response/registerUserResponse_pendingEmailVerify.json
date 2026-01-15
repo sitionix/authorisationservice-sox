@@ -1,0 +1,5 @@
+{
+  "userId": 1,
+  "message": "Account already exists and requires email verification. Please verify your email.",
+  "status": "PENDING_EMAIL_VERIFY"
+}
