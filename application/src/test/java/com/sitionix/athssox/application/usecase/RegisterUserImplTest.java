@@ -12,6 +12,7 @@ import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
+import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -57,13 +59,17 @@ class RegisterUserImplTest {
     @Mock
     private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
 
+    @Mock
+    private EmailVerificationResendPolicy emailVerificationResendPolicy;
+
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
                 this.outboxCommand,
-                this.outboxEventBuilder);
+                this.outboxEventBuilder,
+                this.emailVerificationResendPolicy);
     }
 
     @AfterEach
@@ -72,7 +78,8 @@ class RegisterUserImplTest {
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
                 this.outboxCommand,
-                this.outboxEventBuilder);
+                this.outboxEventBuilder,
+                this.emailVerificationResendPolicy);
     }
 
     @Test
@@ -80,7 +87,7 @@ class RegisterUserImplTest {
         //given
         final String rawPassword = "StrongPassword123";
         final String encodedPassword = "encoded";
-        final UUID siteId = UUID.randomUUID();
+        final UUID siteId = this.getSiteId();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
                 UserRole.SITE_USER,
@@ -95,8 +102,8 @@ class RegisterUserImplTest {
                 "Registration successful. Please verify your email.");
         final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
 
-        when(this.userRepository.existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
-                .thenReturn(false);
+        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(Optional.empty());
         when(this.passwordEncoder.encode(rawPassword))
                 .thenReturn(encodedPassword);
         when(this.userRepository.createUser(given))
@@ -114,7 +121,7 @@ class RegisterUserImplTest {
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
         verify(this.userRepository)
-                .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
+                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verify(this.passwordEncoder)
                 .encode(rawPassword);
         verify(this.userRepository)
@@ -139,6 +146,86 @@ class RegisterUserImplTest {
     }
 
     @Test
+    void givenPendingSiteScopedUser_whenExecute_thenReturnExistingUserAndResend() {
+        //given
+        final UUID siteId = this.getSiteId();
+        final RegisterUserDO given = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SITE_USER,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "weak");
+        final ResponseRegisterUser existingUser = this.getResponseRegisterUser(14L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                null);
+        final ResponseRegisterUser expected = this.getResponseRegisterUser(14L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "Account already exists and requires email verification. Please verify your email.");
+        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
+
+        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(Optional.of(existingUser));
+        when(this.emailVerificationResendPolicy.isResendAllowed(14L))
+                .thenReturn(true);
+        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
+                .thenReturn(outboxEvent);
+
+        //when
+        final ResponseRegisterUser actual = this.registerUser.execute(given);
+
+        //then
+        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
+
+        verify(this.userRepository)
+                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
+        verify(this.emailVerificationResendPolicy)
+                .isResendAllowed(14L);
+        verify(this.outboxEventBuilder)
+                .build(buildContextCaptor.capture());
+        verify(this.outboxCommand)
+                .execute(outboxEvent);
+
+        assertThat(actual).isEqualTo(expected);
+        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
+        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(existingUser.getUserId(),
+                siteId,
+                DEFAULT_EMAIL,
+                buildContextCaptor.getValue().requestedAt()));
+    }
+
+    @Test
+    void givenPendingSiteScopedUserAndResendNotAllowed_whenExecute_thenReturnExistingUserWithoutOutbox() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final RegisterUserDO given = this.getRegisterUserDO(siteId,
+                DEFAULT_EMAIL,
+                UserRole.SITE_USER,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "weak");
+        final ResponseRegisterUser existingUser = this.getResponseRegisterUser(15L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                null);
+        final ResponseRegisterUser expected = this.getResponseRegisterUser(15L,
+                UserStatus.PENDING_EMAIL_VERIFY,
+                "Account already exists and requires email verification. Please verify your email.");
+
+        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(Optional.of(existingUser));
+        when(this.emailVerificationResendPolicy.isResendAllowed(15L))
+                .thenReturn(false);
+
+        //when
+        final ResponseRegisterUser actual = this.registerUser.execute(given);
+
+        //then
+        verify(this.userRepository)
+                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
+        verify(this.emailVerificationResendPolicy)
+                .isResendAllowed(15L);
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
     void givenSiteScopedEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
         //given
         final UUID siteId = UUID.randomUUID();
@@ -147,9 +234,12 @@ class RegisterUserImplTest {
                 UserRole.SITE_ADMIN,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "StrongPassword123");
+        final ResponseRegisterUser existingUser = this.getResponseRegisterUser(21L,
+                UserStatus.ACTIVE,
+                null);
 
-        when(this.userRepository.existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
-                .thenReturn(true);
+        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(Optional.of(existingUser));
 
         //when
         final Throwable actualThrowable = catchThrowable(() -> this.registerUser.execute(given));
@@ -157,12 +247,12 @@ class RegisterUserImplTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(EmailAlreadyRegisteredException.class)
-                .hasMessage("Email already registered for this site.");
+                .hasMessage("Email already registered for this role and context");
 
         verify(this.passwordPolicyValidator)
                 .validate("StrongPassword123");
         verify(this.userRepository)
-                .existsSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
+                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
                 this.outboxEventBuilder,
                 this.outboxCommand);
@@ -176,9 +266,12 @@ class RegisterUserImplTest {
                 UserRole.SUPER_ADMIN,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "StrongPassword123");
+        final ResponseRegisterUser existingUser = this.getResponseRegisterUser(33L,
+                UserStatus.ACTIVE,
+                null);
 
-        when(this.userRepository.existsGlobalByEmail(DEFAULT_EMAIL))
-                .thenReturn(true);
+        when(this.userRepository.findGlobalByEmail(DEFAULT_EMAIL))
+                .thenReturn(Optional.of(existingUser));
 
         //when
         final Throwable actualThrowable = catchThrowable(() -> this.registerUser.execute(given));
@@ -186,12 +279,12 @@ class RegisterUserImplTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(EmailAlreadyRegisteredException.class)
-                .hasMessage("Email already registered for this role scope.");
+                .hasMessage("Email already registered for this role and context");
 
         verify(this.passwordPolicyValidator)
                 .validate("StrongPassword123");
         verify(this.userRepository)
-                .existsGlobalByEmail(DEFAULT_EMAIL);
+                .findGlobalByEmail(DEFAULT_EMAIL);
         verifyNoInteractions(this.passwordEncoder,
                 this.outboxEventBuilder,
                 this.outboxCommand);
@@ -209,6 +302,8 @@ class RegisterUserImplTest {
 
         final RuntimeException expected = this.getRuntimeException("invalid password");
 
+        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
+                .thenReturn(Optional.empty());
         doThrow(expected)
                 .when(this.passwordPolicyValidator)
                 .validate("weak");
@@ -220,8 +315,9 @@ class RegisterUserImplTest {
         assertThat(actualThrowable).isEqualTo(expected);
         verify(this.passwordPolicyValidator)
                 .validate("weak");
+        verify(this.userRepository)
+                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
-                this.userRepository,
                 this.outboxEventBuilder,
                 this.outboxCommand);
     }
@@ -269,8 +365,8 @@ class RegisterUserImplTest {
                 "Registration successful. Please verify your email.");
         final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
 
-        when(this.userRepository.existsGlobalByEmail(DEFAULT_EMAIL))
-                .thenReturn(false);
+        when(this.userRepository.findGlobalByEmail(DEFAULT_EMAIL))
+                .thenReturn(Optional.empty());
         when(this.passwordEncoder.encode(rawPassword))
                 .thenReturn(encodedPassword);
         when(this.userRepository.createUser(given))
@@ -288,7 +384,7 @@ class RegisterUserImplTest {
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
         verify(this.userRepository)
-                .existsGlobalByEmail(DEFAULT_EMAIL);
+                .findGlobalByEmail(DEFAULT_EMAIL);
         verify(this.passwordEncoder)
                 .encode(rawPassword);
         verify(this.userRepository)

@@ -270,7 +270,7 @@ class UserControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
                 .withRequest("registerUserRequest_duplicateEmailSameSite.json")
-                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this site."))
+                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role and context"))
                 .expectStatus(HttpStatus.CONFLICT)
                 .assertAndCreate();
 
@@ -298,7 +298,7 @@ class UserControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
                 .withRequest("registerUserRequest_duplicateEmailGlobalRole.json")
-                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role scope."))
+                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role and context"))
                 .expectStatus(HttpStatus.CONFLICT)
                 .assertAndCreate();
 

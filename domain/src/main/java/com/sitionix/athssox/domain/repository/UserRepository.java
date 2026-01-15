@@ -4,6 +4,7 @@ import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 
 import java.util.UUID;
+import java.util.Optional;
 
 public interface UserRepository {
 
@@ -12,4 +13,8 @@ public interface UserRepository {
     boolean existsSiteScopedByEmailAndSiteId(final String email, final UUID siteId);
 
     boolean existsGlobalByEmail(final String email);
+
+    Optional<ResponseRegisterUser> findSiteScopedByEmailAndSiteId(final String email, final UUID siteId);
+
+    Optional<ResponseRegisterUser> findGlobalByEmail(final String email);
 }

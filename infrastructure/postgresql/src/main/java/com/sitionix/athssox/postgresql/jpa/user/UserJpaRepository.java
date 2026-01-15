@@ -16,6 +16,13 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
     boolean existsByEmailAndGlobalRole_IdIn(final String email,
                                             final Collection<Long> globalRoleIds);
 
+    Optional<UserEntity> findByEmailAndSiteIdAndGlobalRole_IdIn(final String email,
+                                                                final UUID siteId,
+                                                                final Collection<Long> globalRoleIds);
+
+    Optional<UserEntity> findByEmailAndSiteIdIsNullAndGlobalRole_IdIn(final String email,
+                                                                      final Collection<Long> globalRoleIds);
+
     Optional<UserEntity> findByEmailAndSiteId(final String email, final UUID siteId);
 
     Optional<UserEntity> findByEmailAndSiteIdIsNull(final String email);

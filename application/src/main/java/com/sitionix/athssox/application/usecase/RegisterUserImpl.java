@@ -6,12 +6,14 @@ import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
+import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
+import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.RegisterUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -33,14 +36,22 @@ public class RegisterUserImpl implements RegisterUser {
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final OutboxCommand<EmailVerifyPayload> command;
     private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private final EmailVerificationResendPolicy emailVerificationResendPolicy;
 
     @Override
     @Transactional
     public ResponseRegisterUser execute(@Valid final RegisterUserDO registerUserDO) {
 
         this.validateSiteScope(registerUserDO);
+        final Optional<ResponseRegisterUser> existingUser = this.findExistingUser(registerUserDO);
+        if (existingUser.isPresent() && existingUser.get().getStatus() == UserStatus.PENDING_EMAIL_VERIFY) {
+            return this.handlePendingUser(existingUser.get(), registerUserDO);
+        }
+
         this.passwordPolicyValidator.validate(registerUserDO.getPassword());
-        this.validateEmailUniqueness(registerUserDO);
+        if (existingUser.isPresent()) {
+            throw new EmailAlreadyRegisteredException("Email already registered for this role and context");
+        }
         registerUserDO.setPassword(this.passwordEncoder.encode(registerUserDO.getPassword()));
 
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
@@ -77,26 +88,35 @@ public class RegisterUserImpl implements RegisterUser {
         );
     }
 
-    private void validateEmailUniqueness(final RegisterUserDO registerUserDO) {
+    private Optional<ResponseRegisterUser> findExistingUser(final RegisterUserDO registerUserDO) {
         final UserRole role = registerUserDO.getRole();
         final String email = registerUserDO.getEmail();
         final UUID siteId = registerUserDO.getSiteId();
 
         if (role == null) {
-            return;
+            return Optional.empty();
         }
 
         if (role.isSiteScoped()) {
-            if (this.userRepository.existsSiteScopedByEmailAndSiteId(email, siteId)) {
-                throw new EmailAlreadyRegisteredException("Email already registered for this site.");
-            }
-            return;
+            return this.userRepository.findSiteScopedByEmailAndSiteId(email, siteId);
         }
 
         if (role.isGlobalScoped()) {
-            if (this.userRepository.existsGlobalByEmail(email)) {
-                throw new EmailAlreadyRegisteredException("Email already registered for this role scope.");
-            }
+            return this.userRepository.findGlobalByEmail(email);
         }
+
+        return Optional.empty();
+    }
+
+    private ResponseRegisterUser handlePendingUser(final ResponseRegisterUser existingUser,
+                                                   final RegisterUserDO registerUserDO) {
+        if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
+            final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder
+                    .build(this.buildContext(existingUser, registerUserDO));
+            this.command.execute(outboxEvent);
+        }
+
+        existingUser.setMessage("Account already exists and requires email verification. Please verify your email.");
+        return existingUser;
     }
 }
