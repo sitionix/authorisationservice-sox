@@ -149,7 +149,7 @@ class UserRepositoryImplTest {
         final UserEntity entity = mock(UserEntity.class);
         final ResponseRegisterUser expected = mock(ResponseRegisterUser.class);
 
-        when(this.userJpaRepository.findByEmailAndSiteIdIsNullAndGlobalRole_IdIn(email, roleIds))
+        when(this.userJpaRepository.findByEmailAndGlobalRole_IdIn(email, roleIds))
                 .thenReturn(Optional.of(entity));
         when(this.userInfraMapper.asResponseRegisterUser(entity))
                 .thenReturn(expected);
@@ -161,7 +161,7 @@ class UserRepositoryImplTest {
         //then
         assertThat(actual).isEqualTo(Optional.of(expected));
         verify(this.userJpaRepository)
-                .findByEmailAndSiteIdIsNullAndGlobalRole_IdIn(email, roleIds);
+                .findByEmailAndGlobalRole_IdIn(email, roleIds);
         verify(this.userInfraMapper)
                 .asResponseRegisterUser(entity);
     }

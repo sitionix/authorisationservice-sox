@@ -237,7 +237,7 @@ class UserControllerIT {
         //given
         this.testManager.postgresql()
                 .create()
-                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .build();
@@ -289,7 +289,7 @@ class UserControllerIT {
         //given
         this.testManager.postgresql()
                 .create()
-                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(2L))
                 .to(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .build();

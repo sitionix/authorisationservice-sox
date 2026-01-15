@@ -53,7 +53,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<ResponseRegisterUser> findGlobalByEmail(final String email) {
-        return this.userJpaRepository.findByEmailAndSiteIdIsNullAndGlobalRole_IdIn(email,
+        return this.userJpaRepository.findByEmailAndGlobalRole_IdIn(email,
                         UserRole.globalScopedIds())
                 .map(this.userInfraMapper::asResponseRegisterUser);
     }

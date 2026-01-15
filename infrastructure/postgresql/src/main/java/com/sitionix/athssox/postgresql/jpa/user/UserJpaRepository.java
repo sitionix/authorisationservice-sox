@@ -20,8 +20,8 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
                                                                 final UUID siteId,
                                                                 final Collection<Long> globalRoleIds);
 
-    Optional<UserEntity> findByEmailAndSiteIdIsNullAndGlobalRole_IdIn(final String email,
-                                                                      final Collection<Long> globalRoleIds);
+    Optional<UserEntity> findByEmailAndGlobalRole_IdIn(final String email,
+                                                       final Collection<Long> globalRoleIds);
 
     Optional<UserEntity> findByEmailAndSiteId(final String email, final UUID siteId);
 
