@@ -8,7 +8,6 @@ import com.sitionix.athssox.postgresql.mapper.token.EmailVerificationTokenInfraM
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.Optional;
 
 @Repository
@@ -31,14 +30,4 @@ public class EmailVerificationTokenRepositoryImpl implements EmailVerificationTo
                 .map(this.emailVerificationTokenInfraMapper::asRecord);
     }
 
-    @Override
-    public Optional<Instant> findLatestCreatedAtByUserId(final Long userId) {
-        return this.emailVerificationTokenJpaRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId)
-                .map(EmailVerificationTokenEntity::getCreatedAt);
-    }
-
-    @Override
-    public long countByUserIdAndCreatedAtAfter(final Long userId, final Instant createdAfter) {
-        return this.emailVerificationTokenJpaRepository.countByUser_IdAndCreatedAtAfter(userId, createdAfter);
-    }
 }

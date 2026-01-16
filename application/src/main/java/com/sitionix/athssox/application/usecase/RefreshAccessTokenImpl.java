@@ -1,5 +1,6 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.application.config.SessionConfig;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
@@ -39,6 +40,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     private final TokenProvider tokenProvider;
     private final TokenHasher tokenHasher;
     private final Clock clock;
+    private final SessionConfig sessionConfig;
 
     @Override
     @Transactional(noRollbackFor = {RefreshTokenInvalidException.class, SessionMismatchException.class})
@@ -148,9 +150,11 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     private void updateSession(final DeviceSession session,
                                final RefreshAccessTokenRequest request,
                                final Instant now) {
-        session.setLastUsedAt(now);
-        session.setLastUserAgent(request.getUserAgent());
-        this.deviceSessionRepository.save(session);
+        final boolean updatedLastUsedAt = this.updateLastUsedAtIfNeeded(session, now);
+        final boolean updatedUserAgent = this.updateLastUserAgentIfChanged(session, request.getUserAgent());
+        if (updatedLastUsedAt || updatedUserAgent) {
+            this.deviceSessionRepository.save(session);
+        }
     }
 
     private void markSessionSuspicious(final DeviceSession session,
@@ -160,8 +164,8 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
             return;
         }
         session.setStatus(SessionStatus.SUSPICIOUS);
-        session.setLastUsedAt(now);
-        session.setLastUserAgent(request.getUserAgent());
+        this.updateLastUsedAtIfNeeded(session, now);
+        this.updateLastUserAgentIfChanged(session, request.getUserAgent());
         this.deviceSessionRepository.save(session);
     }
 
@@ -184,5 +188,33 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
             return false;
         }
         return !session.getLastUserAgent().equals(userAgent);
+    }
+
+    private boolean updateLastUsedAtIfNeeded(final DeviceSession session, final Instant now) {
+        if (!this.shouldUpdateLastUsedAt(session.getLastUsedAt(), now)) {
+            return false;
+        }
+        session.setLastUsedAt(now);
+        return true;
+    }
+
+    private boolean updateLastUserAgentIfChanged(final DeviceSession session, final String userAgent) {
+        if (userAgent == null || userAgent.equals(session.getLastUserAgent())) {
+            return false;
+        }
+        session.setLastUserAgent(userAgent);
+        return true;
+    }
+
+    private boolean shouldUpdateLastUsedAt(final Instant lastUsedAt, final Instant now) {
+        final long throttleMinutes = this.sessionConfig.getLastUsedThrottleMinutes();
+        if (throttleMinutes <= 0) {
+            return true;
+        }
+        if (lastUsedAt == null) {
+            return true;
+        }
+        final Instant threshold = now.minus(Duration.ofMinutes(throttleMinutes));
+        return !lastUsedAt.isAfter(threshold);
     }
 }

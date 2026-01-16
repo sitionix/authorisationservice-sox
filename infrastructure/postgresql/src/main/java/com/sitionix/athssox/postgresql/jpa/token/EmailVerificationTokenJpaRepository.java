@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Lock;
 
 import jakarta.persistence.LockModeType;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,7 +14,4 @@ public interface EmailVerificationTokenJpaRepository extends JpaRepository<Email
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<EmailVerificationTokenEntity> findByTokenHash(String tokenHash);
 
-    Optional<EmailVerificationTokenEntity> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);
-
-    long countByUser_IdAndCreatedAtAfter(Long userId, Instant createdAfter);
 }

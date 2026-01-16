@@ -8,10 +8,8 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "auth.email-verification.resend")
-public class EmailVerificationResendConfig {
+@ConfigurationProperties(prefix = "auth.session")
+public class SessionConfig {
 
-    private long cooldownSeconds = 60L;
-
-    private long dailyCap = 5L;
+    private long lastUsedThrottleMinutes = 5L;
 }

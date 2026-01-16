@@ -12,7 +12,6 @@ import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
-import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,17 +58,13 @@ class RegisterUserImplTest {
     @Mock
     private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
 
-    @Mock
-    private EmailVerificationResendPolicy emailVerificationResendPolicy;
-
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
                 this.outboxCommand,
-                this.outboxEventBuilder,
-                this.emailVerificationResendPolicy);
+                this.outboxEventBuilder);
     }
 
     @AfterEach
@@ -78,8 +73,7 @@ class RegisterUserImplTest {
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
                 this.outboxCommand,
-                this.outboxEventBuilder,
-                this.emailVerificationResendPolicy);
+                this.outboxEventBuilder);
     }
 
     @Test
@@ -143,86 +137,6 @@ class RegisterUserImplTest {
                 siteId,
                 DEFAULT_EMAIL,
                 buildContextCaptor.getValue().requestedAt()));
-    }
-
-    @Test
-    void givenPendingSiteScopedUser_whenExecute_thenReturnExistingUserAndResend() {
-        //given
-        final UUID siteId = this.getSiteId();
-        final RegisterUserDO given = this.getRegisterUserDO(siteId,
-                DEFAULT_EMAIL,
-                UserRole.SITE_USER,
-                UserStatus.PENDING_EMAIL_VERIFY,
-                "weak");
-        final ResponseRegisterUser existingUser = this.getResponseRegisterUser(14L,
-                UserStatus.PENDING_EMAIL_VERIFY,
-                null);
-        final ResponseRegisterUser expected = this.getResponseRegisterUser(14L,
-                UserStatus.PENDING_EMAIL_VERIFY,
-                "Account already exists and requires email verification. Please verify your email.");
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
-
-        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
-                .thenReturn(Optional.of(existingUser));
-        when(this.emailVerificationResendPolicy.isResendAllowed(14L))
-                .thenReturn(true);
-        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
-                .thenReturn(outboxEvent);
-
-        //when
-        final ResponseRegisterUser actual = this.registerUser.execute(given);
-
-        //then
-        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
-
-        verify(this.userRepository)
-                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
-        verify(this.emailVerificationResendPolicy)
-                .isResendAllowed(14L);
-        verify(this.outboxEventBuilder)
-                .build(buildContextCaptor.capture());
-        verify(this.outboxCommand)
-                .execute(outboxEvent);
-
-        assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(existingUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                buildContextCaptor.getValue().requestedAt()));
-    }
-
-    @Test
-    void givenPendingSiteScopedUserAndResendNotAllowed_whenExecute_thenReturnExistingUserWithoutOutbox() {
-        //given
-        final UUID siteId = UUID.randomUUID();
-        final RegisterUserDO given = this.getRegisterUserDO(siteId,
-                DEFAULT_EMAIL,
-                UserRole.SITE_USER,
-                UserStatus.PENDING_EMAIL_VERIFY,
-                "weak");
-        final ResponseRegisterUser existingUser = this.getResponseRegisterUser(15L,
-                UserStatus.PENDING_EMAIL_VERIFY,
-                null);
-        final ResponseRegisterUser expected = this.getResponseRegisterUser(15L,
-                UserStatus.PENDING_EMAIL_VERIFY,
-                "Account already exists and requires email verification. Please verify your email.");
-
-        when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
-                .thenReturn(Optional.of(existingUser));
-        when(this.emailVerificationResendPolicy.isResendAllowed(15L))
-                .thenReturn(false);
-
-        //when
-        final ResponseRegisterUser actual = this.registerUser.execute(given);
-
-        //then
-        verify(this.userRepository)
-                .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
-        verify(this.emailVerificationResendPolicy)
-                .isResendAllowed(15L);
-
-        assertThat(actual).isEqualTo(expected);
     }
 
     @Test

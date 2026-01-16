@@ -13,7 +13,6 @@ import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
-import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.RegisterUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,6 @@ public class RegisterUserImpl implements RegisterUser {
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final OutboxCommand<EmailVerifyPayload> command;
     private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
-    private final EmailVerificationResendPolicy emailVerificationResendPolicy;
 
     @Override
     @Transactional
@@ -110,12 +108,6 @@ public class RegisterUserImpl implements RegisterUser {
 
     private ResponseRegisterUser handlePendingUser(final ResponseRegisterUser existingUser,
                                                    final RegisterUserDO registerUserDO) {
-        if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
-            final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder
-                    .build(this.buildContext(existingUser, registerUserDO));
-            this.command.execute(outboxEvent);
-        }
-
         existingUser.setMessage("Account already exists and requires email verification. Please verify your email.");
         return existingUser;
     }

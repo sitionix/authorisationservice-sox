@@ -21,6 +21,8 @@ auth:
     access-token-ttl-seconds: 3600
     refresh-token-ttl-seconds: 2592000
     email-verification-token-ttl-seconds: 86400
+  session:
+    last-used-throttle-minutes: 5
 bff:
   base-url: http://localhost:8080/bffssox
 outbox:

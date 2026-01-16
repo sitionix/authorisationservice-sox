@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,54 +104,9 @@ class EmailVerificationTokenRepositoryImplTest {
                 .findByTokenHash(hashedToken);
     }
 
-    @Test
-    void givenUserId_whenFindLatestCreatedAtByUserId_thenReturnCreatedAt() {
-        //given
-        final Long userId = 12L;
-        final Instant createdAt = this.getCreatedAt();
-        final EmailVerificationTokenEntity entity = mock(EmailVerificationTokenEntity.class);
-
-        when(entity.getCreatedAt())
-                .thenReturn(createdAt);
-        when(this.emailVerificationTokenJpaRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId))
-                .thenReturn(Optional.of(entity));
-
-        //when
-        final Optional<Instant> actual =
-                this.emailVerificationTokenRepository.findLatestCreatedAtByUserId(userId);
-
-        //then
-        assertThat(actual).isEqualTo(Optional.of(createdAt));
-        verify(this.emailVerificationTokenJpaRepository)
-                .findFirstByUser_IdOrderByCreatedAtDesc(userId);
-        verify(entity)
-                .getCreatedAt();
-    }
-
-    @Test
-    void givenUserIdAndInstant_whenCountByUserIdAndCreatedAtAfter_thenReturnCount() {
-        //given
-        final Long userId = 24L;
-        final Instant createdAfter = this.getCreatedAt();
-
-        when(this.emailVerificationTokenJpaRepository.countByUser_IdAndCreatedAtAfter(userId, createdAfter))
-                .thenReturn(3L);
-
-        //when
-        final long actual =
-                this.emailVerificationTokenRepository.countByUserIdAndCreatedAtAfter(userId, createdAfter);
-
-        //then
-        assertThat(actual).isEqualTo(3L);
-        verify(this.emailVerificationTokenJpaRepository)
-                .countByUser_IdAndCreatedAtAfter(userId, createdAfter);
-    }
 
     private String getHashedToken() {
         return "hashed-token";
     }
 
-    private Instant getCreatedAt() {
-        return Instant.parse("2024-01-01T10:00:00Z");
-    }
 }

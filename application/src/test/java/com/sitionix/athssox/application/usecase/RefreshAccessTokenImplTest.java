@@ -1,5 +1,6 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.application.config.SessionConfig;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
@@ -64,13 +65,17 @@ class RefreshAccessTokenImplTest {
     @Mock
     private Clock clock;
 
+    @Mock
+    private SessionConfig sessionConfig;
+
     @BeforeEach
     void setUp() {
         this.refreshAccessToken = new RefreshAccessTokenImpl(this.refreshTokenRepository,
                 this.deviceSessionRepository,
                 this.tokenProvider,
                 this.tokenHasher,
-                this.clock);
+                this.clock,
+                this.sessionConfig);
     }
 
     @AfterEach
@@ -79,7 +84,8 @@ class RefreshAccessTokenImplTest {
                 this.deviceSessionRepository,
                 this.tokenProvider,
                 this.tokenHasher,
-                this.clock);
+                this.clock,
+                this.sessionConfig);
     }
 
     @Test
@@ -162,6 +168,8 @@ class RefreshAccessTokenImplTest {
                 .generateRefreshToken(user);
         verify(this.tokenHasher)
                 .hash(newRefreshTokenValue);
+        verify(this.sessionConfig)
+                .getLastUsedThrottleMinutes();
         verify(this.refreshTokenRepository, times(2))
                 .save(recordCaptor.capture());
         verify(this.deviceSessionRepository)
@@ -202,6 +210,130 @@ class RefreshAccessTokenImplTest {
         final List<RefreshTokenRecord> expectedRecords = List.of(expectedNewRecord, expectedUpdatedRecord);
 
         assertThat(sessionCaptor.getValue()).isEqualTo(expectedSession);
+        assertThat(recordCaptor.getAllValues()).isEqualTo(expectedRecords);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenLastUsedAtWithinThrottle_whenExecute_thenSkipSessionUpdate() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final UUID sessionId = UUID.randomUUID();
+        final String refreshTokenValue = "refresh-token";
+        final String newRefreshTokenValue = "new-refresh-token";
+        final String sessionSourceId = "session-source-id";
+        final String userAgent = "Mozilla/5.0";
+        final Instant sessionCreatedAt = NOW.minusSeconds(3600);
+        final Instant sessionLastUsedAt = NOW.minusSeconds(60);
+        final Instant recordCreatedAt = NOW.minusSeconds(7200);
+        final Instant recordUpdatedAt = NOW.minusSeconds(60);
+        final Instant tokenExpiresAt = NOW.plusSeconds(3600);
+        final Instant newRefreshTokenExpiresAt = NOW.plusSeconds(7200);
+
+        final RefreshAccessTokenRequest given = this.getRefreshAccessTokenRequest(refreshTokenValue,
+                sessionSourceId,
+                userAgent);
+        final AuthUser user = this.getAuthUser(1L, siteId);
+        final DeviceSession session = this.getDeviceSession(sessionId,
+                user,
+                sessionSourceId,
+                SessionStatus.ACTIVE,
+                sessionCreatedAt,
+                sessionLastUsedAt,
+                userAgent,
+                userAgent);
+        final RefreshTokenRecord tokenRecord = this.getRefreshTokenRecord(10L,
+                "hashed-refresh-token",
+                user,
+                session,
+                RefreshTokenStatus.ACTIVE,
+                tokenExpiresAt,
+                recordCreatedAt,
+                recordUpdatedAt,
+                null,
+                null,
+                null);
+        final AccessToken accessToken = this.getAccessToken("access-token", NOW.plusSeconds(3600));
+        final RefreshToken newRefreshToken = this.getRefreshToken(newRefreshTokenValue, newRefreshTokenExpiresAt);
+        final RefreshAccessTokenResponse expected = this.getRefreshAccessTokenResponse("access-token",
+                newRefreshTokenValue,
+                3600L,
+                TokenType.BEARER);
+
+        when(this.clock.instant())
+                .thenReturn(NOW);
+        when(this.sessionConfig.getLastUsedThrottleMinutes())
+                .thenReturn(5L);
+        when(this.tokenHasher.hash(refreshTokenValue))
+                .thenReturn("hashed-refresh-token");
+        when(this.refreshTokenRepository.findByTokenHash("hashed-refresh-token"))
+                .thenReturn(Optional.of(tokenRecord));
+        when(this.tokenProvider.generateAccessToken(user))
+                .thenReturn(accessToken);
+        when(this.tokenProvider.generateRefreshToken(user))
+                .thenReturn(newRefreshToken);
+        when(this.tokenHasher.hash(newRefreshTokenValue))
+                .thenReturn("hashed-new-refresh-token");
+
+        //when
+        final RefreshAccessTokenResponse actual = this.refreshAccessToken.execute(given);
+
+        //then
+        final ArgumentCaptor<RefreshTokenRecord> recordCaptor = ArgumentCaptor.forClass(RefreshTokenRecord.class);
+
+        verify(this.clock)
+                .instant();
+        verify(this.sessionConfig)
+                .getLastUsedThrottleMinutes();
+        verify(this.tokenHasher)
+                .hash(refreshTokenValue);
+        verify(this.refreshTokenRepository)
+                .findByTokenHash("hashed-refresh-token");
+        verify(this.tokenProvider)
+                .generateAccessToken(user);
+        verify(this.tokenProvider)
+                .generateRefreshToken(user);
+        verify(this.tokenHasher)
+                .hash(newRefreshTokenValue);
+        verify(this.refreshTokenRepository, times(2))
+                .save(recordCaptor.capture());
+        verify(this.deviceSessionRepository, times(0))
+                .save(any(DeviceSession.class));
+
+        final DeviceSession expectedSession = this.getDeviceSession(sessionId,
+                user,
+                sessionSourceId,
+                SessionStatus.ACTIVE,
+                sessionCreatedAt,
+                sessionLastUsedAt,
+                userAgent,
+                userAgent);
+
+        final RefreshTokenRecord expectedNewRecord = this.getRefreshTokenRecord(null,
+                "hashed-new-refresh-token",
+                user,
+                expectedSession,
+                RefreshTokenStatus.ACTIVE,
+                newRefreshTokenExpiresAt,
+                NOW,
+                NOW,
+                null,
+                null,
+                null);
+        final RefreshTokenRecord expectedUpdatedRecord = this.getRefreshTokenRecord(10L,
+                "hashed-refresh-token",
+                user,
+                expectedSession,
+                RefreshTokenStatus.REVOKED,
+                tokenExpiresAt,
+                recordCreatedAt,
+                NOW,
+                NOW,
+                NOW,
+                "ROTATED");
+
+        final List<RefreshTokenRecord> expectedRecords = List.of(expectedNewRecord, expectedUpdatedRecord);
+
         assertThat(recordCaptor.getAllValues()).isEqualTo(expectedRecords);
         assertThat(actual).isEqualTo(expected);
     }
@@ -316,6 +448,8 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.sessionConfig)
+                .getLastUsedThrottleMinutes();
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
 
@@ -386,6 +520,8 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.sessionConfig)
+                .getLastUsedThrottleMinutes();
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
 
