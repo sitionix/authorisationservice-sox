@@ -47,6 +47,7 @@ class LoginUserImplTest {
     private static final Instant NOW = Instant.parse("2024-05-01T10:15:30Z");
 
     private LoginUserImpl loginUser;
+    private SessionConfig sessionConfig;
 
     @Mock
     private DeviceSessionRepository deviceSessionRepository;
@@ -68,14 +69,14 @@ class LoginUserImplTest {
 
     @BeforeEach
     void setUp() {
-        final SessionConfig sessionConfig = this.getSessionConfig(5L);
+        this.sessionConfig = this.getSessionConfig(5L);
         this.loginUser = new LoginUserImpl(this.deviceSessionRepository,
                 this.refreshTokenRepository,
                 this.tokenProvider,
                 this.tokenHasher,
                 this.authenticationManager,
                 this.clock,
-                sessionConfig);
+                this.sessionConfig);
     }
 
     @AfterEach
@@ -237,6 +238,188 @@ class LoginUserImplTest {
         final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
                 user,
                 existingSession,
+                RefreshTokenStatus.ACTIVE,
+                refreshToken.getExpiresAt(),
+                NOW,
+                NOW);
+
+        assertThat(recordCaptor.getValue()).isEqualTo(expectedRecord);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenExistingSessionWithNullLastUsedAt_whenExecute_thenUpdateSession() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final UUID sessionId = UUID.randomUUID();
+        final LoginRequest given = this.getLoginRequest(siteId);
+        final AuthUser user = this.getAuthUser(10L, siteId);
+        final AccessToken accessToken = this.getAccessToken("access-token", NOW.plusSeconds(3600));
+        final RefreshToken refreshToken = this.getRefreshToken("refresh-token", NOW.plusSeconds(7200));
+        final LoginResponse expected = this.getLoginResponse(accessToken.getToken(),
+                refreshToken.getToken(),
+                3600L,
+                "Bearer");
+        final DeviceSession existingSession = this.getDeviceSession(sessionId,
+                user,
+                given.getSessionSourceId(),
+                SessionStatus.ACTIVE,
+                NOW.minusSeconds(3600),
+                null,
+                given.getUserAgent(),
+                given.getUserAgent());
+
+        when(this.clock.instant())
+                .thenReturn(NOW);
+        when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
+                .thenReturn(LoginAuthenticationToken.authenticated(user));
+        when(this.deviceSessionRepository.findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId()))
+                .thenReturn(Optional.of(existingSession));
+        when(this.deviceSessionRepository.save(any(DeviceSession.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(this.tokenProvider.generateAccessToken(user))
+                .thenReturn(accessToken);
+        when(this.tokenProvider.generateRefreshToken(user))
+                .thenReturn(refreshToken);
+        when(this.tokenHasher.hash(refreshToken.getToken()))
+                .thenReturn("hashed");
+
+        //when
+        final LoginResponse actual = this.loginUser.execute(given);
+
+        //then
+        final ArgumentCaptor<LoginAuthenticationToken> tokenCaptor = ArgumentCaptor.forClass(LoginAuthenticationToken.class);
+        final ArgumentCaptor<RefreshTokenRecord> recordCaptor = ArgumentCaptor.forClass(RefreshTokenRecord.class);
+        final ArgumentCaptor<DeviceSession> sessionCaptor = ArgumentCaptor.forClass(DeviceSession.class);
+
+        verify(this.clock)
+                .instant();
+        verify(this.authenticationManager)
+                .authenticate(tokenCaptor.capture());
+        verify(this.deviceSessionRepository)
+                .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
+        verify(this.deviceSessionRepository)
+                .save(sessionCaptor.capture());
+        verify(this.tokenProvider)
+                .generateAccessToken(user);
+        verify(this.tokenProvider)
+                .generateRefreshToken(user);
+        verify(this.tokenHasher)
+                .hash(refreshToken.getToken());
+        verify(this.refreshTokenRepository)
+                .save(recordCaptor.capture());
+
+        final LoginAuthenticationToken actualToken = tokenCaptor.getValue();
+        assertThat(actualToken.getEmail()).isEqualTo(given.getEmail());
+        assertThat(actualToken.getCredentials()).isEqualTo(given.getPassword());
+        assertThat(actualToken.getSiteId()).isEqualTo(given.getSiteId());
+
+        final DeviceSession expectedSession = this.getDeviceSession(sessionId,
+                user,
+                given.getSessionSourceId(),
+                SessionStatus.ACTIVE,
+                NOW.minusSeconds(3600),
+                NOW,
+                given.getUserAgent(),
+                given.getUserAgent());
+
+        assertThat(sessionCaptor.getValue()).isEqualTo(expectedSession);
+
+        final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
+                user,
+                expectedSession,
+                RefreshTokenStatus.ACTIVE,
+                refreshToken.getExpiresAt(),
+                NOW,
+                NOW);
+
+        assertThat(recordCaptor.getValue()).isEqualTo(expectedRecord);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenThrottleIntervalZero_whenExecute_thenUpdateSession() {
+        //given
+        final UUID siteId = UUID.randomUUID();
+        final UUID sessionId = UUID.randomUUID();
+        final LoginRequest given = this.getLoginRequest(siteId);
+        final AuthUser user = this.getAuthUser(10L, siteId);
+        final AccessToken accessToken = this.getAccessToken("access-token", NOW.plusSeconds(3600));
+        final RefreshToken refreshToken = this.getRefreshToken("refresh-token", NOW.plusSeconds(7200));
+        final LoginResponse expected = this.getLoginResponse(accessToken.getToken(),
+                refreshToken.getToken(),
+                3600L,
+                "Bearer");
+        final DeviceSession existingSession = this.getDeviceSession(sessionId,
+                user,
+                given.getSessionSourceId(),
+                SessionStatus.ACTIVE,
+                NOW.minusSeconds(3600),
+                NOW.minusSeconds(60),
+                given.getUserAgent(),
+                given.getUserAgent());
+
+        this.sessionConfig.setLastUsedThrottleMinutes(0L);
+
+        when(this.clock.instant())
+                .thenReturn(NOW);
+        when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
+                .thenReturn(LoginAuthenticationToken.authenticated(user));
+        when(this.deviceSessionRepository.findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId()))
+                .thenReturn(Optional.of(existingSession));
+        when(this.deviceSessionRepository.save(any(DeviceSession.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(this.tokenProvider.generateAccessToken(user))
+                .thenReturn(accessToken);
+        when(this.tokenProvider.generateRefreshToken(user))
+                .thenReturn(refreshToken);
+        when(this.tokenHasher.hash(refreshToken.getToken()))
+                .thenReturn("hashed");
+
+        //when
+        final LoginResponse actual = this.loginUser.execute(given);
+
+        //then
+        final ArgumentCaptor<LoginAuthenticationToken> tokenCaptor = ArgumentCaptor.forClass(LoginAuthenticationToken.class);
+        final ArgumentCaptor<RefreshTokenRecord> recordCaptor = ArgumentCaptor.forClass(RefreshTokenRecord.class);
+        final ArgumentCaptor<DeviceSession> sessionCaptor = ArgumentCaptor.forClass(DeviceSession.class);
+
+        verify(this.clock)
+                .instant();
+        verify(this.authenticationManager)
+                .authenticate(tokenCaptor.capture());
+        verify(this.deviceSessionRepository)
+                .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
+        verify(this.deviceSessionRepository)
+                .save(sessionCaptor.capture());
+        verify(this.tokenProvider)
+                .generateAccessToken(user);
+        verify(this.tokenProvider)
+                .generateRefreshToken(user);
+        verify(this.tokenHasher)
+                .hash(refreshToken.getToken());
+        verify(this.refreshTokenRepository)
+                .save(recordCaptor.capture());
+
+        final LoginAuthenticationToken actualToken = tokenCaptor.getValue();
+        assertThat(actualToken.getEmail()).isEqualTo(given.getEmail());
+        assertThat(actualToken.getCredentials()).isEqualTo(given.getPassword());
+        assertThat(actualToken.getSiteId()).isEqualTo(given.getSiteId());
+
+        final DeviceSession expectedSession = this.getDeviceSession(sessionId,
+                user,
+                given.getSessionSourceId(),
+                SessionStatus.ACTIVE,
+                NOW.minusSeconds(3600),
+                NOW,
+                given.getUserAgent(),
+                given.getUserAgent());
+
+        assertThat(sessionCaptor.getValue()).isEqualTo(expectedSession);
+
+        final RefreshTokenRecord expectedRecord = this.getRefreshTokenRecord("hashed",
+                user,
+                expectedSession,
                 RefreshTokenStatus.ACTIVE,
                 refreshToken.getExpiresAt(),
                 NOW,
