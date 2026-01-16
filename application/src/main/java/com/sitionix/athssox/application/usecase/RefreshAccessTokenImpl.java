@@ -1,5 +1,6 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.application.config.SessionConfig;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
@@ -39,6 +40,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     private final TokenProvider tokenProvider;
     private final TokenHasher tokenHasher;
     private final Clock clock;
+    private final SessionConfig sessionConfig;
 
     @Override
     @Transactional(noRollbackFor = {RefreshTokenInvalidException.class, SessionMismatchException.class})
@@ -148,8 +150,19 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     private void updateSession(final DeviceSession session,
                                final RefreshAccessTokenRequest request,
                                final Instant now) {
-        session.setLastUsedAt(now);
-        session.setLastUserAgent(request.getUserAgent());
+        final boolean shouldUpdateLastUsedAt = this.shouldUpdateLastUsedAt(session, now);
+        final boolean shouldUpdateUserAgent = !Objects.equals(session.getLastUserAgent(), request.getUserAgent());
+
+        if (!shouldUpdateLastUsedAt && !shouldUpdateUserAgent) {
+            return;
+        }
+
+        if (shouldUpdateLastUsedAt) {
+            session.setLastUsedAt(now);
+        }
+        if (shouldUpdateUserAgent) {
+            session.setLastUserAgent(request.getUserAgent());
+        }
         this.deviceSessionRepository.save(session);
     }
 
@@ -160,8 +173,12 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
             return;
         }
         session.setStatus(SessionStatus.SUSPICIOUS);
-        session.setLastUsedAt(now);
-        session.setLastUserAgent(request.getUserAgent());
+        if (this.shouldUpdateLastUsedAt(session, now)) {
+            session.setLastUsedAt(now);
+        }
+        if (!Objects.equals(session.getLastUserAgent(), request.getUserAgent())) {
+            session.setLastUserAgent(request.getUserAgent());
+        }
         this.deviceSessionRepository.save(session);
     }
 
@@ -184,5 +201,17 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
             return false;
         }
         return !session.getLastUserAgent().equals(userAgent);
+    }
+
+    private boolean shouldUpdateLastUsedAt(final DeviceSession session, final Instant now) {
+        if (session.getLastUsedAt() == null) {
+            return true;
+        }
+        final Duration throttleInterval = this.sessionConfig.getLastUsedThrottleInterval();
+        if (throttleInterval.isZero() || throttleInterval.isNegative()) {
+            return true;
+        }
+        final Instant threshold = now.minus(throttleInterval);
+        return !session.getLastUsedAt().isAfter(threshold);
     }
 }

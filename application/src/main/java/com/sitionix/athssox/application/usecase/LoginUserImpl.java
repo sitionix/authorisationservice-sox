@@ -1,5 +1,7 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.application.config.SessionConfig;
+import com.sitionix.athssox.application.security.LoginAuthenticationToken;
 import com.sitionix.athssox.domain.model.AccessToken;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.DeviceSession;
@@ -14,7 +16,6 @@ import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
 import com.sitionix.athssox.domain.service.TokenProvider;
 import com.sitionix.athssox.domain.usecase.LoginUser;
-import com.sitionix.athssox.application.security.LoginAuthenticationToken;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -40,6 +42,7 @@ public class LoginUserImpl implements LoginUser {
     private final TokenHasher tokenHasher;
     private final AuthenticationManager authenticationManager;
     private final Clock clock;
+    private final SessionConfig sessionConfig;
 
     @Override
     @Transactional
@@ -71,25 +74,33 @@ public class LoginUserImpl implements LoginUser {
         final Optional<DeviceSession> existingSession = this.deviceSessionRepository
                 .findByUserIdAndSessionSourceId(user.getId(), loginRequest.getSessionSourceId());
 
-        final DeviceSession session = existingSession
-                .map(existing -> this.refreshSession(existing, loginRequest, now))
-                .orElseGet(() -> this.createSession(user, loginRequest, now));
+        if (existingSession.isPresent()) {
+            final DeviceSession session = existingSession.get();
+            final boolean updated = this.refreshSession(session, loginRequest, now);
+            return updated ? this.deviceSessionRepository.save(session) : session;
+        }
 
+        final DeviceSession session = this.createSession(user, loginRequest, now);
         return this.deviceSessionRepository.save(session);
     }
 
-    private DeviceSession refreshSession(final DeviceSession existing,
-                                         final LoginRequest loginRequest,
-                                         final Instant now) {
-        final SessionStatus updatedStatus = existing.getStatus() == SessionStatus.ACTIVE
-                ? existing.getStatus()
-                : SessionStatus.ACTIVE;
-
-        existing.setStatus(updatedStatus);
-        existing.setLastUsedAt(now);
-        existing.setLastUserAgent(loginRequest.getUserAgent());
-
-        return existing;
+    private boolean refreshSession(final DeviceSession existing,
+                                   final LoginRequest loginRequest,
+                                   final Instant now) {
+        boolean updated = false;
+        if (existing.getStatus() != SessionStatus.ACTIVE) {
+            existing.setStatus(SessionStatus.ACTIVE);
+            updated = true;
+        }
+        if (this.shouldUpdateLastUsedAt(existing, now)) {
+            existing.setLastUsedAt(now);
+            updated = true;
+        }
+        if (!Objects.equals(existing.getLastUserAgent(), loginRequest.getUserAgent())) {
+            existing.setLastUserAgent(loginRequest.getUserAgent());
+            updated = true;
+        }
+        return updated;
     }
 
     private DeviceSession createSession(final AuthUser user,
@@ -120,5 +131,17 @@ public class LoginUserImpl implements LoginUser {
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
+    }
+
+    private boolean shouldUpdateLastUsedAt(final DeviceSession session, final Instant now) {
+        if (session.getLastUsedAt() == null) {
+            return true;
+        }
+        final Duration throttleInterval = this.sessionConfig.getLastUsedThrottleInterval();
+        if (throttleInterval.isZero() || throttleInterval.isNegative()) {
+            return true;
+        }
+        final Instant threshold = now.minus(throttleInterval);
+        return !session.getLastUsedAt().isAfter(threshold);
     }
 }

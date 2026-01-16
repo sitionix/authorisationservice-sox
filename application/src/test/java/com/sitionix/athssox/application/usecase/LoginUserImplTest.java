@@ -1,5 +1,6 @@
 package com.sitionix.athssox.application.usecase;
 
+import com.sitionix.athssox.application.config.SessionConfig;
 import com.sitionix.athssox.application.security.LoginAuthenticationToken;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.model.AccessToken;
@@ -66,12 +67,14 @@ class LoginUserImplTest {
 
     @BeforeEach
     void setUp() {
+        final SessionConfig sessionConfig = this.getSessionConfig(5L);
         this.loginUser = new LoginUserImpl(this.deviceSessionRepository,
                 this.refreshTokenRepository,
                 this.tokenProvider,
                 this.tokenHasher,
                 this.authenticationManager,
-                this.clock);
+                this.clock,
+                sessionConfig);
     }
 
     @AfterEach
@@ -291,5 +294,11 @@ class LoginUserImplTest {
                 .initialUserAgent(initialUserAgent)
                 .lastUserAgent(lastUserAgent)
                 .build();
+    }
+
+    private SessionConfig getSessionConfig(final long lastUsedThrottleMinutes) {
+        final SessionConfig config = new SessionConfig();
+        config.setLastUsedThrottleMinutes(lastUsedThrottleMinutes);
+        return config;
     }
 }
