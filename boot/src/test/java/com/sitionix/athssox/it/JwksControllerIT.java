@@ -29,6 +29,8 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -148,17 +150,25 @@ class JwksControllerIT {
     @DisplayName("Should return multiple keys for rotation and verify legacy token")
     void givenLegacyKeyConfigured_whenGetJwks_thenContainsLegacyKeyAndVerifiesToken() throws Exception {
         //given
-        final String privateKeyPem;
+        final String applicationItYaml;
         try (InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResourceAsStream("forge-it/jwt/jwks-legacy-private.pem"))) {
-            privateKeyPem = new String(inputStream.readAllBytes(), StandardCharsets.US_ASCII);
+                .getResourceAsStream("application-it.yml"))) {
+            applicationItYaml = new String(inputStream.readAllBytes(), StandardCharsets.US_ASCII);
         }
 
-        final String publicKeyPem;
-        try (InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResourceAsStream("forge-it/jwt/jwks-legacy-public.pem"))) {
-            publicKeyPem = new String(inputStream.readAllBytes(), StandardCharsets.US_ASCII);
-        }
+        final Pattern privatePattern = Pattern.compile(
+                "-----BEGIN PRIVATE KEY-----.*?-----END PRIVATE KEY-----",
+                Pattern.DOTALL);
+        final Matcher privateMatcher = privatePattern.matcher(applicationItYaml);
+        assertThat(privateMatcher.find()).isTrue();
+        final String privateKeyPem = privateMatcher.group(0);
+
+        final Pattern publicPattern = Pattern.compile(
+                "-----BEGIN PUBLIC KEY-----.*?-----END PUBLIC KEY-----",
+                Pattern.DOTALL);
+        final Matcher publicMatcher = publicPattern.matcher(applicationItYaml);
+        assertThat(publicMatcher.find()).isTrue();
+        final String publicKeyPem = publicMatcher.group(0);
 
         final String normalizedPrivate = privateKeyPem
                 .replace("-----BEGIN PRIVATE KEY-----", "")
