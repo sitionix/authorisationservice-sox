@@ -1,6 +1,7 @@
 package com.sitionix.athssox.postgresql.repository.token;
 
 import com.sitionix.athssox.domain.model.RefreshTokenRecord;
+import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.postgresql.entity.token.RefreshTokenEntity;
 import com.sitionix.athssox.postgresql.jpa.token.RefreshTokenJpaRepository;
@@ -8,6 +9,7 @@ import com.sitionix.athssox.postgresql.mapper.token.RefreshTokenInfraMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @Repository
@@ -28,5 +30,15 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     public Optional<RefreshTokenRecord> findByTokenHash(final String tokenHash) {
         return this.refreshTokenJpaRepository.findByTokenHash(tokenHash)
                 .map(this.refreshTokenInfraMapper::asRefreshTokenRecord);
+    }
+
+    @Override
+    public boolean revokeIfActive(final Long tokenId, final Instant now, final String reason) {
+        final int updated = this.refreshTokenJpaRepository.revokeIfActive(tokenId,
+                RefreshTokenStatus.REVOKED.getId(),
+                RefreshTokenStatus.ACTIVE.getId(),
+                now,
+                reason);
+        return updated > 0;
     }
 }

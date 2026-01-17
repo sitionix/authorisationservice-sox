@@ -9,6 +9,7 @@ import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
+import com.sitionix.athssox.domain.model.jwks.JwksResponse;
 import com.sitionix.forgeit.domain.endpoint.Endpoint;
 import com.sitionix.forgeit.domain.endpoint.HttpMethod;
 import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
@@ -137,6 +138,16 @@ public class ControllerEndpoint {
                         .withRequest("refreshAccessTokenRequest.json")
                         .expectResponse("refreshAccessTokenResponse.json")
                         .expectStatus(200)
+        );
+    }
+
+    public static Endpoint<Void, JwksResponse> jwks() {
+        return Endpoint.createContract(
+                "/.well-known/jwks.json",
+                HttpMethod.GET,
+                Void.class,
+                JwksResponse.class,
+                (MockmvcDefault) context -> context.expectStatus(200)
         );
     }
 }

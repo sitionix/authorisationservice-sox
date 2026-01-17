@@ -2,6 +2,7 @@ package com.sitionix.athssox.application.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.sitionix.athssox.application.config.TokenConfig;
 import com.sitionix.athssox.domain.model.AccessToken;
 import com.sitionix.athssox.domain.model.AuthUser;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -68,6 +70,7 @@ class JwtTokenProviderTest {
         final KeyPair keyPair = this.getRsaKeyPair();
         final String keyId = "key-1";
         final AccessToken expected = this.getAccessToken(given, expiresAt, "auth-issuer", keyId, keyPair);
+        final Algorithm algorithm = this.getRsaAlgorithm(keyPair);
 
         when(this.clock.instant())
                 .thenReturn(NOW);
@@ -76,8 +79,7 @@ class JwtTokenProviderTest {
         when(this.tokenConfig.getIssuer())
                 .thenReturn("auth-issuer");
         when(this.jwtKeyProvider.getSigningAlgorithm())
-                .thenReturn(Algorithm.RSA256((RSAPublicKey) keyPair.getPublic(),
-                        (RSAPrivateKey) keyPair.getPrivate()));
+                .thenReturn(algorithm);
         when(this.jwtKeyProvider.getActiveKeyId())
                 .thenReturn(keyId);
 
@@ -96,6 +98,110 @@ class JwtTokenProviderTest {
                 .getSigningAlgorithm();
         verify(this.jwtKeyProvider)
                 .getActiveKeyId();
+    }
+
+    @Test
+    void givenAccessToken_whenVerifyWithWrongIssuer_thenThrowException() {
+        //given
+        final AuthUser given = this.getAuthUser(7L, UUID.randomUUID());
+        final KeyPair keyPair = this.getRsaKeyPair();
+        final Algorithm algorithm = this.getRsaAlgorithm(keyPair);
+        final String keyId = "key-1";
+
+        when(this.clock.instant())
+                .thenReturn(NOW);
+        when(this.tokenConfig.getAccessTokenTtlSeconds())
+                .thenReturn(3600L);
+        when(this.tokenConfig.getIssuer())
+                .thenReturn("auth-issuer");
+        when(this.jwtKeyProvider.getSigningAlgorithm())
+                .thenReturn(algorithm);
+        when(this.jwtKeyProvider.getActiveKeyId())
+                .thenReturn(keyId);
+
+        final AccessToken accessToken = this.jwtTokenProvider.generateAccessToken(given);
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> JWT.require(algorithm)
+                .withIssuer("invalid-issuer")
+                .build()
+                .verify(accessToken.getToken()));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(JWTVerificationException.class);
+        verify(this.clock)
+                .instant();
+        verify(this.tokenConfig)
+                .getAccessTokenTtlSeconds();
+        verify(this.tokenConfig)
+                .getIssuer();
+        verify(this.jwtKeyProvider)
+                .getSigningAlgorithm();
+        verify(this.jwtKeyProvider)
+                .getActiveKeyId();
+    }
+
+    @Test
+    void givenAccessToken_whenVerifyWithWrongAudience_thenThrowException() {
+        //given
+        final AuthUser given = this.getAuthUser(7L, UUID.randomUUID());
+        final KeyPair keyPair = this.getRsaKeyPair();
+        final Algorithm algorithm = this.getRsaAlgorithm(keyPair);
+        final String keyId = "key-1";
+
+        when(this.clock.instant())
+                .thenReturn(NOW);
+        when(this.tokenConfig.getAccessTokenTtlSeconds())
+                .thenReturn(3600L);
+        when(this.tokenConfig.getIssuer())
+                .thenReturn("auth-issuer");
+        when(this.jwtKeyProvider.getSigningAlgorithm())
+                .thenReturn(algorithm);
+        when(this.jwtKeyProvider.getActiveKeyId())
+                .thenReturn(keyId);
+
+        final AccessToken accessToken = this.jwtTokenProvider.generateAccessToken(given);
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> JWT.require(algorithm)
+                .withIssuer("auth-issuer")
+                .withAudience("invalid-audience")
+                .build()
+                .verify(accessToken.getToken()));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(JWTVerificationException.class);
+        verify(this.clock)
+                .instant();
+        verify(this.tokenConfig)
+                .getAccessTokenTtlSeconds();
+        verify(this.tokenConfig)
+                .getIssuer();
+        verify(this.jwtKeyProvider)
+                .getSigningAlgorithm();
+        verify(this.jwtKeyProvider)
+                .getActiveKeyId();
+    }
+
+    @Test
+    void givenNoneAlgorithmToken_whenVerifyWithRsaAlgorithm_thenThrowException() {
+        //given
+        final AuthUser given = this.getAuthUser(7L, UUID.randomUUID());
+        final KeyPair keyPair = this.getRsaKeyPair();
+        final Algorithm algorithm = this.getRsaAlgorithm(keyPair);
+        final String token = this.getNoneAlgorithmToken(given, NOW, NOW.plusSeconds(3600L), "auth-issuer");
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> JWT.require(algorithm)
+                .withIssuer("auth-issuer")
+                .build()
+                .verify(token));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(JWTVerificationException.class);
     }
 
     @Test
@@ -127,8 +233,7 @@ class JwtTokenProviderTest {
         final String issuer,
         final String keyId,
         final KeyPair keyPair) {
-        final Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) keyPair.getPublic(),
-                (RSAPrivateKey) keyPair.getPrivate());
+        final Algorithm algorithm = this.getRsaAlgorithm(keyPair);
         final String token = JWT.create()
                 .withIssuer(issuer)
                 .withSubject(user.getId().toString())
@@ -168,5 +273,28 @@ class JwtTokenProviderTest {
         } catch (final Exception ex) {
             throw new IllegalStateException("Failed to generate RSA key pair for test.", ex);
         }
+    }
+
+    private Algorithm getRsaAlgorithm(final KeyPair keyPair) {
+        return Algorithm.RSA256((RSAPublicKey) keyPair.getPublic(),
+                (RSAPrivateKey) keyPair.getPrivate());
+    }
+
+    private String getNoneAlgorithmToken(final AuthUser user,
+                                         final Instant issuedAt,
+                                         final Instant expiresAt,
+                                         final String issuer) {
+        return JWT.create()
+                .withIssuer(issuer)
+                .withSubject(user.getId().toString())
+                .withClaim("email", user.getEmail())
+                .withClaim("role", user.getRole().name())
+                .withClaim("siteId", Optional.ofNullable(user.getSiteId())
+                        .map(Object::toString)
+                        .orElse(null))
+                .withClaim("type", "access")
+                .withIssuedAt(Date.from(issuedAt))
+                .withExpiresAt(Date.from(expiresAt))
+                .sign(Algorithm.none());
     }
 }

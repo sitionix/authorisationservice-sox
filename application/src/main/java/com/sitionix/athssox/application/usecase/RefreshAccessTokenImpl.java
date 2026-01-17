@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.config.SessionConfig;
+import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
@@ -15,6 +16,7 @@ import com.sitionix.athssox.domain.model.RefreshTokenRecord;
 import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.model.SessionStatus;
 import com.sitionix.athssox.domain.model.TokenType;
+import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.repository.DeviceSessionRepository;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
@@ -55,10 +57,13 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         this.detectSessionAnomaly(session, refreshAccessTokenRequest);
 
         final AuthUser user = tokenRecord.getUser();
+        this.ensureUserActive(user);
+        this.revokeActiveTokenOrThrow(tokenRecord, session, refreshAccessTokenRequest, now);
+
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken newRefreshToken = this.tokenProvider.generateRefreshToken(user);
 
-        this.rotateRefreshToken(tokenRecord, user, session, newRefreshToken, now);
+        this.saveNewRefreshToken(user, session, newRefreshToken, now);
         this.updateSession(session, refreshAccessTokenRequest, now);
 
         final long expiresIn = Duration.between(now, accessToken.getExpiresAt()).getSeconds();
@@ -117,6 +122,12 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         }
     }
 
+    private void ensureUserActive(final AuthUser user) {
+        if (user == null || user.getStatus() != UserStatus.ACTIVE) {
+            throw new InactiveUserException("Account is not yet activated");
+        }
+    }
+
     private void detectSessionAnomaly(final DeviceSession session,
                                       final RefreshAccessTokenRequest request) {
         if (isUserAgentChanged(session, request.getUserAgent())) {
@@ -124,11 +135,10 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         }
     }
 
-    private void rotateRefreshToken(final RefreshTokenRecord tokenRecord,
-                                    final AuthUser user,
-                                    final DeviceSession session,
-                                    final RefreshToken newRefreshToken,
-                                    final Instant now) {
+    private void saveNewRefreshToken(final AuthUser user,
+                                     final DeviceSession session,
+                                     final RefreshToken newRefreshToken,
+                                     final Instant now) {
         this.refreshTokenRepository.save(RefreshTokenRecord.builder()
                 .tokenHash(this.tokenHasher.hash(newRefreshToken.getToken()))
                 .user(user)
@@ -138,13 +148,17 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
+    }
 
-        tokenRecord.setStatus(RefreshTokenStatus.REVOKED);
-        tokenRecord.setUsedAt(now);
-        tokenRecord.setRevokedAt(now);
-        tokenRecord.setRevokedReason("ROTATED");
-        tokenRecord.setUpdatedAt(now);
-        this.refreshTokenRepository.save(tokenRecord);
+    private void revokeActiveTokenOrThrow(final RefreshTokenRecord tokenRecord,
+                                          final DeviceSession session,
+                                          final RefreshAccessTokenRequest request,
+                                          final Instant now) {
+        final boolean revoked = this.refreshTokenRepository.revokeIfActive(tokenRecord.getId(), now, "ROTATED");
+        if (!revoked) {
+            this.markSessionSuspicious(session, request, now);
+            throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
+        }
     }
 
     private void updateSession(final DeviceSession session,
