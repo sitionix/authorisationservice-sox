@@ -8,7 +8,6 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.forgeit.core.test.IntegrationTest;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,13 +61,7 @@ class JwksControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.jwks())
                 .expectStatus(HttpStatus.OK)
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys", Matchers.hasSize(Matchers.greaterThan(0))))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys[*].kty", Matchers.everyItem(Matchers.is("RSA"))))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys[*].alg", Matchers.everyItem(Matchers.is("RS256"))))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys[*].use", Matchers.everyItem(Matchers.is("sig"))))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys[*].kid", Matchers.everyItem(Matchers.not(Matchers.isEmptyOrNullString()))))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys[*].n", Matchers.everyItem(Matchers.not(Matchers.isEmptyOrNullString()))))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.keys[*].e", Matchers.everyItem(Matchers.not(Matchers.isEmptyOrNullString()))))
+                .expectResponse("jwksResponse.json")
                 .assertAndCreate();
 
         //then
@@ -155,10 +148,45 @@ class JwksControllerIT {
     @DisplayName("Should return multiple keys for rotation and verify legacy token")
     void givenLegacyKeyConfigured_whenGetJwks_thenContainsLegacyKeyAndVerifiesToken() throws Exception {
         //given
-        final RSAPrivateKey legacyPrivateKey = this.loadPrivateKey("forge-it/jwt/jwks-legacy-private.pem");
-        final RSAPublicKey legacyPublicKey = this.loadPublicKey("forge-it/jwt/jwks-legacy-public.pem");
+        final String privateKeyPem;
+        try (InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResourceAsStream("forge-it/jwt/jwks-legacy-private.pem"))) {
+            privateKeyPem = new String(inputStream.readAllBytes(), StandardCharsets.US_ASCII);
+        }
+
+        final String publicKeyPem;
+        try (InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResourceAsStream("forge-it/jwt/jwks-legacy-public.pem"))) {
+            publicKeyPem = new String(inputStream.readAllBytes(), StandardCharsets.US_ASCII);
+        }
+
+        final String normalizedPrivate = privateKeyPem
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        final byte[] privateKeyBytes = Base64.getDecoder().decode(normalizedPrivate);
+        final PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        final RSAPrivateKey legacyPrivateKey = (RSAPrivateKey) KeyFactory.getInstance("RSA")
+                .generatePrivate(privateKeySpec);
+
+        final String normalizedPublic = publicKeyPem
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+        final byte[] publicKeyBytes = Base64.getDecoder().decode(normalizedPublic);
+        final X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+        final RSAPublicKey legacyPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                .generatePublic(publicKeySpec);
         final Algorithm legacyAlgorithm = Algorithm.RSA256(legacyPublicKey, legacyPrivateKey);
-        final String legacyToken = this.getLegacyAccessToken(legacyAlgorithm);
+        final Instant now = Instant.now();
+        final String legacyToken = JWT.create()
+                .withIssuer("athssox")
+                .withSubject("legacy-user")
+                .withClaim("type", "access")
+                .withIssuedAt(Date.from(now))
+                .withExpiresAt(Date.from(now.plusSeconds(3600L)))
+                .withKeyId("it-key-legacy")
+                .sign(legacyAlgorithm);
         final List<String> jwksBodies = new ArrayList<>();
 
         //when
@@ -179,7 +207,10 @@ class JwksControllerIT {
         assertThat(modulus).hasSize(1);
         assertThat(exponent).hasSize(1);
 
-        final RSAPublicKey jwksKey = this.toPublicKey(modulus.get(0), exponent.get(0));
+        final BigInteger modulusValue = new BigInteger(1, Base64.getUrlDecoder().decode(modulus.get(0)));
+        final BigInteger exponentValue = new BigInteger(1, Base64.getUrlDecoder().decode(exponent.get(0)));
+        final RSAPublicKeySpec jwksKeySpec = new RSAPublicKeySpec(modulusValue, exponentValue);
+        final RSAPublicKey jwksKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(jwksKeySpec);
         final Algorithm verifyAlgorithm = Algorithm.RSA256(jwksKey, null);
         final DecodedJWT verified = JWT.require(verifyAlgorithm)
                 .withIssuer("athssox")
@@ -187,56 +218,5 @@ class JwksControllerIT {
                 .verify(legacyToken);
 
         assertThat(verified.getKeyId()).isEqualTo("it-key-legacy");
-    }
-
-    private RSAPrivateKey loadPrivateKey(final String resourcePath) throws Exception {
-        final String pem = this.readResource(resourcePath);
-        final byte[] decoded = this.decodePem(pem);
-        final PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
-        return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(keySpec);
-    }
-
-    private RSAPublicKey loadPublicKey(final String resourcePath) throws Exception {
-        final String pem = this.readResource(resourcePath);
-        final byte[] decoded = this.decodePem(pem);
-        final X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decoded);
-        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
-    }
-
-    private RSAPublicKey toPublicKey(final String modulusBase64Url, final String exponentBase64Url) throws Exception {
-        final BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(modulusBase64Url));
-        final BigInteger exponent = new BigInteger(1, Base64.getUrlDecoder().decode(exponentBase64Url));
-        final RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, exponent);
-        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
-    }
-
-    private String getLegacyAccessToken(final Algorithm algorithm) {
-        final Instant now = Instant.now();
-        return JWT.create()
-                .withIssuer("athssox")
-                .withSubject("legacy-user")
-                .withClaim("type", "access")
-                .withIssuedAt(Date.from(now))
-                .withExpiresAt(Date.from(now.plusSeconds(3600L)))
-                .withKeyId("it-key-legacy")
-                .sign(algorithm);
-    }
-
-    private String readResource(final String resourcePath) throws Exception {
-        try (InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResourceAsStream(resourcePath))) {
-            final byte[] bytes = inputStream.readAllBytes();
-            return new String(bytes, StandardCharsets.US_ASCII);
-        }
-    }
-
-    private byte[] decodePem(final String pem) {
-        final String normalized = pem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s", "");
-        return Base64.getDecoder().decode(normalized);
     }
 }
