@@ -107,6 +107,8 @@ class AuthControllerTest {
                 .thenReturn("127.0.0.1");
         when(given.getEmail())
                 .thenReturn("user@sitionix.com");
+        when(given.getSessionSourceId())
+                .thenReturn("device-123");
         when(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT))
                 .thenReturn("Mozilla/5.0");
         when(this.loginUser.execute(loginRequest))
@@ -122,7 +124,7 @@ class AuthControllerTest {
         verify(this.clientIpResolver)
                 .resolve(this.httpServletRequest);
         verify(this.rateLimitGuard)
-                .checkLogin("127.0.0.1", "user@sitionix.com");
+                .checkLogin("127.0.0.1", "user@sitionix.com", "device-123");
         verify(this.authApiMapper)
                 .asLoginRequest(given);
         verify(this.httpServletRequest)

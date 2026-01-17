@@ -51,6 +51,7 @@ class AuthRateLimitIT {
     private MutableClock mutableClock;
 
     private final Set<String> usedEmails = new HashSet<>();
+    private final Set<String> usedSessions = new HashSet<>();
     private String clientIp;
 
     @AfterEach
@@ -64,6 +65,11 @@ class AuthRateLimitIT {
                 this.rateLimiterService.reset("login:email:" + normalized);
             }
         }
+        for (final String sessionId : this.usedSessions) {
+            if (this.clientIp != null) {
+                this.rateLimiterService.reset("login:ip-session:" + this.clientIp + ":" + sessionId);
+            }
+        }
     }
 
     @Test
@@ -71,14 +77,18 @@ class AuthRateLimitIT {
     void givenTooManyLoginAttemptsByEmail_whenLogin_thenTooManyRequests() {
         //given
         this.setupActiveUser();
-        this.configureLoginLimits(10L, 2L, Duration.ofSeconds(5));
+        this.configureLoginLimits(100L, 5L, 100L, Duration.ofSeconds(5));
         final String email = "user@sitionix.com";
+        final String sessionSourceId = "device-123";
         final AtomicReference<String> retryAfter = new AtomicReference<>();
 
         //when
-        this.loginUnauthorized(email);
-        this.loginUnauthorized(email);
-        this.loginTooMany(email, retryAfter);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginTooMany(email, sessionSourceId, retryAfter);
 
         //then
         assertThat(retryAfter.get()).isNotBlank();
@@ -90,17 +100,18 @@ class AuthRateLimitIT {
     void givenExceededRateLimit_whenWindowElapses_thenLoginReturnsUnauthorized() {
         //given
         this.setupActiveUser();
-        this.configureLoginLimits(10L, 2L, Duration.ofSeconds(2));
+        this.configureLoginLimits(100L, 2L, 100L, Duration.ofSeconds(2));
         final String email = "user@sitionix.com";
+        final String sessionSourceId = "device-123";
 
         //when
-        this.loginUnauthorized(email);
-        this.loginUnauthorized(email);
-        this.loginTooMany(email, new AtomicReference<>());
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginTooMany(email, sessionSourceId, new AtomicReference<>());
         this.mutableClock.advance(Duration.ofSeconds(3));
 
         //then
-        this.loginUnauthorized(email);
+        this.loginUnauthorized(email, sessionSourceId);
     }
 
     @Test
@@ -108,13 +119,33 @@ class AuthRateLimitIT {
     void givenDifferentEmailsSameIp_whenLoginTooManyTimes_thenTooManyRequests() {
         //given
         this.setupActiveUser();
-        this.configureLoginLimits(2L, 100L, Duration.ofSeconds(5));
+        this.configureLoginLimits(2L, 100L, 100L, Duration.ofSeconds(5));
+        final String sessionSourceId = "device-123";
         final AtomicReference<String> retryAfter = new AtomicReference<>();
 
         //when
-        this.loginUnauthorized("user-1@sitionix.com");
-        this.loginUnauthorized("user-2@sitionix.com");
-        this.loginTooMany("user-3@sitionix.com", retryAfter);
+        this.loginUnauthorized("user-1@sitionix.com", sessionSourceId);
+        this.loginUnauthorized("user-2@sitionix.com", sessionSourceId);
+        this.loginTooMany("user-3@sitionix.com", sessionSourceId, retryAfter);
+
+        //then
+        assertThat(retryAfter.get()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("Should enforce IP and session limit together")
+    void givenSameIpAndSession_whenLoginTooManyTimes_thenTooManyRequests() {
+        //given
+        this.setupActiveUser();
+        this.configureLoginLimits(100L, 100L, 2L, Duration.ofSeconds(5));
+        final String email = "user@sitionix.com";
+        final String sessionSourceId = "device-123";
+        final AtomicReference<String> retryAfter = new AtomicReference<>();
+
+        //when
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginUnauthorized(email, sessionSourceId);
+        this.loginTooMany(email, sessionSourceId, retryAfter);
 
         //then
         assertThat(retryAfter.get()).isNotBlank();
@@ -129,7 +160,10 @@ class AuthRateLimitIT {
                 .build();
     }
 
-    private void configureLoginLimits(final long ipLimit, final long emailLimit, final Duration window) {
+    private void configureLoginLimits(final long ipLimit,
+                                      final long emailLimit,
+                                      final long ipSessionLimit,
+                                      final Duration window) {
         this.rateLimitProperties.setEnabled(true);
         final RateLimitProperties.EndpointLimits login = this.rateLimitProperties.getLogin();
 
@@ -140,15 +174,21 @@ class AuthRateLimitIT {
         login.getEmail().setEnabled(true);
         login.getEmail().setLimit(emailLimit);
         login.getEmail().setWindow(window);
+
+        login.getIpSession().setEnabled(true);
+        login.getIpSession().setLimit(ipSessionLimit);
+        login.getIpSession().setWindow(window);
     }
 
-    private void loginUnauthorized(final String email) {
+    private void loginUnauthorized(final String email, final String sessionSourceId) {
         this.usedEmails.add(email);
+        this.usedSessions.add(sessionSourceId);
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json", request -> {
                     request.setEmail(email);
                     request.setPassword("wrong-password");
+                    request.setSessionSourceId(sessionSourceId);
                 })
                 .expectStatus(HttpStatus.UNAUTHORIZED)
                 .andExpectPath(result -> {
@@ -159,13 +199,15 @@ class AuthRateLimitIT {
                 .assertAndCreate();
     }
 
-    private void loginTooMany(final String email, final AtomicReference<String> retryAfter) {
+    private void loginTooMany(final String email, final String sessionSourceId, final AtomicReference<String> retryAfter) {
         this.usedEmails.add(email);
+        this.usedSessions.add(sessionSourceId);
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json", request -> {
                     request.setEmail(email);
                     request.setPassword("wrong-password");
+                    request.setSessionSourceId(sessionSourceId);
                 })
                 .expectStatus(HttpStatus.TOO_MANY_REQUESTS)
                 .andExpectPath(MockMvcResultMatchers.header().exists(HttpHeaders.RETRY_AFTER))

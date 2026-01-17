@@ -9,17 +9,17 @@ public class ClientIpResolver {
 
     private static final String FORWARDED_FOR_HEADER = "X-Forwarded-For";
 
-    private final RateLimitProperties rateLimitProperties;
+    private final SecurityProperties securityProperties;
 
-    public ClientIpResolver(final RateLimitProperties rateLimitProperties) {
-        this.rateLimitProperties = rateLimitProperties;
+    public ClientIpResolver(final SecurityProperties securityProperties) {
+        this.securityProperties = securityProperties;
     }
 
     public String resolve(final HttpServletRequest request) {
         if (request == null) {
             return "unknown";
         }
-        if (this.rateLimitProperties.isTrustedProxy()) {
+        if (this.securityProperties.isTrustedProxy()) {
             final String forwardedFor = request.getHeader(FORWARDED_FOR_HEADER);
             if (StringUtils.hasText(forwardedFor)) {
                 final String[] parts = forwardedFor.split(",");

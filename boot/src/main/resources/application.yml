@@ -14,6 +14,8 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl: update
+security:
+  trusted-proxy: false
 auth:
   tokens:
     issuer: athssox
@@ -37,33 +39,44 @@ auth:
     last-used-throttle-minutes: 5
   rate-limit:
     enabled: true
-    trusted-proxy: false
     login:
       ip:
-        limit: 10
+        limit: 20
         window: 5m
       email:
         limit: 5
+        window: 5m
+      ip-session:
+        limit: 10
         window: 5m
     register:
       ip:
-        limit: 5
+        limit: 10
         window: 15m
       email:
+        limit: 3
+        window: 15m
+      ip-email:
         limit: 3
         window: 15m
     resend:
       ip:
-        limit: 5
+        limit: 10
         window: 15m
       email:
         limit: 3
         window: 15m
+      ip-email:
+        limit: 3
+        window: 15m
     refresh:
       ip:
-        limit: 30
+        limit: 60
         window: 5m
       session:
+        limit: 30
+        window: 5m
+      ip-session:
         limit: 30
         window: 5m
 bff:

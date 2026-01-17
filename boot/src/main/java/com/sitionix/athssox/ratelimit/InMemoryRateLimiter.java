@@ -2,6 +2,7 @@ package com.sitionix.athssox.ratelimit;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import com.sitionix.athssox.domain.service.RateLimitResult;
 import com.sitionix.athssox.domain.service.RateLimiterService;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ public class InMemoryRateLimiter implements RateLimiterService {
         this.clock = clock;
         this.cache = Caffeine.newBuilder()
                 .maximumSize(10_000)
+                .expireAfter(new RateLimitExpiry(this.clock))
                 .build();
     }
 
@@ -64,5 +66,44 @@ public class InMemoryRateLimiter implements RateLimiterService {
     }
 
     private record RateLimitBucket(long count, Instant expiresAt) {
+    }
+
+    private static final class RateLimitExpiry implements Expiry<String, RateLimitBucket> {
+
+        private final Clock clock;
+
+        private RateLimitExpiry(final Clock clock) {
+            this.clock = clock;
+        }
+
+        @Override
+        public long expireAfterCreate(final String key, final RateLimitBucket value, final long currentTime) {
+            return this.toNanos(value);
+        }
+
+        @Override
+        public long expireAfterUpdate(final String key,
+                                      final RateLimitBucket value,
+                                      final long currentTime,
+                                      final long currentDuration) {
+            return this.toNanos(value);
+        }
+
+        @Override
+        public long expireAfterRead(final String key,
+                                    final RateLimitBucket value,
+                                    final long currentTime,
+                                    final long currentDuration) {
+            return currentDuration;
+        }
+
+        private long toNanos(final RateLimitBucket value) {
+            final Instant now = this.clock.instant();
+            final Duration remaining = Duration.between(now, value.expiresAt());
+            if (remaining.isNegative() || remaining.isZero()) {
+                return 0L;
+            }
+            return remaining.toNanos();
+        }
     }
 }

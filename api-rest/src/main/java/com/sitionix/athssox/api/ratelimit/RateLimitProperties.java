@@ -14,7 +14,6 @@ import java.time.Duration;
 public class RateLimitProperties {
 
     private boolean enabled = true;
-    private boolean trustedProxy = false;
 
     private EndpointLimits login = new EndpointLimits();
     private EndpointLimits register = new EndpointLimits();
@@ -27,6 +26,8 @@ public class RateLimitProperties {
         private Rule ip = new Rule();
         private Rule email = new Rule();
         private Rule session = new Rule();
+        private Rule ipSession = new Rule();
+        private Rule ipEmail = new Rule();
     }
 
     @Getter

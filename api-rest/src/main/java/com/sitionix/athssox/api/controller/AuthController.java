@@ -56,7 +56,7 @@ public class AuthController implements AuthApi {
         log.info("Received login request for email: {}", loginRequestDTO.getEmail());
 
         final String clientIp = this.clientIpResolver.resolve(this.httpServletRequest);
-        this.rateLimitGuard.checkLogin(clientIp, loginRequestDTO.getEmail());
+        this.rateLimitGuard.checkLogin(clientIp, loginRequestDTO.getEmail(), loginRequestDTO.getSessionSourceId());
 
         final LoginRequest loginRequest = this.authApiMapper.asLoginRequest(loginRequestDTO);
         loginRequest.setUserAgent(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT));
