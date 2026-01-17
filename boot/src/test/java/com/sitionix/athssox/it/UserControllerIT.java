@@ -6,7 +6,6 @@ import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
-import com.sitionix.forgeit.domain.contract.graph.DbEntityHandle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,16 +81,14 @@ class UserControllerIT {
                 .ignoreFields("createdAt", "id", "passwordHash", "updatedAt")
                 .containsWithJsonsStrict("registeredUserEntity.json");
 
-        final List<DbEntityHandle<UserEntity>> userHandles = this.testManager.postgresql()
-                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
-                .hasSize(1)
-                .withFetchedRelations()
-                .actualHandles();
-        final UserEntity persistedUser = userHandles.get(0).get();
+        final List<UserEntity> persistedUsers =
+                this.testManager.postgresql().get(DatabaseContract.USER_ENTITY_DB_CONTRACT);
+        assertThat(persistedUsers).hasSize(1);
+        final UserEntity persistedUser = persistedUsers.get(0);
 
         assertThat(persistedUser.getCreatedAt()).isNotNull();
         assertThat(persistedUser.getPasswordHash()).isNotBlank();
-        assertThat(persistedUser.getPasswordHash()).isNotEqualTo("StrongPassword123");
+        assertThat(persistedUser.getPasswordHash()).isNotEqualTo(this.getDefaultPassword());
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
@@ -406,5 +403,9 @@ class UserControllerIT {
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
+    }
+
+    private String getDefaultPassword() {
+        return "StrongPassword123";
     }
 }
