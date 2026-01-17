@@ -25,13 +25,14 @@ public class JwtTokenProvider implements TokenProvider {
 
     private final TokenConfig tokenConfig;
     private final Clock clock;
+    private final JwtKeyProvider jwtKeyProvider;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
     public AccessToken generateAccessToken(final AuthUser user) {
         final Instant now = this.clock.instant();
         final Instant expiresAt = now.plusSeconds(this.tokenConfig.getAccessTokenTtlSeconds());
-        final Algorithm algorithm = Algorithm.HMAC256(this.tokenConfig.getJwtSecret());
+        final Algorithm algorithm = this.jwtKeyProvider.getSigningAlgorithm();
 
         final String token = JWT.create()
                 .withIssuer(this.tokenConfig.getIssuer())
@@ -44,6 +45,7 @@ public class JwtTokenProvider implements TokenProvider {
                 .withClaim("type", "access")
                 .withIssuedAt(Date.from(now))
                 .withExpiresAt(Date.from(expiresAt))
+                .withKeyId(this.jwtKeyProvider.getActiveKeyId())
                 .sign(algorithm);
 
         return AccessToken.builder()

@@ -17,10 +17,22 @@ spring:
 auth:
   tokens:
     issuer: athssox
-    jwt-secret: change-me
     access-token-ttl-seconds: 3600
     refresh-token-ttl-seconds: 2592000
     email-verification-token-ttl-seconds: 86400
+    jwt:
+      alg: RS256
+      key-id: ${AUTH_JWT_KEY_ID:local-dev}
+      key-store:
+        path: ${AUTH_JWT_KEY_STORE_PATH:}
+        password: ${AUTH_JWT_KEY_STORE_PASSWORD:}
+        alias: ${AUTH_JWT_KEY_STORE_ALIAS:}
+        key-password: ${AUTH_JWT_KEY_STORE_KEY_PASSWORD:}
+      pem:
+        private-key-path: ${AUTH_JWT_PRIVATE_KEY_PATH:./keys/jwt-private.pem}
+        public-key-path: ${AUTH_JWT_PUBLIC_KEY_PATH:./keys/jwt-public.pem}
+        private-key: ${AUTH_JWT_PRIVATE_KEY:}
+        public-key: ${AUTH_JWT_PUBLIC_KEY:}
   session:
     last-used-throttle-minutes: 5
 bff:
