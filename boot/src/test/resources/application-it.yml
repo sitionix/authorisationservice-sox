@@ -49,3 +49,6 @@ auth:
           z31RCF2v5vLV4A4icbfi9KthbonfXBS13oPds+E3XtFXxVhGV4XR/cYS7Ty0mFEL
           mwIDAQAB
           -----END PUBLIC KEY-----
+      verification-keys:
+        - key-id: it-key-legacy
+          public-key-path: classpath:forge-it/jwt/jwks-legacy-public.pem
