@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -129,8 +130,9 @@ class JwtKeyProviderTest {
 
         when(this.tokenConfig.getJwt())
                 .thenReturn(jwtConfig);
-        when(this.configValidator.validate(jwtConfig))
-                .thenThrow(new IllegalStateException("invalid-config"));
+        doThrow(new IllegalStateException("invalid-config"))
+                .when(this.configValidator)
+                .validate(jwtConfig);
 
         //when
         final Throwable actualThrowable = catchThrowable(() -> this.jwtKeyProvider.init());

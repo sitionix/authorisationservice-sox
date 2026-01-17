@@ -300,7 +300,8 @@ class JwtKeyMaterialLoaderTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("JWT key alias not found in key store.");
+                .hasMessage("Failed to load JWT keys from key store.")
+                .hasRootCauseMessage("JWT key alias not found in key store.");
         verify(this.resourceLoader)
                 .getResource(keyStorePath);
         verify(this.resource)
