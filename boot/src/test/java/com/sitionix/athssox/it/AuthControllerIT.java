@@ -6,10 +6,22 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.forgeit.core.test.IntegrationTest;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 @IntegrationTest
@@ -231,6 +243,56 @@ class AuthControllerIT {
     }
 
     @Test
+    @DisplayName("Should reject login when user is pending email verification")
+    void givenPendingUser_whenLogin_thenForbiddenAndNoRefreshTokenSaved() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.loginForbidden())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse_forbidden.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should reject login when user is banned")
+    void givenBannedUser_whenLogin_thenForbiddenAndNoRefreshTokenSaved() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(4L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.loginForbidden())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse_forbidden.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(0);
+    }
+
+    @Test
     @DisplayName("Should reject login when user is not found")
     void givenUnknownUser_whenLogin_thenUnauthorized() {
         //when
@@ -245,6 +307,48 @@ class AuthControllerIT {
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
                 .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should prefer site-scoped user when both site and global users share email")
+    void givenSiteAndGlobalUsersSameEmail_whenLoginWithSiteId_thenUseSiteUser() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActiveGlobalSameEmail.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "createdAt", "lastUsedAt", "initialUserAgent", "lastUserAgent")
+                .containsAllWithJsons("deviceSessionActiveExpected.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
+                .containsAllWithJsons("refreshTokenEntityExpected.json");
     }
 
     @Test
@@ -307,6 +411,142 @@ class AuthControllerIT {
                 })
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Should reactivate suspicious session on login")
+    void givenSuspiciousSession_whenLogin_thenSessionBecomesActiveAndTokenSaved() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionSuspicious.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "createdAt", "lastUsedAt", "initialUserAgent", "lastUserAgent")
+                .containsAllWithJsons("deviceSessionActiveExpected.json");
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
+                .containsAllWithJsons("refreshTokenEntityExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should avoid duplicate session when concurrent logins use same sessionSourceId")
+    void givenConcurrentLoginsWithSameSessionSourceId_whenLogin_thenSingleSessionPersisted() throws InterruptedException {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        final int attempts = 2;
+        final ExecutorService executor = Executors.newFixedThreadPool(attempts);
+        final CountDownLatch ready = new CountDownLatch(attempts);
+        final CountDownLatch start = new CountDownLatch(1);
+        final List<Boolean> successes = Collections.synchronizedList(new ArrayList<>());
+        final List<Throwable> failures = Collections.synchronizedList(new ArrayList<>());
+
+        final Runnable loginTask = () -> {
+            ready.countDown();
+            try {
+                if (!start.await(5, TimeUnit.SECONDS)) {
+                    failures.add(new IllegalStateException("Concurrent login start timed out"));
+                    return;
+                }
+            } catch (final InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                failures.add(exception);
+                return;
+            }
+            try {
+                this.testManager.mockMvc()
+                        .ping(ControllerEndpoint.login())
+                        .withRequest("loginRequest.json")
+                        .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                        .expectStatus(HttpStatus.OK)
+                        .assertAndCreate();
+                successes.add(Boolean.TRUE);
+            } catch (final Throwable exception) {
+                failures.add(exception);
+            }
+        };
+
+        //when
+        final boolean readyToStart;
+        final boolean terminated;
+        try {
+            for (int i = 0; i < attempts; i++) {
+                executor.submit(loginTask);
+            }
+            readyToStart = ready.await(5, TimeUnit.SECONDS);
+            start.countDown();
+            executor.shutdown();
+            terminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        //then
+        assertThat(readyToStart).isTrue();
+        assertThat(terminated).isTrue();
+        assertThat(successes).isNotEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT)
+                .hasSize(1);
+
+        final List<?> refreshTokens =
+                this.testManager.postgresql().get(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT);
+        assertThat(refreshTokens).hasSizeBetween(1, 2);
+        assertThat(failures).hasSizeLessThanOrEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should return only token fields and no cookies on login")
+    void givenValidLogin_whenLogin_thenResponseContainsOnlyTokensAndNoCookies() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.*", Matchers.hasSize(4)))
+                .andExpectPath(MockMvcResultMatchers.header().doesNotExist("Set-Cookie"))
                 .assertAndCreate();
 
         //then
