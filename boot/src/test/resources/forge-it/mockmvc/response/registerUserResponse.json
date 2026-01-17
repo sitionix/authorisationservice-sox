@@ -1,5 +1,5 @@
 {
   "userId": 1,
-  "message": "Registration successful. Please verify your email.",
+  "message": "Registration accepted. Please check your email for verification.",
   "status": "PENDING_EMAIL_VERIFY"
 }

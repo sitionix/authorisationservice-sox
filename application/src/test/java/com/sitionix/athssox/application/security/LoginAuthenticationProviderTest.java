@@ -1,6 +1,5 @@
 package com.sitionix.athssox.application.security;
 
-import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.UserRole;
@@ -107,7 +106,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenInactiveUser_whenAuthenticate_thenThrowInactiveUserException() {
+    void givenInactiveUser_whenAuthenticate_thenThrowBadCredentialsException() {
         //given
         final String email = "user@sitionix.com";
         final String password = "StrongPassword123";
@@ -122,8 +121,8 @@ class LoginAuthenticationProviderTest {
 
         //then
         assertThat(actualThrowable)
-                .isInstanceOf(InactiveUserException.class)
-                .hasMessage("Account is not yet activated");
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid credentials");
         verify(this.authUserRepository)
                 .findGlobalByEmail(email);
     }
@@ -147,7 +146,7 @@ class LoginAuthenticationProviderTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(BadCredentialsException.class)
-                .hasMessage("Invalid email or password");
+                .hasMessage("Invalid credentials");
         verify(this.authUserRepository)
                 .findGlobalByEmail(email);
         verify(this.passwordEncoder)

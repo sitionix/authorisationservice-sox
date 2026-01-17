@@ -99,7 +99,7 @@ class RegisterUserImplTest {
                 null);
         final ResponseRegisterUser expected = this.getResponseRegisterUser(10L,
                 UserStatus.PENDING_EMAIL_VERIFY,
-                "Registration successful. Please verify your email.");
+                "Registration accepted. Please check your email for verification.");
         final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
@@ -159,7 +159,7 @@ class RegisterUserImplTest {
                 null);
         final ResponseRegisterUser expected = this.getResponseRegisterUser(14L,
                 UserStatus.PENDING_EMAIL_VERIFY,
-                "Account already exists and requires email verification. Please verify your email.");
+                "Registration accepted. Please check your email for verification.");
         final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
@@ -206,7 +206,7 @@ class RegisterUserImplTest {
                 null);
         final ResponseRegisterUser expected = this.getResponseRegisterUser(15L,
                 UserStatus.PENDING_EMAIL_VERIFY,
-                "Account already exists and requires email verification. Please verify your email.");
+                "Registration accepted. Please check your email for verification.");
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
                 .thenReturn(Optional.of(existingUser));
@@ -247,7 +247,7 @@ class RegisterUserImplTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(EmailAlreadyRegisteredException.class)
-                .hasMessage("Email already registered for this role and context");
+                .hasMessage("Registration already processed. Please check your email.");
 
         verify(this.passwordPolicyValidator)
                 .validate("StrongPassword123");
@@ -279,7 +279,7 @@ class RegisterUserImplTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(EmailAlreadyRegisteredException.class)
-                .hasMessage("Email already registered for this role and context");
+                .hasMessage("Registration already processed. Please check your email.");
 
         verify(this.passwordPolicyValidator)
                 .validate("StrongPassword123");
@@ -362,7 +362,7 @@ class RegisterUserImplTest {
                 null);
         final ResponseRegisterUser expected = this.getResponseRegisterUser(11L,
                 UserStatus.PENDING_EMAIL_VERIFY,
-                "Registration successful. Please verify your email.");
+                "Registration accepted. Please check your email for verification.");
         final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
 
         when(this.userRepository.findGlobalByEmail(DEFAULT_EMAIL))

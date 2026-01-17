@@ -97,6 +97,58 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
+    void givenJsonWithPassword_whenMask_thenHidePassword() {
+        //given
+        final String given = this.getPayloadWithPassword();
+        final String expected = this.getPayloadWithMaskedPassword();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenJsonWithRefreshToken_whenMask_thenHideRefreshToken() {
+        //given
+        final String given = this.getPayloadWithRefreshToken();
+        final String expected = this.getPayloadWithMaskedRefreshToken();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenMessageWithPasswordKeyValue_whenMask_thenHidePassword() {
+        //given
+        final String given = this.getMessageWithPasswordKeyValue();
+        final String expected = this.getMessageWithMaskedPasswordKeyValue();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void givenMessageWithRefreshTokenKeyValue_whenMask_thenHideRefreshToken() {
+        //given
+        final String given = this.getMessageWithRefreshTokenKeyValue();
+        final String expected = this.getMessageWithMaskedRefreshTokenKeyValue();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
     void givenJsonWithVerifyUrl_whenMask_thenHideTokenInUrl() {
         //given
         final String given = this.getPayloadWithVerifyUrl();
@@ -156,6 +208,38 @@ class SensitiveDataMaskerTest {
 
     private String getPayloadWithMaskedToken() {
         return "{\"token\":\"***\"}";
+    }
+
+    private String getPayloadWithPassword() {
+        return "{\"password\":\"secret-password\"}";
+    }
+
+    private String getPayloadWithMaskedPassword() {
+        return "{\"password\":\"***\"}";
+    }
+
+    private String getPayloadWithRefreshToken() {
+        return "{\"refreshToken\":\"refresh-token\"}";
+    }
+
+    private String getPayloadWithMaskedRefreshToken() {
+        return "{\"refreshToken\":\"***\"}";
+    }
+
+    private String getMessageWithPasswordKeyValue() {
+        return "RegisterUserDTO(password=secret-password, email=email@sitionix.com)";
+    }
+
+    private String getMessageWithMaskedPasswordKeyValue() {
+        return "RegisterUserDTO(password=***, email=email@sitionix.com)";
+    }
+
+    private String getMessageWithRefreshTokenKeyValue() {
+        return "RefreshAccessTokenRequestDTO(refreshToken=refresh-token, sessionSourceId=device-123)";
+    }
+
+    private String getMessageWithMaskedRefreshTokenKeyValue() {
+        return "RefreshAccessTokenRequestDTO(refreshToken=***, sessionSourceId=device-123)";
     }
 
     private String getPayloadWithVerifyUrl() {
