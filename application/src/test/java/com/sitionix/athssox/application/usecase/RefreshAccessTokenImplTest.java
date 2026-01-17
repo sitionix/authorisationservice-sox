@@ -137,6 +137,8 @@ class RefreshAccessTokenImplTest {
                 .thenReturn("hashed-refresh-token");
         when(this.refreshTokenRepository.findByTokenHash("hashed-refresh-token"))
                 .thenReturn(Optional.of(tokenRecord));
+        when(this.refreshTokenRepository.revokeIfActive(10L, NOW, "ROTATED"))
+                .thenReturn(true);
         when(this.tokenProvider.generateAccessToken(user))
                 .thenReturn(accessToken);
         when(this.tokenProvider.generateRefreshToken(user))
@@ -159,13 +161,15 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.refreshTokenRepository)
+                .revokeIfActive(10L, NOW, "ROTATED");
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
                 .generateRefreshToken(user);
         verify(this.tokenHasher)
                 .hash(newRefreshTokenValue);
-        verify(this.refreshTokenRepository, times(2))
+        verify(this.refreshTokenRepository)
                 .save(recordCaptor.capture());
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
@@ -190,22 +194,8 @@ class RefreshAccessTokenImplTest {
                 null,
                 null,
                 null);
-        final RefreshTokenRecord expectedUpdatedRecord = this.getRefreshTokenRecord(10L,
-                "hashed-refresh-token",
-                user,
-                expectedSession,
-                RefreshTokenStatus.REVOKED,
-                tokenExpiresAt,
-                recordCreatedAt,
-                NOW,
-                NOW,
-                NOW,
-                "ROTATED");
-
-        final List<RefreshTokenRecord> expectedRecords = List.of(expectedNewRecord, expectedUpdatedRecord);
-
         assertThat(sessionCaptor.getValue()).isEqualTo(expectedSession);
-        assertThat(recordCaptor.getAllValues()).isEqualTo(expectedRecords);
+        assertThat(recordCaptor.getAllValues()).isEqualTo(List.of(expectedNewRecord));
         assertThat(actual).isEqualTo(expected);
     }
 
@@ -261,6 +251,8 @@ class RefreshAccessTokenImplTest {
                 .thenReturn("hashed-refresh-token");
         when(this.refreshTokenRepository.findByTokenHash("hashed-refresh-token"))
                 .thenReturn(Optional.of(tokenRecord));
+        when(this.refreshTokenRepository.revokeIfActive(10L, NOW, "ROTATED"))
+                .thenReturn(true);
         when(this.tokenProvider.generateAccessToken(user))
                 .thenReturn(accessToken);
         when(this.tokenProvider.generateRefreshToken(user))
@@ -280,13 +272,15 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.refreshTokenRepository)
+                .revokeIfActive(10L, NOW, "ROTATED");
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
                 .generateRefreshToken(user);
         verify(this.tokenHasher)
                 .hash(newRefreshTokenValue);
-        verify(this.refreshTokenRepository, times(2))
+        verify(this.refreshTokenRepository)
                 .save(recordCaptor.capture());
         verify(this.deviceSessionRepository, times(0))
                 .save(any(DeviceSession.class));
@@ -311,21 +305,7 @@ class RefreshAccessTokenImplTest {
                 null,
                 null,
                 null);
-        final RefreshTokenRecord expectedUpdatedRecord = this.getRefreshTokenRecord(10L,
-                "hashed-refresh-token",
-                user,
-                expectedSession,
-                RefreshTokenStatus.REVOKED,
-                tokenExpiresAt,
-                recordCreatedAt,
-                NOW,
-                NOW,
-                NOW,
-                "ROTATED");
-
-        final List<RefreshTokenRecord> expectedRecords = List.of(expectedNewRecord, expectedUpdatedRecord);
-
-        assertThat(recordCaptor.getAllValues()).isEqualTo(expectedRecords);
+        assertThat(recordCaptor.getAllValues()).isEqualTo(List.of(expectedNewRecord));
         assertThat(actual).isEqualTo(expected);
     }
 
