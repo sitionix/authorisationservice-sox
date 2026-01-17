@@ -16,6 +16,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -119,6 +120,29 @@ class JwtKeyProviderTest {
                 .loadVerificationKeys(jwtConfig);
         verify(this.jwksFactory)
                 .build(activeKey, verificationKeys);
+    }
+
+    @Test
+    void givenInvalidConfig_whenInit_thenPropagateException() {
+        //given
+        final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig();
+
+        when(this.tokenConfig.getJwt())
+                .thenReturn(jwtConfig);
+        when(this.configValidator.validate(jwtConfig))
+                .thenThrow(new IllegalStateException("invalid-config"));
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.jwtKeyProvider.init());
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("invalid-config");
+        verify(this.tokenConfig)
+                .getJwt();
+        verify(this.configValidator)
+                .validate(jwtConfig);
     }
 
     private TokenConfig.JwtConfig getJwtConfig() {
