@@ -452,22 +452,20 @@ class AuthControllerIT {
         assertThat(users).hasSize(1);
         assertThat(accessTokens).hasSize(1);
 
-        final ExpectedJwt expectedJwt = this.getExpectedJwt();
-
         final String accessToken = accessTokens.get(0);
         final DecodedJWT decoded = JWT.decode(accessToken);
 
         assertThat(decoded.getAlgorithm()).isEqualTo("RS256");
-        assertThat(decoded.getKeyId()).isEqualTo(expectedJwt.keyId());
-        assertThat(decoded.getIssuer()).isEqualTo(expectedJwt.issuer());
+        assertThat(decoded.getKeyId()).isEqualTo("it-key");
+        assertThat(decoded.getIssuer()).isEqualTo("athssox");
         assertThat(decoded.getSubject()).isEqualTo(users.get(0).getId().toString());
         assertThat(decoded.getIssuedAt()).isNotNull();
         assertThat(decoded.getExpiresAt()).isNotNull();
-        assertThat(decoded.getClaim("role").asString()).isEqualTo(expectedJwt.role());
-        assertThat(decoded.getClaim("siteId").asString()).isEqualTo(expectedJwt.siteId());
+        assertThat(decoded.getClaim("role").asString()).isEqualTo("SITE_USER");
+        assertThat(decoded.getClaim("siteId").asString()).isEqualTo("c9b1f3f4-12c7-11ec-82a8-0242ac130003");
 
         final Duration ttl = Duration.between(decoded.getIssuedAt().toInstant(), decoded.getExpiresAt().toInstant());
-        assertThat(ttl.getSeconds()).isEqualTo(expectedJwt.accessTokenTtlSeconds());
+        assertThat(ttl.getSeconds()).isEqualTo(3600L);
     }
 
     @Test
@@ -921,18 +919,4 @@ class AuthControllerIT {
         //then
     }
 
-    private ExpectedJwt getExpectedJwt() {
-        return new ExpectedJwt("it-key",
-                "athssox",
-                "c9b1f3f4-12c7-11ec-82a8-0242ac130003",
-                "SITE_USER",
-                3600L);
-    }
-
-    private record ExpectedJwt(String keyId,
-                               String issuer,
-                               String siteId,
-                               String role,
-                               long accessTokenTtlSeconds) {
-    }
 }
