@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -166,6 +167,70 @@ class JwtKeyMaterialLoaderTest {
                 .getInputStream();
     }
 
+    @Test
+    void givenRsaPrivateKeyPem_whenLoadActiveKey_thenThrowException() {
+        //given
+        final String privatePem = this.getRsaPrivateKeyPem();
+        final TokenConfig.PemConfig pemConfig = this.getPemConfig(privatePem, null, null, null);
+        final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig("key-5",
+                this.getKeyStoreConfig(null, null, null, null),
+                pemConfig,
+                List.of());
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.jwtKeyMaterialLoader.loadActiveKey(jwtConfig));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("RSA PRIVATE KEY format is not supported; use PKCS#8 private key.");
+    }
+
+    @Test
+    void givenMissingPrivateKeyResource_whenLoadActiveKey_thenThrowException() {
+        //given
+        final String privateKeyPath = this.getMissingResourcePath();
+        final TokenConfig.PemConfig pemConfig = this.getPemConfig(null, privateKeyPath, null, null);
+        final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig("key-6",
+                this.getKeyStoreConfig(null, null, null, null),
+                pemConfig,
+                List.of());
+
+        when(this.resourceLoader.getResource(privateKeyPath))
+                .thenReturn(this.resource);
+        when(this.resource.exists())
+                .thenReturn(false);
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.jwtKeyMaterialLoader.loadActiveKey(jwtConfig));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("JWT key resource not found: " + privateKeyPath);
+        verify(this.resourceLoader)
+                .getResource(privateKeyPath);
+        verify(this.resource)
+                .exists();
+    }
+
+    @Test
+    void givenNullVerificationKeys_whenLoadVerificationKeys_thenReturnEmptyList() {
+        //given
+        final KeyPair signingKeyPair = this.getKeyPair();
+        final String signingPrivatePem = this.getPrivateKeyPem(signingKeyPair);
+        final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig("key-7",
+                this.getKeyStoreConfig(null, null, null, null),
+                this.getPemConfig(signingPrivatePem, null, null, null),
+                null);
+
+        //when
+        final List<JwtKey> actual = this.jwtKeyMaterialLoader.loadVerificationKeys(jwtConfig);
+
+        //then
+        assertThat(actual).isEmpty();
+    }
+
     private TokenConfig.JwtConfig getJwtConfig(final String keyId,
                                                final TokenConfig.KeyStoreConfig keyStoreConfig,
                                                final TokenConfig.PemConfig pemConfig,
@@ -231,6 +296,14 @@ class JwtKeyMaterialLoaderTest {
 
     private String getResourcePath() {
         return "classpath:jwt-public.pem";
+    }
+
+    private String getMissingResourcePath() {
+        return "classpath:missing-private-key.pem";
+    }
+
+    private String getRsaPrivateKeyPem() {
+        return "-----BEGIN RSA PRIVATE KEY-----\nabc\n-----END RSA PRIVATE KEY-----";
     }
 
     private KeyPair getKeyPair() {
