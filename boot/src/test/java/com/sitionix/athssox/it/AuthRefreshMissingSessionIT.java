@@ -1,6 +1,7 @@
 package com.sitionix.athssox.it;
 
 import com.sitionix.athssox.domain.model.RefreshTokenRecord;
+import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -36,7 +38,14 @@ class AuthRefreshMissingSessionIT {
     @DisplayName("Should reject refresh when session does not exist")
     void givenRefreshTokenWithoutSession_whenRefreshAccessToken_thenForbidden() {
         //given
-        final RefreshTokenRecord tokenRecord = this.getRefreshTokenRecordWithoutSession();
+        final RefreshTokenRecord tokenRecord = mock(RefreshTokenRecord.class);
+
+        when(tokenRecord.getSession())
+                .thenReturn(null);
+        when(tokenRecord.getExpiresAt())
+                .thenReturn(Instant.parse("2099-01-02T00:00:00Z"));
+        when(tokenRecord.getStatus())
+                .thenReturn(RefreshTokenStatus.ACTIVE);
 
         when(this.tokenHasher.hash(anyString()))
                 .thenReturn("hashed-token");
@@ -55,14 +64,5 @@ class AuthRefreshMissingSessionIT {
         verify(this.tokenHasher).hash("refresh-token-valid");
         verify(this.refreshTokenRepository).findByTokenHash("hashed-token");
         verifyNoMoreInteractions(this.refreshTokenRepository, this.tokenHasher);
-    }
-
-    private RefreshTokenRecord getRefreshTokenRecordWithoutSession() {
-        return RefreshTokenRecord.builder()
-                .tokenHash("hashed-token")
-                .expiresAt(Instant.parse("2099-01-02T00:00:00Z"))
-                .createdAt(Instant.parse("2099-01-01T00:00:00Z"))
-                .updatedAt(Instant.parse("2099-01-01T00:00:00Z"))
-                .build();
     }
 }

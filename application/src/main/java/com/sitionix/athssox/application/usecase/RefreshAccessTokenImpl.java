@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.config.SessionConfig;
+import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
@@ -15,6 +16,7 @@ import com.sitionix.athssox.domain.model.RefreshTokenRecord;
 import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.domain.model.SessionStatus;
 import com.sitionix.athssox.domain.model.TokenType;
+import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.repository.DeviceSessionRepository;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
@@ -55,6 +57,7 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         this.detectSessionAnomaly(session, refreshAccessTokenRequest);
 
         final AuthUser user = tokenRecord.getUser();
+        this.ensureUserActive(user);
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken newRefreshToken = this.tokenProvider.generateRefreshToken(user);
 
@@ -114,6 +117,12 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
             // TODO: emit replay_attack_detected
             this.markSessionSuspicious(session, request, now);
             throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
+        }
+    }
+
+    private void ensureUserActive(final AuthUser user) {
+        if (user == null || user.getStatus() != UserStatus.ACTIVE) {
+            throw new InactiveUserException("Account is not yet activated");
         }
     }
 
