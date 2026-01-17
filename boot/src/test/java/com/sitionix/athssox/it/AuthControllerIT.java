@@ -17,13 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -455,33 +452,22 @@ class AuthControllerIT {
         assertThat(users).hasSize(1);
         assertThat(accessTokens).hasSize(1);
 
-        final String expectationsJson;
-        try (InputStream inputStream = Objects.requireNonNull(this.getClass()
-                .getClassLoader()
-                .getResourceAsStream("forge-it/mockmvc/response/loginResponse_expectedJwt.json"))) {
-            expectationsJson = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        }
-
-        final String expectedKeyId = JsonPath.read(expectationsJson, "$.keyId");
-        final String expectedIssuer = JsonPath.read(expectationsJson, "$.issuer");
-        final String expectedSiteId = JsonPath.read(expectationsJson, "$.siteId");
-        final String expectedRole = JsonPath.read(expectationsJson, "$.role");
-        final Number expectedTtlSeconds = JsonPath.read(expectationsJson, "$.accessTokenTtlSeconds");
+        final ExpectedJwt expectedJwt = this.getExpectedJwt();
 
         final String accessToken = accessTokens.get(0);
         final DecodedJWT decoded = JWT.decode(accessToken);
 
         assertThat(decoded.getAlgorithm()).isEqualTo("RS256");
-        assertThat(decoded.getKeyId()).isEqualTo(expectedKeyId);
-        assertThat(decoded.getIssuer()).isEqualTo(expectedIssuer);
+        assertThat(decoded.getKeyId()).isEqualTo(expectedJwt.keyId());
+        assertThat(decoded.getIssuer()).isEqualTo(expectedJwt.issuer());
         assertThat(decoded.getSubject()).isEqualTo(users.get(0).getId().toString());
         assertThat(decoded.getIssuedAt()).isNotNull();
         assertThat(decoded.getExpiresAt()).isNotNull();
-        assertThat(decoded.getClaim("role").asString()).isEqualTo(expectedRole);
-        assertThat(decoded.getClaim("siteId").asString()).isEqualTo(expectedSiteId);
+        assertThat(decoded.getClaim("role").asString()).isEqualTo(expectedJwt.role());
+        assertThat(decoded.getClaim("siteId").asString()).isEqualTo(expectedJwt.siteId());
 
         final Duration ttl = Duration.between(decoded.getIssuedAt().toInstant(), decoded.getExpiresAt().toInstant());
-        assertThat(ttl.getSeconds()).isEqualTo(expectedTtlSeconds.longValue());
+        assertThat(ttl.getSeconds()).isEqualTo(expectedJwt.accessTokenTtlSeconds());
     }
 
     @Test
@@ -935,4 +921,18 @@ class AuthControllerIT {
         //then
     }
 
+    private ExpectedJwt getExpectedJwt() {
+        return new ExpectedJwt("it-key",
+                "athssox",
+                "c9b1f3f4-12c7-11ec-82a8-0242ac130003",
+                "SITE_USER",
+                3600L);
+    }
+
+    private record ExpectedJwt(String keyId,
+                               String issuer,
+                               String siteId,
+                               String role,
+                               long accessTokenTtlSeconds) {
+    }
 }
