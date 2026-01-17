@@ -4,7 +4,9 @@ import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
+import com.sitionix.athssox.postgresql.entity.user.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
+import com.sitionix.forgeit.domain.contract.graph.DbEntityHandle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,8 +15,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 class UserControllerIT {
@@ -76,6 +81,17 @@ class UserControllerIT {
                 .withFetchedRelations()
                 .ignoreFields("createdAt", "id", "passwordHash", "updatedAt")
                 .containsWithJsonsStrict("registeredUserEntity.json");
+
+        final List<DbEntityHandle<UserEntity>> userHandles = this.testManager.postgresql()
+                .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .actualHandles();
+        final UserEntity persistedUser = userHandles.get(0).get();
+
+        assertThat(persistedUser.getCreatedAt()).isNotNull();
+        assertThat(persistedUser.getPasswordHash()).isNotBlank();
+        assertThat(persistedUser.getPasswordHash()).isNotEqualTo("StrongPassword123");
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
