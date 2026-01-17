@@ -1,0 +1,7 @@
+{
+  "keyId": "it-key",
+  "issuer": "athssox",
+  "siteId": "c9b1f3f4-12c7-11ec-82a8-0242ac130003",
+  "role": "SITE_USER",
+  "accessTokenTtlSeconds": 3600
+}
