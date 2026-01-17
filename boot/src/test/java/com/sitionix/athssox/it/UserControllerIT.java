@@ -88,7 +88,7 @@ class UserControllerIT {
 
         assertThat(persistedUser.getCreatedAt()).isNotNull();
         assertThat(persistedUser.getPasswordHash()).isNotBlank();
-        assertThat(persistedUser.getPasswordHash()).isNotEqualTo(this.getDefaultPassword());
+        assertThat(persistedUser.getPasswordHash()).isNotEqualTo("StrongPassword123");
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
@@ -403,9 +403,5 @@ class UserControllerIT {
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
-    }
-
-    private String getDefaultPassword() {
-        return "StrongPassword123";
     }
 }
