@@ -4,3 +4,48 @@ server:
 forge-it:
   kafka:
     email-verify-topic: athssox.it.email-verify.public.v1
+auth:
+  tokens:
+    jwt:
+      alg: RS256
+      key-id: it-key
+      pem:
+        private-key: |-
+          -----BEGIN PRIVATE KEY-----
+          MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDZVnth7drm50yr
+          xX9N0eAp9eB5Sq6AVYUi21qUtURimi6zCQhtxyhISNc+pU7xg9fe6QY0bkHeOLWR
+          pVfz1XZyavNA/vsy5fkpt+4Uz8rd2SHiQD64/yQW7t1koHrR/7xLed7oR9OiaFCn
+          CyL/k/Qb/S+a3T6t9HfJNjEAdkWalOLY5bShE8HmBmW2gwJfi7Z4fkFAKLkQFs5e
+          QrQCVXAjaXIHRjz3oZ0JA4SblnBLo7m6NSOa5XzuLEePlpoCLU1BlNJneoYy6vzH
+          LhB6b93PfVEIXa/m8tXgDiJxt+L0q2Fuid9cFLXeg92z4Tde0VfFWEZXhdH9xhLt
+          PLSYUQubAgMBAAECggEAIF4pM/V46MiWekKIlMNmr3kckZPWF0DP+i1Ro9y3LuQo
+          LlEbE0EE4SG6r2wZLLjmTnQakMvBkuHpO0609u3Z8m0L21MzgBS7SJj0TonVJw3D
+          u8QLqKuUPrdw+3U3Cs1xHTXXmnUQB3D3tK5g66VSRqostn4FbAzWRijZoBL9MhR8
+          zV0l21Y4721QHo6Vq21vsg3SEG+jyTlGPsVLMtY7OR+WqSaR7lb+q2sivISDJf4c
+          hw/U+RdSMihnGi9bOkuja1loZD283ATZwik/AedCt4zajTf+4V72Opucik3+YoZB
+          uqfJ32NiNwzx8w8ntP8DkVpcR6aC7OPgzofxuOv0qQKBgQDt7nDlUN3rVo7PcenZ
+          7a6ltGiRAR/LUhQ5Gq0eSaGcmnQQgrNwqlYgqKc5o3l5v2mTTFwYBTAl084d4Pdx
+          5yJoCet2vmbPgsbjCjsLHlIkgigUMqGghgEvy49DYKyfTYI6BEE51/yzNAWnlqKf
+          yVgzF+ZxLTqdVStp/FBJAMISXwKBgQDp16/Ij1Kw8vRZ1PfjyWT2IYzKHBI3bkPI
+          qYMV8yMjk05oEHrDArhaETmkCrqbFYbxTYiTMFF9N9VE1K9UMkImKOh6yRlHutvP
+          w6wllQZxWmxuB3Vc1LZh8M+2ecLGyos3Uh0X2/8je+ydyX5pl6hSjylGx03Ak+W+
+          Ly3l0iToRQKBgQCX0d/j0zfnpPG3WL6ZOlqIjZdzfz4kZJlW3ri8bMtcvAl3R47s
+          QyR17mfWFYO7tfHN9ZmGEjloyb/pvNTnr057CGlg+Zlsq8vwr2SBcbWEajDcwnnz
+          jc5QCxm9KoC7nZ+NGY3tNO6gAn/hMfNO9hD7eTKn4O5X2jK7jC5Ght9PDQKBgCkW
+          L5mirRnQJmTeSYvpZ+bjMDSWyBCbPCe2uQSTStpGWKFqO9el07RnkGQlSnJTTvl4
+          8QVDmR3SQJOudvvpNLw1tdtVGC8FQvf3Xnjf/VjPVXvjrZhY+46r3CMos7NwBRP8
+          RoZZrjOS45k5vQ9aiUWwR8Va4Wtz0QsgiQT3bmqtAoGAShsu0feBL8ZR7yDRc8+j
+          zQrUEqDYVLBugYYS7XSS+E0Zp3WPBli26QYMkbiex/p2rh6yQb2nSh58sa3xbwW4
+          fGQfAcbVH+/r59ff+LgTsySDwXBL2+2wLE5VPiEJxhMsBCRnkyU1kSrSs998nG+n
+          rz+ZStrKgahDuhufqb0FVmk=
+          -----END PRIVATE KEY-----
+        public-key: |-
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2VZ7Ye3a5udMq8V/TdHg
+          KfXgeUqugFWFIttalLVEYpouswkIbccoSEjXPqVO8YPX3ukGNG5B3ji1kaVX89V2
+          cmrzQP77MuX5KbfuFM/K3dkh4kA+uP8kFu7dZKB60f+8S3ne6EfTomhQpwsi/5P0
+          G/0vmt0+rfR3yTYxAHZFmpTi2OW0oRPB5gZltoMCX4u2eH5BQCi5EBbOXkK0AlVw
+          I2lyB0Y896GdCQOEm5ZwS6O5ujUjmuV87ixHj5aaAi1NQZTSZ3qGMur8xy4Qem/d
+          z31RCF2v5vLV4A4icbfi9KthbonfXBS13oPds+E3XtFXxVhGV4XR/cYS7Ty0mFEL
+          mwIDAQAB
+          -----END PUBLIC KEY-----
