@@ -2,9 +2,14 @@ package com.sitionix.athssox.it;
 
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
+import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
+import com.sitionix.athssox.postgresql.entity.user.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -417,6 +423,53 @@ class AuthControllerIT {
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
                 .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Should issue access token with expected headers and claims on login")
+    void givenActiveUser_whenLogin_thenAccessTokenHasExpectedHeadersAndClaims() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+        final List<String> accessTokens = this.getTokenContainer();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(result -> {
+                    final String content = result.getResponse().getContentAsString();
+                    final LoginResponseDTO response = this.getObjectMapper()
+                            .readValue(content, LoginResponseDTO.class);
+                    accessTokens.add(response.getAccessToken());
+                })
+                .assertAndCreate();
+
+        //then
+        final List<UserEntity> users = this.testManager.postgresql().get(DatabaseContract.USER_ENTITY_DB_CONTRACT);
+        assertThat(users).hasSize(1);
+        assertThat(accessTokens).hasSize(1);
+
+        final String accessToken = accessTokens.get(0);
+        final DecodedJWT decoded = this.decodeToken(accessToken);
+
+        assertThat(decoded.getAlgorithm()).isEqualTo("RS256");
+        assertThat(decoded.getKeyId()).isEqualTo(this.getExpectedKeyId());
+        assertThat(decoded.getIssuer()).isEqualTo(this.getExpectedIssuer());
+        assertThat(decoded.getSubject()).isEqualTo(users.get(0).getId().toString());
+        assertThat(decoded.getIssuedAt()).isNotNull();
+        assertThat(decoded.getExpiresAt()).isNotNull();
+        assertThat(decoded.getClaim("role").asString()).isEqualTo("SITE_USER");
+        assertThat(decoded.getClaim("siteId").asString()).isEqualTo(this.getExpectedSiteId());
+
+        final Duration ttl = Duration.between(decoded.getIssuedAt().toInstant(), decoded.getExpiresAt().toInstant());
+        assertThat(ttl.getSeconds()).isEqualTo(this.getExpectedAccessTokenTtlSeconds());
     }
 
     @Test
@@ -879,5 +932,33 @@ class AuthControllerIT {
                 .assertAndCreate();
 
         //then
+    }
+
+    private List<String> getTokenContainer() {
+        return new ArrayList<>();
+    }
+
+    private ObjectMapper getObjectMapper() {
+        return new ObjectMapper();
+    }
+
+    private DecodedJWT decodeToken(final String token) {
+        return JWT.decode(token);
+    }
+
+    private String getExpectedKeyId() {
+        return "it-key";
+    }
+
+    private String getExpectedIssuer() {
+        return "athssox";
+    }
+
+    private String getExpectedSiteId() {
+        return "c9b1f3f4-12c7-11ec-82a8-0242ac130003";
+    }
+
+    private long getExpectedAccessTokenTtlSeconds() {
+        return 3600L;
     }
 }

@@ -86,6 +86,28 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
+    void givenNoneAlg_whenValidate_thenThrowException() {
+        //given
+        final TokenConfig.PemConfig pemConfig = this.getPemConfig(this.getPrivateKeyValue(),
+                null,
+                null,
+                null);
+        final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig("none",
+                this.getKeyId(),
+                this.getKeyStoreConfig(null, null, null, null),
+                pemConfig,
+                List.of());
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() -> this.jwtKeyConfigValidator.validate(jwtConfig));
+
+        //then
+        assertThat(actualThrowable)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Only RS256 JWT signing is supported.");
+    }
+
+    @Test
     void givenKeyStoreAndPem_whenValidate_thenThrowException() {
         //given
         final TokenConfig.KeyStoreConfig keyStoreConfig = this.getKeyStoreConfig("classpath:keystore.p12",
