@@ -4,6 +4,7 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.forgeit.core.test.IntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,15 @@ class AuthRateLimitIT {
 
     @Autowired
     private TestManager testManager;
+
+    @AfterEach
+    void waitForRateLimitWindow() {
+        try {
+            Thread.sleep(1100L);
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     @Test
     @DisplayName("Should return 429 and Retry-After when login email exceeds limit")
@@ -64,13 +74,6 @@ class AuthRateLimitIT {
                 .andExpectPath(MockMvcResultMatchers.header().exists(HttpHeaders.RETRY_AFTER))
                 .expectResponse("rateLimitResponse.json", "details")
                 .assertAndCreate();
-
-        //then
-        try {
-            Thread.sleep(1100L);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     @Test
@@ -111,13 +114,6 @@ class AuthRateLimitIT {
                 .andExpectPath(MockMvcResultMatchers.header().exists(HttpHeaders.RETRY_AFTER))
                 .expectResponse("rateLimitResponse.json", "details")
                 .assertAndCreate();
-
-        //then
-        try {
-            Thread.sleep(1100L);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     @Test
@@ -158,12 +154,5 @@ class AuthRateLimitIT {
                 .andExpectPath(MockMvcResultMatchers.header().exists(HttpHeaders.RETRY_AFTER))
                 .expectResponse("rateLimitResponse.json", "details")
                 .assertAndCreate();
-
-        //then
-        try {
-            Thread.sleep(1100L);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
     }
 }
