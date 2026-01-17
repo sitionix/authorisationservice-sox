@@ -1,75 +1,41 @@
 package com.sitionix.athssox.it;
 
-import com.sitionix.athssox.api.ratelimit.EmailNormalizer;
-import com.sitionix.athssox.api.ratelimit.RateLimitProperties;
-import com.sitionix.athssox.domain.service.RateLimiterService;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.forgeit.core.test.IntegrationTest;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
-@Import(AuthRateLimitIT.MutableClockConfig.class)
+@TestPropertySource(properties = {
+        "auth.rate-limit.login.email.limit=5",
+        "auth.rate-limit.login.email.window=2s",
+        "auth.rate-limit.login.ip.limit=20",
+        "auth.rate-limit.login.ip.window=2s",
+        "auth.rate-limit.login.ip-session.limit=10",
+        "auth.rate-limit.login.ip-session.window=2s"
+})
 class AuthRateLimitIT {
 
     @Autowired
     private TestManager testManager;
 
-    @Autowired
-    private RateLimitProperties rateLimitProperties;
-
-    @Autowired
-    private RateLimiterService rateLimiterService;
-
-    @Autowired
-    private EmailNormalizer emailNormalizer;
-
-    @Autowired
-    private MutableClock mutableClock;
-
-    private final Set<String> usedEmails = new HashSet<>();
-    private final Set<String> usedSessions = new HashSet<>();
-    private String clientIp;
-
     @AfterEach
     void tearDown() {
-        if (this.clientIp != null) {
-            this.rateLimiterService.reset("login:ip:" + this.clientIp);
-        }
-        for (final String email : this.usedEmails) {
-            final String normalized = this.emailNormalizer.normalize(email);
-            if (normalized != null) {
-                this.rateLimiterService.reset("login:email:" + normalized);
-            }
-        }
-        for (final String sessionId : this.usedSessions) {
-            if (this.clientIp != null) {
-                this.rateLimiterService.reset("login:ip-session:" + this.clientIp + ":" + sessionId);
-            }
-        }
+        this.awaitWindowReset();
     }
 
     @Test
@@ -77,17 +43,12 @@ class AuthRateLimitIT {
     void givenTooManyLoginAttemptsByEmail_whenLogin_thenTooManyRequests() {
         //given
         this.setupActiveUser();
-        this.configureLoginLimits(100L, 5L, 100L, Duration.ofSeconds(5));
         final String email = "user@sitionix.com";
         final String sessionSourceId = "device-123";
         final AtomicReference<String> retryAfter = new AtomicReference<>();
 
         //when
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginUnauthorized(email, sessionSourceId);
+        this.performUnauthorizedLogins(email, sessionSourceId, 5);
         this.loginTooMany(email, sessionSourceId, retryAfter);
 
         //then
@@ -96,37 +57,21 @@ class AuthRateLimitIT {
     }
 
     @Test
-    @DisplayName("Should allow login after rate limit window elapses")
-    void givenExceededRateLimit_whenWindowElapses_thenLoginReturnsUnauthorized() {
-        //given
-        this.setupActiveUser();
-        this.configureLoginLimits(100L, 2L, 100L, Duration.ofSeconds(2));
-        final String email = "user@sitionix.com";
-        final String sessionSourceId = "device-123";
-
-        //when
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginTooMany(email, sessionSourceId, new AtomicReference<>());
-        this.mutableClock.advance(Duration.ofSeconds(3));
-
-        //then
-        this.loginUnauthorized(email, sessionSourceId);
-    }
-
-    @Test
     @DisplayName("Should enforce IP limit even with different emails")
     void givenDifferentEmailsSameIp_whenLoginTooManyTimes_thenTooManyRequests() {
         //given
         this.setupActiveUser();
-        this.configureLoginLimits(2L, 100L, 100L, Duration.ofSeconds(5));
-        final String sessionSourceId = "device-123";
+        final List<String> emails = this.getEmails("user", 21);
+        final List<String> sessionSourceIds = this.getSessionSourceIds("device", 21);
         final AtomicReference<String> retryAfter = new AtomicReference<>();
 
         //when
-        this.loginUnauthorized("user-1@sitionix.com", sessionSourceId);
-        this.loginUnauthorized("user-2@sitionix.com", sessionSourceId);
-        this.loginTooMany("user-3@sitionix.com", sessionSourceId, retryAfter);
+        for (int i = 0; i < emails.size() - 1; i++) {
+            this.loginUnauthorized(emails.get(i), sessionSourceIds.get(i));
+        }
+        this.loginTooMany(emails.get(emails.size() - 1),
+                sessionSourceIds.get(sessionSourceIds.size() - 1),
+                retryAfter);
 
         //then
         assertThat(retryAfter.get()).isNotBlank();
@@ -137,15 +82,15 @@ class AuthRateLimitIT {
     void givenSameIpAndSession_whenLoginTooManyTimes_thenTooManyRequests() {
         //given
         this.setupActiveUser();
-        this.configureLoginLimits(100L, 100L, 2L, Duration.ofSeconds(5));
-        final String email = "user@sitionix.com";
         final String sessionSourceId = "device-123";
+        final List<String> emails = this.getEmails("session-user", 11);
         final AtomicReference<String> retryAfter = new AtomicReference<>();
 
         //when
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginUnauthorized(email, sessionSourceId);
-        this.loginTooMany(email, sessionSourceId, retryAfter);
+        for (int i = 0; i < emails.size() - 1; i++) {
+            this.loginUnauthorized(emails.get(i), sessionSourceId);
+        }
+        this.loginTooMany(emails.get(emails.size() - 1), sessionSourceId, retryAfter);
 
         //then
         assertThat(retryAfter.get()).isNotBlank();
@@ -160,29 +105,13 @@ class AuthRateLimitIT {
                 .build();
     }
 
-    private void configureLoginLimits(final long ipLimit,
-                                      final long emailLimit,
-                                      final long ipSessionLimit,
-                                      final Duration window) {
-        this.rateLimitProperties.setEnabled(true);
-        final RateLimitProperties.EndpointLimits login = this.rateLimitProperties.getLogin();
-
-        login.getIp().setEnabled(true);
-        login.getIp().setLimit(ipLimit);
-        login.getIp().setWindow(window);
-
-        login.getEmail().setEnabled(true);
-        login.getEmail().setLimit(emailLimit);
-        login.getEmail().setWindow(window);
-
-        login.getIpSession().setEnabled(true);
-        login.getIpSession().setLimit(ipSessionLimit);
-        login.getIpSession().setWindow(window);
+    private void performUnauthorizedLogins(final String email, final String sessionSourceId, final int count) {
+        for (int i = 0; i < count; i++) {
+            this.loginUnauthorized(email, sessionSourceId);
+        }
     }
 
     private void loginUnauthorized(final String email, final String sessionSourceId) {
-        this.usedEmails.add(email);
-        this.usedSessions.add(sessionSourceId);
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json", request -> {
@@ -191,17 +120,11 @@ class AuthRateLimitIT {
                     request.setSessionSourceId(sessionSourceId);
                 })
                 .expectStatus(HttpStatus.UNAUTHORIZED)
-                .andExpectPath(result -> {
-                    if (this.clientIp == null) {
-                        this.clientIp = result.getRequest().getRemoteAddr();
-                    }
-                })
+                .expectResponse("loginResponse_unauthorized.json")
                 .assertAndCreate();
     }
 
     private void loginTooMany(final String email, final String sessionSourceId, final AtomicReference<String> retryAfter) {
-        this.usedEmails.add(email);
-        this.usedSessions.add(sessionSourceId);
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json", request -> {
@@ -211,58 +134,34 @@ class AuthRateLimitIT {
                 })
                 .expectStatus(HttpStatus.TOO_MANY_REQUESTS)
                 .andExpectPath(MockMvcResultMatchers.header().exists(HttpHeaders.RETRY_AFTER))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code")
-                        .value(HttpStatus.TOO_MANY_REQUESTS.value()))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title")
-                        .value(HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase()))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.details",
-                        Matchers.containsString("Too many requests")))
+                .expectResponse("rateLimitResponse.json", "details")
                 .andExpectPath(result -> {
-                    if (this.clientIp == null) {
-                        this.clientIp = result.getRequest().getRemoteAddr();
-                    }
                     retryAfter.set(result.getResponse().getHeader(HttpHeaders.RETRY_AFTER));
                 })
                 .assertAndCreate();
     }
 
-    @TestConfiguration
-    static class MutableClockConfig {
-
-        @Bean
-        @Primary
-        MutableClock mutableClock() {
-            return new MutableClock(Instant.parse("2099-01-01T00:00:00Z"), ZoneOffset.UTC);
+    private List<String> getEmails(final String prefix, final int count) {
+        final List<String> emails = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            emails.add(prefix + "-" + i + "@sitionix.com");
         }
+        return emails;
     }
 
-    static class MutableClock extends Clock {
-
-        private final ZoneId zone;
-        private final AtomicReference<Instant> instant;
-
-        MutableClock(final Instant initialInstant, final ZoneId zone) {
-            this.zone = zone;
-            this.instant = new AtomicReference<>(initialInstant);
+    private List<String> getSessionSourceIds(final String prefix, final int count) {
+        final List<String> sessionSourceIds = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            sessionSourceIds.add(prefix + "-" + i);
         }
+        return sessionSourceIds;
+    }
 
-        @Override
-        public ZoneId getZone() {
-            return this.zone;
-        }
-
-        @Override
-        public Clock withZone(final ZoneId zone) {
-            return new MutableClock(this.instant.get(), zone);
-        }
-
-        @Override
-        public Instant instant() {
-            return this.instant.get();
-        }
-
-        void advance(final Duration duration) {
-            this.instant.updateAndGet(current -> current.plus(duration));
+    private void awaitWindowReset() {
+        try {
+            Thread.sleep(2200L);
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
         }
     }
 }

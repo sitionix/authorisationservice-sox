@@ -2,6 +2,7 @@ package com.sitionix.athssox.api.ratelimit;
 
 import com.sitionix.athssox.domain.service.RateLimitResult;
 import com.sitionix.athssox.domain.service.RateLimiterService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -14,23 +15,20 @@ import java.security.NoSuchAlgorithmException;
 
 @Log4j2
 @Component
+@RequiredArgsConstructor
 public class RateLimitGuard {
 
     private static final String MESSAGE_TEMPLATE = "Too many requests. Please retry after %d seconds.";
     private static final String TRACE_ID_KEY = "traceId";
     private static final String MASKED_VALUE = "-";
+    private static final String LOGIN_ENDPOINT = "login";
+    private static final String REFRESH_ENDPOINT = "refresh";
+    private static final String REGISTER_ENDPOINT = "register";
+    private static final String RESEND_ENDPOINT = "resend";
 
     private final RateLimiterService rateLimiterService;
     private final RateLimitProperties rateLimitProperties;
     private final EmailNormalizer emailNormalizer;
-
-    public RateLimitGuard(final RateLimiterService rateLimiterService,
-                          final RateLimitProperties rateLimitProperties,
-                          final EmailNormalizer emailNormalizer) {
-        this.rateLimiterService = rateLimiterService;
-        this.rateLimitProperties = rateLimitProperties;
-        this.emailNormalizer = emailNormalizer;
-    }
 
     public void checkLogin(final String ip, final String email, final String sessionSourceId) {
         if (!this.rateLimitProperties.isEnabled()) {
@@ -42,9 +40,9 @@ public class RateLimitGuard {
         final String emailHash = this.hashValue(normalizedEmail);
         final String maskedIp = this.maskIp(ip);
 
-        this.enforceRule("login", "login:ip", ip, limits.getIp(), emailHash, maskedIp);
-        this.enforceRule("login", "login:email", normalizedEmail, limits.getEmail(), emailHash, maskedIp);
-        this.enforceRule("login", "login:ip-session", this.composeKey(ip, sessionSourceId),
+        this.enforceRule(LOGIN_ENDPOINT, "login:ip", ip, limits.getIp(), emailHash, maskedIp);
+        this.enforceRule(LOGIN_ENDPOINT, "login:email", normalizedEmail, limits.getEmail(), emailHash, maskedIp);
+        this.enforceRule(LOGIN_ENDPOINT, "login:ip-session", this.composeKey(ip, sessionSourceId),
                 limits.getIpSession(), emailHash, maskedIp);
     }
 
@@ -66,9 +64,9 @@ public class RateLimitGuard {
         final String emailHash = this.hashValue(normalizedEmail);
         final String maskedIp = this.maskIp(ip);
 
-        this.enforceRule("register", "register:ip", ip, limits.getIp(), emailHash, maskedIp);
-        this.enforceRule("register", "register:email", normalizedEmail, limits.getEmail(), emailHash, maskedIp);
-        this.enforceRule("register", "register:ip-email", this.composeKey(ip, normalizedEmail),
+        this.enforceRule(REGISTER_ENDPOINT, "register:ip", ip, limits.getIp(), emailHash, maskedIp);
+        this.enforceRule(REGISTER_ENDPOINT, "register:email", normalizedEmail, limits.getEmail(), emailHash, maskedIp);
+        this.enforceRule(REGISTER_ENDPOINT, "register:ip-email", this.composeKey(ip, normalizedEmail),
                 limits.getIpEmail(), emailHash, maskedIp);
     }
 
@@ -82,9 +80,9 @@ public class RateLimitGuard {
         final String emailHash = this.hashValue(normalizedEmail);
         final String maskedIp = this.maskIp(ip);
 
-        this.enforceRule("resend", "resend:ip", ip, limits.getIp(), emailHash, maskedIp);
-        this.enforceRule("resend", "resend:email", normalizedEmail, limits.getEmail(), emailHash, maskedIp);
-        this.enforceRule("resend", "resend:ip-email", this.composeKey(ip, normalizedEmail),
+        this.enforceRule(RESEND_ENDPOINT, "resend:ip", ip, limits.getIp(), emailHash, maskedIp);
+        this.enforceRule(RESEND_ENDPOINT, "resend:email", normalizedEmail, limits.getEmail(), emailHash, maskedIp);
+        this.enforceRule(RESEND_ENDPOINT, "resend:ip-email", this.composeKey(ip, normalizedEmail),
                 limits.getIpEmail(), emailHash, maskedIp);
     }
 
@@ -95,9 +93,9 @@ public class RateLimitGuard {
 
         final RateLimitProperties.EndpointLimits limits = this.rateLimitProperties.getRefresh();
         final String maskedIp = this.maskIp(ip);
-        this.enforceRule("refresh", "refresh:ip", ip, limits.getIp(), null, maskedIp);
-        this.enforceRule("refresh", "refresh:session", sessionSourceId, limits.getSession(), null, maskedIp);
-        this.enforceRule("refresh", "refresh:ip-session", this.composeKey(ip, sessionSourceId),
+        this.enforceRule(REFRESH_ENDPOINT, "refresh:ip", ip, limits.getIp(), null, maskedIp);
+        this.enforceRule(REFRESH_ENDPOINT, "refresh:session", sessionSourceId, limits.getSession(), null, maskedIp);
+        this.enforceRule(REFRESH_ENDPOINT, "refresh:ip-session", this.composeKey(ip, sessionSourceId),
                 limits.getIpSession(), null, maskedIp);
     }
 

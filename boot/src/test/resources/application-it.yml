@@ -62,4 +62,44 @@ auth:
             mwIDAQAB
             -----END PUBLIC KEY-----
   rate-limit:
-    enabled: false
+    enabled: true
+    login:
+      ip:
+        limit: 200
+        window: 2s
+      email:
+        limit: 100
+        window: 2s
+      ip-session:
+        limit: 150
+        window: 2s
+    register:
+      ip:
+        limit: 100
+        window: 2s
+      email:
+        limit: 100
+        window: 2s
+      ip-email:
+        limit: 100
+        window: 2s
+    resend:
+      ip:
+        limit: 100
+        window: 2s
+      email:
+        limit: 100
+        window: 2s
+      ip-email:
+        limit: 100
+        window: 2s
+    refresh:
+      ip:
+        limit: 300
+        window: 2s
+      session:
+        limit: 300
+        window: 2s
+      ip-session:
+        limit: 300
+        window: 2s
