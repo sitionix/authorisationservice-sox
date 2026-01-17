@@ -26,7 +26,7 @@ public class UserController implements UserApi {
     @Override
     public ResponseEntity<ResponseRegisterUserDTO> registerUser(@Valid final RegisterUserDTO registerUserDTO) {
 
-        log.info("Received request to register user: {}", registerUserDTO);
+        log.info("Received request to register user for email: {}", registerUserDTO.getEmail());
 
         final RegisterUserDO user = this.userDtoMapper.asRegisterUser(registerUserDTO);
         final ResponseRegisterUser responseRegisterUser = this.registerUser.execute(user);

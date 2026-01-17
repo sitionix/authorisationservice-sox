@@ -22,84 +22,41 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid credentials";
+
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     public ResponseEntity<ErrorDTO> handleEmailAlreadyRegistered(final EmailAlreadyRegisteredException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.CONFLICT.value())
-                        .title(HttpStatus.CONFLICT.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.CONFLICT, exception.getMessage());
     }
 
     @ExceptionHandler(InvalidPasswordException.class)
     public ResponseEntity<ErrorDTO> handleInvalidPassword(final InvalidPasswordException exception) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.BAD_REQUEST.value())
-                        .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     @ExceptionHandler(MissingSiteIdException.class)
     public ResponseEntity<ErrorDTO> handleMissingSiteId(final MissingSiteIdException exception) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.BAD_REQUEST.value())
-                        .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorDTO> handleInvalidCredentials(final BadCredentialsException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.UNAUTHORIZED.value())
-                        .title(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
-    }
-
-    @ExceptionHandler(AuthenticationException.class)
+    @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})
     public ResponseEntity<ErrorDTO> handleAuthentication(final AuthenticationException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.UNAUTHORIZED.value())
-                        .title(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
     }
 
     @ExceptionHandler(InactiveUserException.class)
     public ResponseEntity<ErrorDTO> handleInactiveUser(final InactiveUserException exception) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.FORBIDDEN.value())
-                        .title(HttpStatus.FORBIDDEN.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.FORBIDDEN, exception.getMessage());
     }
 
     @ExceptionHandler(RefreshTokenExpiredException.class)
     public ResponseEntity<ErrorDTO> handleRefreshTokenExpired(final RefreshTokenExpiredException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.UNAUTHORIZED.value())
-                        .title(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
     @ExceptionHandler({RefreshTokenInvalidException.class, SessionNotActiveException.class, SessionMismatchException.class})
     public ResponseEntity<ErrorDTO> handleRefreshTokenForbidden(final RuntimeException exception) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.FORBIDDEN.value())
-                        .title(HttpStatus.FORBIDDEN.getReasonPhrase())
-                        .details(exception.getMessage())
-                        .build());
+        return buildError(HttpStatus.FORBIDDEN, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -109,21 +66,20 @@ public class RestExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .orElse("Validation failed");
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorDTO.builder()
-                        .code(HttpStatus.BAD_REQUEST.value())
-                        .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                        .details(details)
-                        .build());
+        return buildError(HttpStatus.BAD_REQUEST, details);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorDTO> handleNotReadable(final HttpMessageNotReadableException exception) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return buildError(HttpStatus.BAD_REQUEST, "Malformed request body");
+    }
+
+    private static ResponseEntity<ErrorDTO> buildError(final HttpStatus status, final String details) {
+        return ResponseEntity.status(status)
                 .body(ErrorDTO.builder()
-                        .code(HttpStatus.BAD_REQUEST.value())
-                        .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                        .details("Malformed request body")
+                        .code(status.value())
+                        .title(status.getReasonPhrase())
+                        .details(details)
                         .build());
     }
 }

@@ -1,6 +1,10 @@
 package com.sitionix.athssox.it;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
+import com.sitionix.athssox.api.controller.UserController;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
@@ -11,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
@@ -96,6 +101,43 @@ class UserControllerIT {
                 .withFetchedRelations()
                 .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
                 .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+    }
+
+    @Test
+    @DisplayName("Should not log registration password or verification token")
+    void givenRegistrationRequest_whenRegisterUser_thenSensitiveDataNotLogged() {
+        //given
+        final String password = "StrongPassword123";
+        final Logger logger = (Logger) LoggerFactory.getLogger(UserController.class);
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        final boolean containsPassword;
+        final boolean containsVerifyToken;
+        try {
+            //when
+            this.testManager.mockMvc()
+                    .ping(ControllerEndpoint.registerUser())
+                    .withRequest("registerUserRequest.json", (RegisterUserDTO request) -> request.setPassword(password))
+                    .expectResponse("registerUserResponse.json", "userId")
+                    .expectStatus(HttpStatus.CREATED)
+                    .assertAndCreate();
+
+            containsPassword = appender.list.stream()
+                    .map(ILoggingEvent::getFormattedMessage)
+                    .anyMatch(message -> message.contains(password));
+            containsVerifyToken = appender.list.stream()
+                    .map(ILoggingEvent::getFormattedMessage)
+                    .anyMatch(message -> message.contains("token="));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        //then
+        assertThat(containsPassword).isFalse();
+        assertThat(containsVerifyToken).isFalse();
     }
 
     static Stream<Arguments> invalidRegisterUserRequests() {
@@ -344,7 +386,7 @@ class UserControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
                 .withRequest("registerUserRequest_duplicateEmailSameSite.json")
-                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role and context"))
+                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Registration already processed. Please check your email."))
                 .expectStatus(HttpStatus.CONFLICT)
                 .assertAndCreate();
 
@@ -372,7 +414,7 @@ class UserControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
                 .withRequest("registerUserRequest_duplicateEmailGlobalRole.json")
-                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Email already registered for this role and context"))
+                .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Registration already processed. Please check your email."))
                 .expectStatus(HttpStatus.CONFLICT)
                 .assertAndCreate();
 

@@ -1,10 +1,14 @@
 package com.sitionix.athssox.it;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.jayway.jsonpath.JsonPath;
+import com.sitionix.athssox.api.controller.AuthController;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
@@ -13,6 +17,7 @@ import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -99,6 +104,38 @@ class AuthControllerIT {
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
                 .hasSize(0);
+    }
+
+    @Test
+    @DisplayName("Should not log login password values")
+    void givenLoginRequest_whenLogin_thenPasswordNotLogged() {
+        //given
+        final String password = "plain-password";
+        final Logger logger = (Logger) LoggerFactory.getLogger(AuthController.class);
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        final boolean containsPassword;
+        try {
+            //when
+            this.testManager.mockMvc()
+                    .ping(ControllerEndpoint.loginUnauthorized())
+                    .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setPassword(password))
+                    .expectResponse("loginResponse_unauthorized.json")
+                    .expectStatus(HttpStatus.UNAUTHORIZED)
+                    .assertAndCreate();
+
+            containsPassword = appender.list.stream()
+                    .map(ILoggingEvent::getFormattedMessage)
+                    .anyMatch(message -> message.contains(password));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        //then
+        assertThat(containsPassword).isFalse();
     }
 
     @Test
@@ -224,7 +261,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is inactive")
-    void givenInactiveUser_whenLogin_thenForbidden() {
+    void givenInactiveUser_whenLogin_thenUnauthorized() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -235,10 +272,10 @@ class AuthControllerIT {
 
         //when
         this.testManager.mockMvc()
-                .ping(ControllerEndpoint.loginForbidden())
+                .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json")
-                .expectResponse("loginResponse_forbidden.json")
-                .expectStatus(HttpStatus.FORBIDDEN)
+                .expectResponse("loginResponse_unauthorized.json")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
                 .assertAndCreate();
 
         //then
@@ -249,7 +286,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is pending email verification")
-    void givenPendingUser_whenLogin_thenForbiddenAndNoRefreshTokenSaved() {
+    void givenPendingUser_whenLogin_thenUnauthorizedAndNoRefreshTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -260,10 +297,10 @@ class AuthControllerIT {
 
         //when
         this.testManager.mockMvc()
-                .ping(ControllerEndpoint.loginForbidden())
+                .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json")
-                .expectResponse("loginResponse_forbidden.json")
-                .expectStatus(HttpStatus.FORBIDDEN)
+                .expectResponse("loginResponse_unauthorized.json")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
                 .assertAndCreate();
 
         //then
@@ -274,7 +311,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is banned")
-    void givenBannedUser_whenLogin_thenForbiddenAndNoRefreshTokenSaved() {
+    void givenBannedUser_whenLogin_thenUnauthorizedAndNoRefreshTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -285,10 +322,10 @@ class AuthControllerIT {
 
         //when
         this.testManager.mockMvc()
-                .ping(ControllerEndpoint.loginForbidden())
+                .ping(ControllerEndpoint.loginUnauthorized())
                 .withRequest("loginRequest.json")
-                .expectResponse("loginResponse_forbidden.json")
-                .expectStatus(HttpStatus.FORBIDDEN)
+                .expectResponse("loginResponse_unauthorized.json")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
                 .assertAndCreate();
 
         //then

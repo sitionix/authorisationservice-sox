@@ -1,5 +1,5 @@
 {
   "userId": 1,
-  "message": "Account already exists and requires email verification. Please verify your email.",
+  "message": "Registration accepted. Please check your email for verification.",
   "status": "PENDING_EMAIL_VERIFY"
 }

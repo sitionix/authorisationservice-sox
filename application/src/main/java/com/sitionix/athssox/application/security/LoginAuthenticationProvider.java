@@ -1,6 +1,5 @@
 package com.sitionix.athssox.application.security;
 
-import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.UserStatus;
@@ -28,11 +27,11 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
         final AuthUser user = this.loadUser(token.getEmail(), token.getSiteId());
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new InactiveUserException("Account is not yet activated");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         if (!this.passwordEncoder.matches((String) token.getCredentials(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Invalid email or password");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         return LoginAuthenticationToken.authenticated(user);
@@ -57,6 +56,6 @@ public class LoginAuthenticationProvider implements AuthenticationProvider {
             }
         }
 
-        return user.orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+        return user.orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
     }
 }

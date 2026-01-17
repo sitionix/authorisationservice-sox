@@ -31,6 +31,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RegisterUserImpl implements RegisterUser {
 
+    private static final String REGISTRATION_ACCEPTED_MESSAGE =
+            "Registration accepted. Please check your email for verification.";
+    private static final String REGISTRATION_ALREADY_PROCESSED_MESSAGE =
+            "Registration already processed. Please check your email.";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
@@ -50,7 +55,7 @@ public class RegisterUserImpl implements RegisterUser {
 
         this.passwordPolicyValidator.validate(registerUserDO.getPassword());
         if (existingUser.isPresent()) {
-            throw new EmailAlreadyRegisteredException("Email already registered for this role and context");
+            throw new EmailAlreadyRegisteredException(REGISTRATION_ALREADY_PROCESSED_MESSAGE);
         }
         registerUserDO.setPassword(this.passwordEncoder.encode(registerUserDO.getPassword()));
 
@@ -60,7 +65,7 @@ public class RegisterUserImpl implements RegisterUser {
 
         this.command.execute(outboxEvent);
 
-        createdUser.setMessage("Registration successful. Please verify your email.");
+        createdUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
         return createdUser;
     }
 
@@ -116,7 +121,7 @@ public class RegisterUserImpl implements RegisterUser {
             this.command.execute(outboxEvent);
         }
 
-        existingUser.setMessage("Account already exists and requires email verification. Please verify your email.");
+        existingUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
         return existingUser;
     }
 }

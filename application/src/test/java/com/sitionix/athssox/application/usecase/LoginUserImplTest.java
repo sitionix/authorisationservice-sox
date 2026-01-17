@@ -2,7 +2,6 @@ package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.config.SessionConfig;
 import com.sitionix.athssox.application.security.LoginAuthenticationToken;
-import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.model.AccessToken;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.DeviceSession;
@@ -526,7 +525,7 @@ class LoginUserImplTest {
         final LoginRequest given = this.getLoginRequest(siteId);
 
         when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Invalid email or password"));
+                .thenThrow(new BadCredentialsException("Invalid credentials"));
 
         //when
         final Throwable actualThrowable = catchThrowable(() -> this.loginUser.execute(given));
@@ -534,28 +533,28 @@ class LoginUserImplTest {
         //then
         assertThat(actualThrowable)
                 .isInstanceOf(BadCredentialsException.class)
-                .hasMessage("Invalid email or password");
+                .hasMessage("Invalid credentials");
 
         verify(this.authenticationManager)
                 .authenticate(any(LoginAuthenticationToken.class));
     }
 
     @Test
-    void givenInactiveUser_whenExecute_thenThrowInactiveUserException() {
+    void givenInactiveUser_whenExecute_thenThrowInvalidCredentials() {
         //given
         final UUID siteId = UUID.randomUUID();
         final LoginRequest given = this.getLoginRequest(siteId);
 
         when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
-                .thenThrow(new InactiveUserException("Account is not yet activated"));
+                .thenThrow(new BadCredentialsException("Invalid credentials"));
 
         //when
         final Throwable actualThrowable = catchThrowable(() -> this.loginUser.execute(given));
 
         //then
         assertThat(actualThrowable)
-                .isInstanceOf(InactiveUserException.class)
-                .hasMessage("Account is not yet activated");
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid credentials");
 
         verify(this.authenticationManager)
                 .authenticate(any(LoginAuthenticationToken.class));
