@@ -542,8 +542,9 @@ class LoginUserImplTest {
     @Test
     void givenInactiveUser_whenExecute_thenThrowInvalidCredentials() {
         //given
-        final UUID siteId = UUID.randomUUID();
-        final LoginRequest given = this.getLoginRequest(siteId);
+        final LoginRequest given = this.getLoginRequest(null);
+        final ArgumentCaptor<LoginAuthenticationToken> tokenCaptor =
+                ArgumentCaptor.forClass(LoginAuthenticationToken.class);
 
         when(this.authenticationManager.authenticate(any(LoginAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
@@ -557,7 +558,13 @@ class LoginUserImplTest {
                 .hasMessage("Invalid credentials");
 
         verify(this.authenticationManager)
-                .authenticate(any(LoginAuthenticationToken.class));
+                .authenticate(tokenCaptor.capture());
+        final LoginAuthenticationToken actualToken = tokenCaptor.getValue();
+        assertThat(actualToken.getEmail()).isEqualTo(given.getEmail());
+        assertThat(actualToken.getPassword()).isEqualTo(given.getPassword());
+        assertThat(actualToken.getSiteId()).isEqualTo(given.getSiteId());
+        assertThat(actualToken.getUser()).isNull();
+        assertThat(actualToken.isAuthenticated()).isFalse();
     }
 
     private LoginRequest getLoginRequest(final UUID siteId) {
