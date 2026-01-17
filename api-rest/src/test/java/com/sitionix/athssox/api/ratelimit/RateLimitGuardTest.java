@@ -9,8 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -115,6 +117,18 @@ class RateLimitGuardTest {
                 .consume(this.getRefreshIpSessionKey(ip, sessionSourceId), 30L, window);
     }
 
+    @Test
+    void givenNonIpValue_whenMaskIp_thenReturnOriginal() {
+        //given
+        final String ip = this.getNonIpValue();
+
+        //when
+        final String actual = this.callMaskIp(ip);
+
+        //then
+        assertThat(actual).isEqualTo(ip);
+    }
+
     private RateLimitProperties getRateLimitProperties() {
         return new RateLimitProperties();
     }
@@ -149,6 +163,10 @@ class RateLimitGuardTest {
         return "device-123";
     }
 
+    private String getNonIpValue() {
+        return "not-an-ip";
+    }
+
     private String getLoginIpSessionKey(final String ip, final String sessionSourceId) {
         return "login:ip-session:" + ip + ":" + sessionSourceId;
     }
@@ -159,5 +177,15 @@ class RateLimitGuardTest {
 
     private String getRefreshIpSessionKey(final String ip, final String sessionSourceId) {
         return "refresh:ip-session:" + ip + ":" + sessionSourceId;
+    }
+
+    private String callMaskIp(final String ip) {
+        try {
+            final Method method = RateLimitGuard.class.getDeclaredMethod("maskIp", String.class);
+            method.setAccessible(true);
+            return (String) method.invoke(this.rateLimitGuard, ip);
+        } catch (final ReflectiveOperationException ex) {
+            throw new IllegalStateException("Failed to invoke maskIp.", ex);
+        }
     }
 }
