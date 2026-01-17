@@ -66,40 +66,40 @@ auth:
     login:
       ip:
         limit: 200
-        window: 2s
+        window: 1s
       email:
         limit: 100
-        window: 2s
+        window: 1s
       ip-session:
         limit: 150
-        window: 2s
+        window: 1s
     register:
       ip:
         limit: 100
-        window: 2s
+        window: 1s
       email:
         limit: 100
-        window: 2s
+        window: 1s
       ip-email:
         limit: 100
-        window: 2s
+        window: 1s
     resend:
       ip:
         limit: 100
-        window: 2s
+        window: 1s
       email:
         limit: 100
-        window: 2s
+        window: 1s
       ip-email:
         limit: 100
-        window: 2s
+        window: 1s
     refresh:
       ip:
         limit: 300
-        window: 2s
+        window: 1s
       session:
         limit: 300
-        window: 2s
+        window: 1s
       ip-session:
         limit: 300
         window: 2s
