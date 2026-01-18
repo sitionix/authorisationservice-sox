@@ -1,6 +1,7 @@
 package com.sitionix.athssox.api.controller.handler;
 
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
+import com.sitionix.athssox.api.ratelimit.RateLimitExceededException;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.InvalidPasswordException;
@@ -9,6 +10,7 @@ import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
 import com.sitionix.athssox.domain.exception.SessionNotActiveException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -72,6 +74,17 @@ public class RestExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorDTO> handleNotReadable(final HttpMessageNotReadableException exception) {
         return buildError(HttpStatus.BAD_REQUEST, "Malformed request body");
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ErrorDTO> handleRateLimitExceeded(final RateLimitExceededException exception) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(exception.getRetryAfterSeconds()))
+                .body(ErrorDTO.builder()
+                        .code(HttpStatus.TOO_MANY_REQUESTS.value())
+                        .title(HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase())
+                        .details(exception.getMessage())
+                        .build());
     }
 
     private static ResponseEntity<ErrorDTO> buildError(final HttpStatus status, final String details) {

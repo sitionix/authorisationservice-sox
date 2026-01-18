@@ -14,6 +14,8 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl: update
+security:
+  trusted-proxy: false
 auth:
   tokens:
     issuer: athssox
@@ -35,6 +37,48 @@ auth:
         public-key: ${AUTH_JWT_PUBLIC_KEY:}
   session:
     last-used-throttle-minutes: 5
+  rate-limit:
+    enabled: true
+    login:
+      ip:
+        limit: 20
+        window: 5m
+      email:
+        limit: 5
+        window: 5m
+      ip-session:
+        limit: 10
+        window: 5m
+    register:
+      ip:
+        limit: 10
+        window: 15m
+      email:
+        limit: 3
+        window: 15m
+      ip-email:
+        limit: 3
+        window: 15m
+    resend:
+      ip:
+        limit: 10
+        window: 15m
+      email:
+        limit: 3
+        window: 15m
+      ip-email:
+        limit: 3
+        window: 15m
+    refresh:
+      ip:
+        limit: 60
+        window: 5m
+      session:
+        limit: 30
+        window: 5m
+      ip-session:
+        limit: 30
+        window: 5m
 bff:
   base-url: http://localhost:8080/bffssox
 outbox:
