@@ -198,8 +198,6 @@ class AuthControllerIT {
                 .build();
 
         final List<String> refreshTokens = new ArrayList<>();
-        final String sessionSourceId = "device-123";
-
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
@@ -229,8 +227,6 @@ class AuthControllerIT {
         final List<RefreshTokenEntity> storedTokens =
                 this.testManager.postgresql().get(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT);
         final long activeTokensForSession = storedTokens.stream()
-                .filter(token -> token.getSession() != null)
-                .filter(token -> sessionSourceId.equals(token.getSession().getSessionSourceId()))
                 .filter(token -> token.getStatus().getId().equals(RefreshTokenStatus.ACTIVE.getId()))
                 .count();
 
