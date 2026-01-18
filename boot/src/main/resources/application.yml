@@ -3,6 +3,10 @@ server:
   port: 9090
   servlet:
     context-path: /authsox
+  tomcat:
+    max-http-form-post-size: 32KB
+    max-swallow-size: 32KB
+    connection-timeout: 5s
 spring:
   kafka:
       bootstrap-servers: localhost:9092
@@ -17,6 +21,11 @@ spring:
 security:
   trusted-proxy: false
 auth:
+  request-limits:
+    max-body-size: 16KB
+    email-max-length: 254
+    password-max-length: 128
+    session-source-id-max-length: 64
   tokens:
     issuer: athssox
     access-token-ttl-seconds: 3600

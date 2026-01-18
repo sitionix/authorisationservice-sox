@@ -1,10 +1,19 @@
 environment: it
 server:
   port: 9090
+  tomcat:
+    max-http-form-post-size: 1KB
+    max-swallow-size: 1KB
+    connection-timeout: 2s
 forge-it:
   kafka:
     email-verify-topic: athssox.it.email-verify.public.v1
 auth:
+  request-limits:
+    max-body-size: 512B
+    email-max-length: 254
+    password-max-length: 128
+    session-source-id-max-length: 64
   tokens:
     jwt:
       alg: RS256

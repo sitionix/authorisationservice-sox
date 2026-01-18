@@ -1,0 +1,5 @@
+{
+  "code": 400,
+  "title": "Bad Request",
+  "details": "Invalid request payload"
+}
