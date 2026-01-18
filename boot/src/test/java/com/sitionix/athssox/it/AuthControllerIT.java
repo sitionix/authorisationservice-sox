@@ -9,9 +9,11 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.jayway.jsonpath.JsonPath;
 import com.sitionix.athssox.api.controller.AuthController;
+import com.sitionix.athssox.domain.model.RefreshTokenStatus;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
+import com.sitionix.athssox.postgresql.entity.token.RefreshTokenEntity;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.hamcrest.Matchers;
@@ -174,10 +176,65 @@ class AuthControllerIT {
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
-                .hasSize(2)
-                .withFetchedRelations()
-                .ignoreFields("id", "tokenHash", "expiresAt", "createdAt")
-                .containsAllWithJsons("refreshTokenEntityExpected.json");
+                .hasSize(2);
+
+        final List<RefreshTokenEntity> refreshTokens =
+                this.testManager.postgresql().get(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT);
+        final long activeTokens = refreshTokens.stream()
+                .filter(token -> token.getStatus().getId().equals(RefreshTokenStatus.ACTIVE.getId()))
+                .count();
+        assertThat(activeTokens).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should revoke old refresh token on re-login for same session")
+    void givenSameSessionSourceId_whenLoginTwice_thenOldRefreshIsRejectedAndSingleActiveTokenRemains() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        final List<String> refreshTokens = new ArrayList<>();
+        final String sessionSourceId = "device-123";
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(result -> refreshTokens.add(JsonPath.read(result.getResponse().getContentAsString(), "$.refreshToken")))
+                .assertAndCreate();
+
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.refreshAccessToken())
+                .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken(refreshTokens.get(0)))
+                .expectResponse("refreshAccessTokenResponse_forbidden_invalid.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
+
+        //then
+        assertThat(refreshTokens).hasSize(1);
+
+        final List<RefreshTokenEntity> storedTokens =
+                this.testManager.postgresql().get(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT);
+        final long activeTokensForSession = storedTokens.stream()
+                .filter(token -> token.getSession() != null)
+                .filter(token -> sessionSourceId.equals(token.getSession().getSessionSourceId()))
+                .filter(token -> token.getStatus().getId().equals(RefreshTokenStatus.ACTIVE.getId()))
+                .count();
+
+        assertThat(activeTokensForSession).isEqualTo(1);
     }
 
     @Test

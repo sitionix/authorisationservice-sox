@@ -36,6 +36,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LoginUserImpl implements LoginUser {
 
+    private static final String LOGIN_REVOKE_REASON = "LOGIN";
+
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenProvider tokenProvider;
@@ -55,6 +57,7 @@ public class LoginUserImpl implements LoginUser {
         final AuthUser user = ((LoginAuthenticationToken) authentication).getUser();
         final Instant now = this.clock.instant();
         final DeviceSession session = this.resolveSession(user, loginRequest, now);
+        this.revokeActiveTokensForSession(session, now);
         final AccessToken accessToken = this.tokenProvider.generateAccessToken(user);
         final RefreshToken refreshToken = this.tokenProvider.generateRefreshToken(user);
 
@@ -68,6 +71,13 @@ public class LoginUserImpl implements LoginUser {
                 .expiresIn(expiresIn)
                 .tokenType("Bearer")
                 .build();
+    }
+
+    private void revokeActiveTokensForSession(final DeviceSession session, final Instant now) {
+        if (session == null || session.getId() == null) {
+            return;
+        }
+        this.refreshTokenRepository.revokeActiveBySessionId(session.getId(), now, LOGIN_REVOKE_REASON);
     }
 
     private DeviceSession resolveSession(final AuthUser user, final LoginRequest loginRequest, final Instant now) {

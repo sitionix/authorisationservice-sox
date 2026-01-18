@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -133,12 +134,33 @@ class RefreshTokenRepositoryImplTest {
                 .revokeIfActive(tokenId, revokedStatusId, activeStatusId, now, reason);
     }
 
+    @Test
+    void given_session_id_when_revoke_active_by_session_id_then_verify() {
+        //given
+        final UUID sessionId = this.getSessionId();
+        final Instant now = this.getNow();
+        final String reason = this.getReason();
+        final Long revokedStatusId = RefreshTokenStatus.REVOKED.getId();
+        final Long activeStatusId = RefreshTokenStatus.ACTIVE.getId();
+
+        //when
+        this.repository.revokeActiveBySessionId(sessionId, now, reason);
+
+        //then
+        verify(this.refreshTokenJpaRepository)
+                .revokeActiveBySessionId(sessionId, revokedStatusId, activeStatusId, now, reason);
+    }
+
     private String getTokenHash() {
         return "token-hash";
     }
 
     private Long getTokenId() {
         return 10L;
+    }
+
+    private UUID getSessionId() {
+        return UUID.fromString("2b2f2a92-7c85-4b02-8010-6f1b4d79f2ed");
     }
 
     private Instant getNow() {

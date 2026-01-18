@@ -4,6 +4,7 @@ import com.sitionix.athssox.domain.model.RefreshTokenRecord;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface RefreshTokenRepository {
 
@@ -12,4 +13,6 @@ public interface RefreshTokenRepository {
     Optional<RefreshTokenRecord> findByTokenHash(final String tokenHash);
 
     boolean revokeIfActive(final Long tokenId, final Instant now, final String reason);
+
+    void revokeActiveBySessionId(final UUID sessionId, final Instant now, final String reason);
 }

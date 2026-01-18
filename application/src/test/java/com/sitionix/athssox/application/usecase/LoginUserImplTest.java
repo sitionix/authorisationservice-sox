@@ -132,6 +132,8 @@ class LoginUserImplTest {
                 .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
+        verify(this.refreshTokenRepository)
+                .revokeActiveBySessionId(sessionCaptor.getValue().getId(), NOW, "LOGIN");
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
@@ -218,6 +220,8 @@ class LoginUserImplTest {
                 .authenticate(tokenCaptor.capture());
         verify(this.deviceSessionRepository)
                 .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
+        verify(this.refreshTokenRepository)
+                .revokeActiveBySessionId(existingSession.getId(), NOW, "LOGIN");
         verify(this.deviceSessionRepository, times(0))
                 .save(any(DeviceSession.class));
         verify(this.tokenProvider)
@@ -299,6 +303,8 @@ class LoginUserImplTest {
                 .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
+        verify(this.refreshTokenRepository)
+                .revokeActiveBySessionId(sessionId, NOW, "LOGIN");
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
@@ -391,6 +397,8 @@ class LoginUserImplTest {
                 .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
+        verify(this.refreshTokenRepository)
+                .revokeActiveBySessionId(sessionId, NOW, "LOGIN");
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
@@ -481,6 +489,8 @@ class LoginUserImplTest {
                 .findByUserIdAndSessionSourceId(user.getId(), given.getSessionSourceId());
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
+        verify(this.refreshTokenRepository)
+                .revokeActiveBySessionId(sessionId, NOW, "LOGIN");
         verify(this.tokenProvider)
                 .generateAccessToken(user);
         verify(this.tokenProvider)
