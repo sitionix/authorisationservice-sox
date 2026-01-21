@@ -22,4 +22,6 @@ public interface OutboxEventRepository {
                     String errorMessage,
                     Duration retryDelay,
                     int maxRetries);
+
+    int deleteSentBefore(LocalDateTime cutoff);
 }

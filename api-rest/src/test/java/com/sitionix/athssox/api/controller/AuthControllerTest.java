@@ -9,8 +9,6 @@ import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
 import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
-import com.sitionix.athssox.api.ratelimit.ClientIpResolver;
-import com.sitionix.athssox.api.ratelimit.RateLimitGuard;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
@@ -56,12 +54,6 @@ class AuthControllerTest {
     private HttpServletRequest httpServletRequest;
 
     @Mock
-    private ClientIpResolver clientIpResolver;
-
-    @Mock
-    private RateLimitGuard rateLimitGuard;
-
-    @Mock
     private RefreshAccessToken refreshAccessToken;
 
     @Mock
@@ -75,9 +67,7 @@ class AuthControllerTest {
                 this.loginUser,
                 this.refreshAccessToken,
                 this.refreshAccessTokenApiMapper,
-                this.httpServletRequest,
-                this.clientIpResolver,
-                this.rateLimitGuard);
+                this.httpServletRequest);
     }
 
     @AfterEach
@@ -88,9 +78,7 @@ class AuthControllerTest {
                 this.loginUser,
                 this.refreshAccessToken,
                 this.refreshAccessTokenApiMapper,
-                this.httpServletRequest,
-                this.clientIpResolver,
-                this.rateLimitGuard);
+                this.httpServletRequest);
     }
 
     @Test
@@ -103,12 +91,8 @@ class AuthControllerTest {
 
         when(this.authApiMapper.asLoginRequest(given))
                 .thenReturn(loginRequest);
-        when(this.clientIpResolver.resolve(this.httpServletRequest))
-                .thenReturn("127.0.0.1");
         when(given.getEmail())
                 .thenReturn("user@sitionix.com");
-        when(given.getSessionSourceId())
-                .thenReturn("device-123");
         when(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT))
                 .thenReturn("Mozilla/5.0");
         when(this.loginUser.execute(loginRequest))
@@ -121,18 +105,12 @@ class AuthControllerTest {
 
         //then
         assertThat(actual).isEqualTo(ResponseEntity.ok(expected));
-        verify(this.clientIpResolver)
-                .resolve(this.httpServletRequest);
-        verify(this.rateLimitGuard)
-                .checkLogin("127.0.0.1", "user@sitionix.com", "device-123");
         verify(this.authApiMapper)
                 .asLoginRequest(given);
         verify(this.httpServletRequest)
                 .getHeader(HttpHeaders.USER_AGENT);
         verify(this.loginUser)
                 .execute(loginRequest);
-        verify(this.rateLimitGuard)
-                .resetLoginEmail("user@sitionix.com");
         verify(this.authApiMapper)
                 .asLoginResponseDTO(loginResponse);
     }
@@ -195,10 +173,6 @@ class AuthControllerTest {
 
         when(this.refreshAccessTokenApiMapper.asRefreshAccessTokenRequest(given))
                 .thenReturn(refreshAccessTokenRequest);
-        when(this.clientIpResolver.resolve(this.httpServletRequest))
-                .thenReturn("127.0.0.1");
-        when(given.getSessionSourceId())
-                .thenReturn("device-123");
         when(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT))
                 .thenReturn("Mozilla/5.0");
         when(this.refreshAccessToken.execute(refreshAccessTokenRequest))
@@ -211,10 +185,6 @@ class AuthControllerTest {
 
         //then
         assertThat(actual).isEqualTo(ResponseEntity.ok(expected));
-        verify(this.clientIpResolver)
-                .resolve(this.httpServletRequest);
-        verify(this.rateLimitGuard)
-                .checkRefresh("127.0.0.1", "device-123");
         verify(this.refreshAccessTokenApiMapper)
                 .asRefreshAccessTokenRequest(given);
         verify(this.httpServletRequest)

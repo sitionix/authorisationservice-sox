@@ -148,6 +148,23 @@ class EmailVerificationTokenRepositoryImplTest {
                 .countByUser_IdAndCreatedAtAfter(userId, createdAfter);
     }
 
+    @Test
+    void given_cutoff_when_delete_expired_before_then_return_count() {
+        //given
+        final Instant cutoff = this.getCreatedAt();
+
+        when(this.emailVerificationTokenJpaRepository.deleteExpiredBefore(cutoff))
+                .thenReturn(4);
+
+        //when
+        final int actual = this.emailVerificationTokenRepository.deleteExpiredBefore(cutoff);
+
+        //then
+        assertThat(actual).isEqualTo(4);
+        verify(this.emailVerificationTokenJpaRepository)
+                .deleteExpiredBefore(cutoff);
+    }
+
     private String getHashedToken() {
         return "hashed-token";
     }

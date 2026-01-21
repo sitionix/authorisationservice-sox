@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,10 +48,15 @@ public class LoginUserImpl implements LoginUser {
     @Override
     @Transactional
     public LoginResponse execute(@Valid final LoginRequest loginRequest) {
-        final Authentication authentication = this.authenticationManager.authenticate(
-                LoginAuthenticationToken.unauthenticated(loginRequest.getEmail(),
-                        loginRequest.getPassword(),
-                        loginRequest.getSiteId()));
+        final Authentication authentication;
+        try {
+            authentication = this.authenticationManager.authenticate(
+                    LoginAuthenticationToken.unauthenticated(loginRequest.getEmail(),
+                            loginRequest.getPassword(),
+                            loginRequest.getSiteId()));
+        } catch (final AuthenticationException exception) {
+            throw exception;
+        }
 
         final AuthUser user = ((LoginAuthenticationToken) authentication).getUser();
         final Instant now = this.clock.instant();
@@ -122,6 +128,7 @@ public class LoginUserImpl implements LoginUser {
                                   final DeviceSession session,
                                   final RefreshToken refreshToken,
                                   final Instant now) {
+        this.refreshTokenRepository.revokeActiveBySessionId(session.getId(), now, "ROTATED");
         this.refreshTokenRepository.save(RefreshTokenRecord.builder()
                 .tokenHash(this.tokenHasher.hash(refreshToken.getToken()))
                 .user(user)
@@ -144,4 +151,5 @@ public class LoginUserImpl implements LoginUser {
         final Instant threshold = now.minus(throttleInterval);
         return !session.getLastUsedAt().isAfter(threshold);
     }
+
 }

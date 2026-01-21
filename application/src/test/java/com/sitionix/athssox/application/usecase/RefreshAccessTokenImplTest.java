@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.config.SessionConfig;
+import com.sitionix.athssox.application.service.RefreshTokenRevocationService;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
@@ -55,6 +56,9 @@ class RefreshAccessTokenImplTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
+    private RefreshTokenRevocationService refreshTokenRevocationService;
+
+    @Mock
     private DeviceSessionRepository deviceSessionRepository;
 
     @Mock
@@ -70,6 +74,7 @@ class RefreshAccessTokenImplTest {
     void setUp() {
         final SessionConfig sessionConfig = this.getSessionConfig(5L);
         this.refreshAccessToken = new RefreshAccessTokenImpl(this.refreshTokenRepository,
+                this.refreshTokenRevocationService,
                 this.deviceSessionRepository,
                 this.tokenProvider,
                 this.tokenHasher,
@@ -80,6 +85,7 @@ class RefreshAccessTokenImplTest {
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.refreshTokenRepository,
+                this.refreshTokenRevocationService,
                 this.deviceSessionRepository,
                 this.tokenProvider,
                 this.tokenHasher,
@@ -571,6 +577,8 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.refreshTokenRevocationService)
+                .revokeIfActive(12L, NOW, "MISMATCH");
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
 
@@ -641,6 +649,8 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.refreshTokenRevocationService)
+                .revokeIfActive(13L, NOW, "REPLAY");
         verify(this.deviceSessionRepository)
                 .save(sessionCaptor.capture());
 
@@ -709,6 +719,8 @@ class RefreshAccessTokenImplTest {
                 .hash(refreshTokenValue);
         verify(this.refreshTokenRepository)
                 .findByTokenHash("hashed-refresh-token");
+        verify(this.refreshTokenRevocationService)
+                .revokeIfActive(14L, NOW, "SUSPICIOUS");
     }
 
     @Test

@@ -277,6 +277,23 @@ class OutboxEventRepositoryImplTest {
                 .save(entity);
     }
 
+    @Test
+    void given_cutoff_when_delete_sent_before_then_delegate_to_repository() {
+        //given
+        final LocalDateTime cutoff = LocalDateTime.now();
+
+        when(this.outboxEventJpaRepository.deleteSentBefore(cutoff, OutboxStatus.SENT.getId()))
+                .thenReturn(3);
+
+        //when
+        final int actual = this.repository.deleteSentBefore(cutoff);
+
+        //then
+        assertThat(actual).isEqualTo(3);
+        verify(this.outboxEventJpaRepository)
+                .deleteSentBefore(cutoff, OutboxStatus.SENT.getId());
+    }
+
     private OutboxEventEntity getOutboxEventEntity(final OutboxInitiatorTypeEntity initiatorType,
                                                    final int retryCount,
                                                    final String lastError) {

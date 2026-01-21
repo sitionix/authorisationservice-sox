@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -131,6 +132,45 @@ class RefreshTokenRepositoryImplTest {
         assertThat(actual).isEqualTo(false);
         verify(this.refreshTokenJpaRepository)
                 .revokeIfActive(tokenId, revokedStatusId, activeStatusId, now, reason);
+    }
+
+    @Test
+    void given_session_id_when_revoke_active_by_session_then_delegate_to_repository() {
+        //given
+        final UUID sessionId = UUID.randomUUID();
+        final Instant now = this.getNow();
+        final String reason = this.getReason();
+        final Long revokedStatusId = RefreshTokenStatus.REVOKED.getId();
+        final Long activeStatusId = RefreshTokenStatus.ACTIVE.getId();
+
+        when(this.refreshTokenJpaRepository.revokeActiveBySessionId(sessionId, revokedStatusId, activeStatusId, now, reason))
+                .thenReturn(2);
+
+        //when
+        final int actual = this.repository.revokeActiveBySessionId(sessionId, now, reason);
+
+        //then
+        assertThat(actual).isEqualTo(2);
+        verify(this.refreshTokenJpaRepository)
+                .revokeActiveBySessionId(sessionId, revokedStatusId, activeStatusId, now, reason);
+    }
+
+    @Test
+    void given_cutoff_when_delete_inactive_before_then_delegate_to_repository() {
+        //given
+        final Instant cutoff = this.getNow();
+        final Long revokedStatusId = RefreshTokenStatus.REVOKED.getId();
+
+        when(this.refreshTokenJpaRepository.deleteInactiveBefore(cutoff, revokedStatusId))
+                .thenReturn(4);
+
+        //when
+        final int actual = this.repository.deleteInactiveBefore(cutoff);
+
+        //then
+        assertThat(actual).isEqualTo(4);
+        verify(this.refreshTokenJpaRepository)
+                .deleteInactiveBefore(cutoff, revokedStatusId);
     }
 
     private String getTokenHash() {

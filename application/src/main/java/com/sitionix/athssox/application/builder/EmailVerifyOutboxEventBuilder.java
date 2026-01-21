@@ -10,8 +10,8 @@ import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
-import com.sitionix.athssox.domain.service.VerificationLinkFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<EmailVerifyPayload> {
 
     private final EmailVerificationTokenService tokenService;
-    private final VerificationLinkFactory linkFactory;
 
     @Override
     public OutboxEventType eventType() {
@@ -31,11 +30,8 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
 
     @Override
     public OutboxEvent<EmailVerifyPayload> build(final OutboxBuildContext ctx) {
-        final String rawToken = this.tokenService.issue(ctx.userId(), ctx.siteId());
-
-        final String verifyUrl = this.linkFactory.buildEmailVerifyUrl(rawToken, ctx.siteId());
-
-        final EmailVerifyPayload payload = this.buildPayload(ctx, verifyUrl);
+        final EmailVerificationTokenIssue tokenIssue = this.tokenService.issue(ctx.userId(), ctx.siteId());
+        final EmailVerifyPayload payload = this.buildPayload(ctx, tokenIssue.tokenId());
 
         return OutboxEvent.<EmailVerifyPayload>builder()
                 .aggregateType(OutboxAggregateType.USER)
@@ -51,7 +47,7 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
                 .build();
     }
 
-    private EmailVerifyPayload buildPayload(final OutboxBuildContext ctx, final String verifyUrl) {
+    private EmailVerifyPayload buildPayload(final OutboxBuildContext ctx, final java.util.UUID verificationTokenId) {
         return EmailVerifyPayload.builder()
                 .delivery(EmailVerifyPayload.Delivery.builder()
                         .channel(VerifyChannel.EMAIL)
@@ -59,7 +55,7 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
                         .build())
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(EmailVerifyPayload.Params.builder()
-                        .verifyUrl(verifyUrl)
+                        .verificationTokenId(verificationTokenId)
                         .build())
                 .meta(EmailVerifyPayload.Meta.builder()
                         .userId(ctx.userId())

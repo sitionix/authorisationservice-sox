@@ -9,6 +9,7 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -101,6 +102,29 @@ class UserControllerIT {
                 .withFetchedRelations()
                 .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
                 .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+    }
+
+    @Test
+    @DisplayName("Should not store raw verification token or verifyUrl in outbox payload")
+    void given_registration_when_user_created_then_outbox_payload_has_no_raw_token() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.registerUser())
+                .withRequest("registerUserRequest.json")
+                .expectResponse("registerUserResponse.json", "userId")
+                .expectStatus(HttpStatus.CREATED)
+                .assertAndCreate();
+
+        //then
+        final List<OutboxEventEntity> events =
+                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        assertThat(events).hasSize(1);
+        final String payload = events.get(0).getPayload();
+        assertThat(payload).doesNotContain("token=");
+        assertThat(payload).doesNotContain("verifyUrl");
+        assertThat(payload).contains("verificationTokenId");
     }
 
     @Test

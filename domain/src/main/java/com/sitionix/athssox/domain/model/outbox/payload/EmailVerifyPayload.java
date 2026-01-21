@@ -37,7 +37,7 @@ public class EmailVerifyPayload {
     @Jacksonized
     @EqualsAndHashCode
     public static class Params {
-        private String verifyUrl;
+        private UUID verificationTokenId;
     }
 
     @Data

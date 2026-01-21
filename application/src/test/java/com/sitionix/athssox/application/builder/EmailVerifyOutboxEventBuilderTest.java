@@ -5,12 +5,12 @@ import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
-import com.sitionix.athssox.domain.service.VerificationLinkFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,49 +35,43 @@ class EmailVerifyOutboxEventBuilderTest {
     @Mock
     private EmailVerificationTokenService tokenService;
 
-    @Mock
-    private VerificationLinkFactory linkFactory;
-
     @BeforeEach
     void setUp() {
-        this.builder = new EmailVerifyOutboxEventBuilder(this.tokenService, this.linkFactory);
+        this.builder = new EmailVerifyOutboxEventBuilder(this.tokenService);
     }
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.tokenService, this.linkFactory);
+        verifyNoMoreInteractions(this.tokenService);
     }
 
     @Test
-    void givenContext_whenBuild_thenReturnEmailVerifyOutboxEvent() {
+    void given_context_when_build_then_return_email_verify_outbox_event() {
         //given
         final UUID siteId = UUID.randomUUID();
         final Instant requestedAt = Instant.now();
+        final UUID tokenId = UUID.randomUUID();
         final OutboxBuildContext given = this.getOutboxBuildContext(siteId,
                 requestedAt);
 
         when(this.tokenService.issue(1L, siteId))
-                .thenReturn("rawToken");
-        when(this.linkFactory.buildEmailVerifyUrl("rawToken", siteId))
-                .thenReturn("verifyUrl");
+                .thenReturn(this.getTokenIssue(tokenId));
 
         //when
         final OutboxEvent<EmailVerifyPayload> actual = this.builder.build(given);
 
         //then
         final OutboxEvent<EmailVerifyPayload> expected = this.getOutboxEvent(actual.getNextRetryAt(),
-                this.getEmailVerifyPayload(siteId, requestedAt));
+                this.getEmailVerifyPayload(siteId, requestedAt, tokenId));
 
         assertThat(actual).isEqualTo(expected);
 
         verify(this.tokenService)
                 .issue(1L, siteId);
-        verify(this.linkFactory)
-                .buildEmailVerifyUrl("rawToken", siteId);
     }
 
     @Test
-    void givenBuilder_whenEventType_thenReturnEmailVerify() {
+    void given_builder_when_event_type_then_return_email_verify() {
         //given
 
         //when
@@ -114,11 +108,12 @@ class EmailVerifyOutboxEventBuilderTest {
     }
 
     private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
-                                                     final Instant requestedAt) {
+                                                     final Instant requestedAt,
+                                                     final UUID tokenId) {
         return EmailVerifyPayload.builder()
                 .delivery(this.getDelivery())
                 .template(NotificationTemplate.EMAIL_VERIFY)
-                .params(this.getParams())
+                .params(this.getParams(tokenId))
                 .meta(this.getMeta(siteId, requestedAt))
                 .build();
     }
@@ -130,10 +125,14 @@ class EmailVerifyOutboxEventBuilderTest {
                 .build();
     }
 
-    private EmailVerifyPayload.Params getParams() {
+    private EmailVerifyPayload.Params getParams(final UUID tokenId) {
         return EmailVerifyPayload.Params.builder()
-                .verifyUrl("verifyUrl")
+                .verificationTokenId(tokenId)
                 .build();
+    }
+
+    private EmailVerificationTokenIssue getTokenIssue(final UUID tokenId) {
+        return new EmailVerificationTokenIssue(tokenId, "rawToken");
     }
 
     private EmailVerifyPayload.Meta getMeta(final UUID siteId, final Instant instant) {

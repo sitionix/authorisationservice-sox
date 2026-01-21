@@ -242,7 +242,7 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionRevokedExpected.json");
+                .containsAllWithJsons("refreshTokenRevokedSessionRevokedExpected.json");
     }
 
     @Test
@@ -415,7 +415,7 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionSuspiciousExpected.json");
+                .containsAllWithJsons("refreshTokenRevokedSessionMismatchExpected.json");
     }
 
     @Test
@@ -454,7 +454,38 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionSuspiciousExpected.json");
+                .containsAllWithJsons("refreshTokenRevokedSessionSuspiciousReasonExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should persist refresh token revocation for suspicious session")
+    void givenSuspiciousSession_whenRefreshAccessToken_thenForbiddenAndRevocationPersisted() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionSuspicious.json"))
+                .to(DatabaseContract.REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT.withJson("refreshTokenActiveBoundToDevice123.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.refreshAccessToken())
+                .withRequest("refreshAccessTokenRequest.json")
+                .expectResponse("refreshAccessTokenResponse_forbidden_session.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
+
+        //then
+        final List<RefreshTokenEntity> tokens =
+                this.testManager.postgresql().get(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT);
+        assertThat(tokens).hasSize(1);
+        assertThat(tokens.get(0).getStatus().getId()).isEqualTo(RefreshTokenStatus.REVOKED.getId());
+        assertThat(tokens.get(0).getRevokedReason()).isEqualTo("SUSPICIOUS");
     }
 
     @Test

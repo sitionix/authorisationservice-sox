@@ -28,6 +28,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.Optional;
@@ -35,7 +36,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -80,6 +83,8 @@ class LoginUserImplTest {
 
     @AfterEach
     void tearDown() {
+        verify(this.refreshTokenRepository, atMostOnce())
+                .revokeActiveBySessionId(any(UUID.class), eq(NOW), eq("ROTATED"));
         verifyNoMoreInteractions(this.deviceSessionRepository,
                 this.refreshTokenRepository,
                 this.tokenProvider,

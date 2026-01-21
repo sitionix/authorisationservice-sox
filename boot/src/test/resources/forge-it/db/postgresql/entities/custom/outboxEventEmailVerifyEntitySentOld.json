@@ -1,13 +1,16 @@
 {
   "aggregateType": {
-    "id": 1
+    "id": 1,
+    "description": "USER"
   },
   "aggregateId": 1,
   "eventType": {
-    "id": 2
+    "id": 1,
+    "description": "EMAIL_VERIFY"
   },
   "status": {
-    "id": 1
+    "id": 3,
+    "description": "SENT"
   },
   "initiatorType": {
     "id": 2,
@@ -17,5 +20,6 @@
   "retryCount": 0,
   "nextRetryAt": "2020-01-01T00:00:00",
   "payload": "{\"meta\": {\"siteId\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\", \"userId\": 1, \"traceId\": null, \"requestedAt\": \"2025-12-23T18:31:16.740787Z\"}, \"params\": {\"verificationTokenId\": \"11111111-1111-1111-1111-111111111111\"}, \"delivery\": {\"to\": \"email@sitionix.com\", \"channel\": \"EMAIL\"}, \"template\": \"EMAIL_VERIFY\"}",
-  "lastError": null
+  "createdAt": "2020-01-01T00:00:00",
+  "updatedAt": "2020-01-01T00:00:00"
 }

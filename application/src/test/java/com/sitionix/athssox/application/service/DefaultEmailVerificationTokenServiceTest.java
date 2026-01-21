@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.service;
 
 import com.sitionix.athssox.application.config.TokenConfig;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
@@ -62,7 +63,7 @@ class DefaultEmailVerificationTokenServiceTest {
     }
 
     @Test
-    void givenUserIdAndSiteId_whenIssue_thenPersistRecordAndReturnRawToken() {
+    void given_user_id_and_site_id_when_issue_then_persist_record_and_return_token_issue() {
         //given
         final Long userId = this.getUserId();
         final UUID siteId = this.getSiteId();
@@ -81,13 +82,14 @@ class DefaultEmailVerificationTokenServiceTest {
                 .thenReturn(now);
 
         //when
-        final String actual = this.defaultEmailVerificationTokenService.issue(userId, siteId);
+        final EmailVerificationTokenIssue actual = this.defaultEmailVerificationTokenService.issue(userId, siteId);
 
         //then
         final ArgumentCaptor<EmailVerificationTokenRecord> recordCaptor =
                 ArgumentCaptor.forClass(EmailVerificationTokenRecord.class);
 
-        assertThat(actual).isEqualTo(rawToken);
+        assertThat(actual.rawToken()).isEqualTo(rawToken);
+        assertThat(actual.tokenId()).isNotNull();
         assertThat(this.secureRandom.getCallCount()).isEqualTo(1);
         verify(this.tokenHasher)
                 .hash(rawToken);
@@ -99,9 +101,9 @@ class DefaultEmailVerificationTokenServiceTest {
                 .save(recordCaptor.capture());
 
         final EmailVerificationTokenRecord savedRecord = recordCaptor.getValue();
-        assertThat(savedRecord.getId()).isNotNull();
+        assertThat(savedRecord.getId()).isEqualTo(actual.tokenId());
 
-        final EmailVerificationTokenRecord expected = this.getEmailVerificationTokenRecord(savedRecord.getId(),
+        final EmailVerificationTokenRecord expected = this.getEmailVerificationTokenRecord(actual.tokenId(),
                 userId,
                 siteId,
                 hashedToken,

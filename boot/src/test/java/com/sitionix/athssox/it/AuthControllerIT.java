@@ -107,6 +107,60 @@ class AuthControllerIT {
     }
 
     @Test
+    @DisplayName("Should revoke old refresh token on login and keep a single active token")
+    void given_same_session_when_login_twice_then_old_refresh_token_rejected_and_single_active_token() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .build();
+
+        final List<String> refreshTokens = new ArrayList<>();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(result -> refreshTokens.add(JsonPath.read(result.getResponse().getContentAsString(),
+                        "$.refreshToken")))
+                .assertAndCreate();
+
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.login())
+                .withRequest("loginRequest.json")
+                .expectResponse("loginResponse.json", "accessToken", "refreshToken")
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.refreshAccessToken())
+                .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken(refreshTokens.get(0)))
+                .expectResponse("refreshAccessTokenResponse_forbidden_invalid.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
+
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(2)
+                .withFetchedRelations()
+                .ignoreFields("id",
+                        "tokenHash",
+                        "expiresAt",
+                        "createdAt",
+                        "updatedAt",
+                        "usedAt",
+                        "revokedAt",
+                        "rotatedFromTokenId")
+                .containsAllWithJsons("refreshTokenActiveExpected.json",
+                        "refreshTokenRevokedExpected.json");
+    }
+
+    @Test
     @DisplayName("Should not log login password values")
     void givenLoginRequest_whenLogin_thenPasswordNotLogged() {
         //given

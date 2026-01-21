@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.config.SessionConfig;
+import com.sitionix.athssox.application.service.RefreshTokenRevocationService;
 import com.sitionix.athssox.domain.exception.InactiveUserException;
 import com.sitionix.athssox.domain.exception.RefreshTokenExpiredException;
 import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
@@ -38,6 +39,7 @@ import java.util.Objects;
 public class RefreshAccessTokenImpl implements RefreshAccessToken {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenRevocationService refreshTokenRevocationService;
     private final DeviceSessionRepository deviceSessionRepository;
     private final TokenProvider tokenProvider;
     private final TokenHasher tokenHasher;
@@ -51,8 +53,8 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         final RefreshTokenRecord tokenRecord = this.findTokenRecord(refreshAccessTokenRequest, now);
         final DeviceSession session = this.getTokenSession(tokenRecord);
 
-        this.ensureSessionActive(session);
-        this.ensureSessionSourceMatches(session, refreshAccessTokenRequest, now);
+        this.ensureSessionActive(session, tokenRecord, now);
+        this.ensureSessionSourceMatches(session, tokenRecord, refreshAccessTokenRequest, now);
         this.ensureTokenNotReplayed(tokenRecord, session, refreshAccessTokenRequest, now);
         this.detectSessionAnomaly(session, refreshAccessTokenRequest);
 
@@ -95,17 +97,22 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         return session;
     }
 
-    private void ensureSessionActive(final DeviceSession session) {
+    private void ensureSessionActive(final DeviceSession session,
+                                     final RefreshTokenRecord tokenRecord,
+                                     final Instant now) {
         if (session.getStatus() != SessionStatus.ACTIVE) {
+            this.revokeTokenIfActive(tokenRecord, now, "SUSPICIOUS");
             throw new SessionNotActiveException("Session is not active or does not exist");
         }
     }
 
     private void ensureSessionSourceMatches(final DeviceSession session,
+                                            final RefreshTokenRecord tokenRecord,
                                             final RefreshAccessTokenRequest request,
                                             final Instant now) {
         if (!Objects.equals(session.getSessionSourceId(), request.getSessionSourceId())) {
             // TODO: emit session_context_mismatch_detected
+            this.revokeTokenIfActive(tokenRecord, now, "MISMATCH");
             this.markSessionSuspicious(session, request, now);
             throw new SessionMismatchException("Session does not match original token context");
         }
@@ -117,7 +124,11 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
                                         final Instant now) {
         if (isReplayed(tokenRecord)) {
             // TODO: emit replay_attack_detected
+            this.revokeTokenIfActive(tokenRecord, now, "REPLAY");
             this.markSessionSuspicious(session, request, now);
+            throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
+        }
+        if (isRevoked(tokenRecord)) {
             throw new RefreshTokenInvalidException("Refresh token is invalid or revoked");
         }
     }
@@ -201,9 +212,10 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
     }
 
     private boolean isReplayed(final RefreshTokenRecord tokenRecord) {
-        if (tokenRecord.getUsedAt() != null) {
-            return true;
-        }
+        return tokenRecord.getUsedAt() != null;
+    }
+
+    private boolean isRevoked(final RefreshTokenRecord tokenRecord) {
         if (tokenRecord.getRevokedAt() != null) {
             return true;
         }
@@ -227,5 +239,14 @@ public class RefreshAccessTokenImpl implements RefreshAccessToken {
         }
         final Instant threshold = now.minus(throttleInterval);
         return !session.getLastUsedAt().isAfter(threshold);
+    }
+
+    private void revokeTokenIfActive(final RefreshTokenRecord tokenRecord,
+                                     final Instant now,
+                                     final String reason) {
+        if (tokenRecord == null || tokenRecord.getId() == null) {
+            return;
+        }
+        this.refreshTokenRevocationService.revokeIfActive(tokenRecord.getId(), now, reason);
     }
 }
