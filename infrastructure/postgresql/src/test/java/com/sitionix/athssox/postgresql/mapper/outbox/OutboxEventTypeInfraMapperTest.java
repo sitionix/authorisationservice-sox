@@ -21,7 +21,7 @@ class OutboxEventTypeInfraMapperTest {
     }
 
     @Test
-    void givenNullEventType_whenAsOutboxEventTypeEntity_thenReturnNull() {
+    void given_null_event_type_when_as_outbox_event_type_entity_then_return_null() {
         //given
         final OutboxEventType given = null;
 
@@ -33,7 +33,7 @@ class OutboxEventTypeInfraMapperTest {
     }
 
     @Test
-    void givenEventType_whenAsOutboxEventTypeEntity_thenReturnEntity() {
+    void given_event_type_when_as_outbox_event_type_entity_then_return_entity() {
         //given
         final OutboxEventType given = OutboxEventType.EMAIL_VERIFY;
         final OutboxEventTypeEntity expected = this.getOutboxEventTypeEntity(1L, "EMAIL_VERIFY");
@@ -46,7 +46,7 @@ class OutboxEventTypeInfraMapperTest {
     }
 
     @Test
-    void givenEventTypeEntity_whenAsEventType_thenReturnEventType() {
+    void given_event_type_entity_when_as_event_type_then_return_event_type() {
         //given
         final OutboxEventTypeEntity given = this.getOutboxEventTypeEntity(1L, "EMAIL_VERIFY");
         final OutboxEventType expected = OutboxEventType.EMAIL_VERIFY;

@@ -53,7 +53,7 @@ class OutboxWorkerTest {
     }
 
     @Test
-    void givenNoEvents_whenDispatchPendingEvents_thenSkipProcessing() {
+    void given_no_events_when_dispatch_pending_events_then_skip_processing() {
         //given
         final int batchSize = 10;
         final List<String> statuses = this.getEventStatuses();
@@ -81,7 +81,7 @@ class OutboxWorkerTest {
     }
 
     @Test
-    void givenPendingEvent_whenDispatchPendingEvents_thenHandleAndMarkSent() {
+    void given_pending_event_when_dispatch_pending_events_then_handle_and_mark_sent() {
         //given
         final int batchSize = 1;
         final OutboxEvent<Object> event = this.getOutboxEvent(1L);
@@ -111,7 +111,7 @@ class OutboxWorkerTest {
     }
 
     @Test
-    void givenHandlerError_whenDispatchPendingEvents_thenMarkFailed() {
+    void given_handler_error_when_dispatch_pending_events_then_mark_failed() {
         //given
         final int batchSize = 1;
         final long retryDelaySeconds = 30L;

@@ -46,7 +46,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should refresh access token and rotate refresh token")
-    void givenValidRefreshToken_whenRefreshAccessToken_thenOkAndRotateRefreshToken() {
+    void given_valid_refresh_token_when_refresh_access_token_then_ok_and_rotate_refresh_token() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -85,7 +85,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should keep refresh tokens bound to a session and only one active after rotation")
-    void givenRotatedRefreshToken_whenInspectTokens_thenSingleActiveAndAllBoundToSession() {
+    void given_rotated_refresh_token_when_inspect_tokens_then_single_active_and_all_bound_to_session() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -117,7 +117,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should treat refresh token expiring at now as expired")
-    void givenRefreshTokenExpiringAtNow_whenRefreshAccessToken_thenUnauthorized() {
+    void given_refresh_token_expiring_at_now_when_refresh_access_token_then_unauthorized() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -149,7 +149,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh when token is expired")
-    void givenExpiredRefreshToken_whenRefreshAccessToken_thenUnauthorized() {
+    void given_expired_refresh_token_when_refresh_access_token_then_unauthorized() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -181,7 +181,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh when token is invalid")
-    void givenInvalidRefreshToken_whenRefreshAccessToken_thenForbidden() {
+    void given_invalid_refresh_token_when_refresh_access_token_then_forbidden() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -208,7 +208,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh when session is not active")
-    void givenInactiveSession_whenRefreshAccessToken_thenForbidden() {
+    void given_inactive_session_when_refresh_access_token_then_forbidden() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -242,12 +242,12 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionRevokedExpected.json");
+                .containsAllWithJsons("refreshTokenRevokedSessionRevokedExpected.json");
     }
 
     @Test
     @DisplayName("Should detect refresh token replay and mark session suspicious")
-    void givenRevokedRefreshToken_whenRefreshAccessToken_thenForbiddenAndSessionSuspicious() {
+    void given_revoked_refresh_token_when_refresh_access_token_then_forbidden_and_session_suspicious() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -286,7 +286,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh token reuse after rotation and mark session suspicious")
-    void givenRotatedRefreshToken_whenRefreshAccessTokenAgain_thenForbiddenAndSessionSuspicious() {
+    void given_rotated_refresh_token_when_refresh_access_token_again_then_forbidden_and_session_suspicious() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -332,7 +332,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should refresh token for matching session when multiple sessions exist")
-    void givenMultipleSessionsAndMatchingContext_whenRefreshAccessToken_thenOkAndOnlyBoundSessionUpdated() {
+    void given_multiple_sessions_and_matching_context_when_refresh_access_token_then_ok_and_only_bound_session_updated() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -376,7 +376,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh when session does not match token context")
-    void givenSessionMismatch_whenRefreshAccessToken_thenForbidden() {
+    void given_session_mismatch_when_refresh_access_token_then_forbidden() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -415,12 +415,12 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("id", "tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionSuspiciousExpected.json");
+                .containsAllWithJsons("refreshTokenRevokedSessionMismatchExpected.json");
     }
 
     @Test
     @DisplayName("Should reject refresh when session is suspicious")
-    void givenSuspiciousSession_whenRefreshAccessToken_thenForbidden() {
+    void given_suspicious_session_when_refresh_access_token_then_forbidden() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -454,12 +454,43 @@ class AuthRefreshControllerIT {
                 .hasSize(1)
                 .withFetchedRelations()
                 .ignoreFields("tokenHash", "expiresAt", "createdAt", "updatedAt", "usedAt", "revokedAt", "rotatedFromTokenId")
-                .containsAllWithJsons("refreshTokenActiveSessionSuspiciousExpected.json");
+                .containsAllWithJsons("refreshTokenRevokedSessionSuspiciousReasonExpected.json");
+    }
+
+    @Test
+    @DisplayName("Should persist refresh token revocation for suspicious session")
+    void given_suspicious_session_when_refresh_access_token_then_forbidden_and_revocation_persisted() {
+        //given
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserActive.json"))
+                .to(DatabaseContract.SESSION_STATUS_ENTITY_DB_CONTRACT.getById(2L))
+                .to(DatabaseContract.DEVICE_SESSION_ENTITY_DB_CONTRACT.withJson("deviceSessionSuspicious.json"))
+                .to(DatabaseContract.REFRESH_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
+                .to(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT.withJson("refreshTokenActiveBoundToDevice123.json"))
+                .build();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.refreshAccessToken())
+                .withRequest("refreshAccessTokenRequest.json")
+                .expectResponse("refreshAccessTokenResponse_forbidden_session.json")
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .assertAndCreate();
+
+        //then
+        final List<RefreshTokenEntity> tokens =
+                this.testManager.postgresql().get(DatabaseContract.REFRESH_TOKEN_ENTITY_DB_CONTRACT);
+        assertThat(tokens).hasSize(1);
+        assertThat(tokens.get(0).getStatus().getId()).isEqualTo(RefreshTokenStatus.REVOKED.getId());
+        assertThat(tokens.get(0).getRevokedReason()).isEqualTo("SUSPICIOUS");
     }
 
     @Test
     @DisplayName("Should allow only one concurrent refresh for the same token")
-    void givenConcurrentRefreshRequests_whenRefreshAccessToken_thenSingleSuccessAndConsistentState() throws InterruptedException {
+    void given_concurrent_refresh_requests_when_refresh_access_token_then_single_success_and_consistent_state() throws InterruptedException {
         //given
         this.testManager.postgresql()
                 .create()
@@ -534,7 +565,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should update session lastUsedAt only once within the throttle window")
-    void givenMultipleRefreshesWithinThrottleWindow_whenRefreshAccessToken_thenUpdateLastUsedAtOnce() {
+    void given_multiple_refreshes_within_throttle_window_when_refresh_access_token_then_update_last_used_at_once() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -585,7 +616,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should not log refresh token values")
-    void givenRefreshToken_whenRefreshAccessToken_thenRefreshTokenNotLogged() {
+    void given_refresh_token_when_refresh_access_token_then_refresh_token_not_logged() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -627,7 +658,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should extend refresh token expiry on rotation")
-    void givenValidRefreshToken_whenRefreshAccessToken_thenSetNewRefreshTokenExpiresAt() {
+    void given_valid_refresh_token_when_refresh_access_token_then_set_new_refresh_token_expires_at() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -663,7 +694,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh for inactive user")
-    void givenInactiveUser_whenRefreshAccessToken_thenForbiddenAndNoRotation() {
+    void given_inactive_user_when_refresh_access_token_then_forbidden_and_no_rotation() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -693,7 +724,7 @@ class AuthRefreshControllerIT {
 
     @Test
     @DisplayName("Should reject refresh for banned user")
-    void givenBannedUser_whenRefreshAccessToken_thenForbiddenAndNoRotation() {
+    void given_banned_user_when_refresh_access_token_then_forbidden_and_no_rotation() {
         //given
         this.testManager.postgresql()
                 .create()

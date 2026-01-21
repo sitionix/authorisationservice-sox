@@ -41,4 +41,9 @@ public class EmailVerificationTokenRepositoryImpl implements EmailVerificationTo
     public long countByUserIdAndCreatedAtAfter(final Long userId, final Instant createdAfter) {
         return this.emailVerificationTokenJpaRepository.countByUser_IdAndCreatedAtAfter(userId, createdAfter);
     }
+
+    @Override
+    public int deleteExpiredBefore(final Instant cutoff) {
+        return this.emailVerificationTokenJpaRepository.deleteExpiredBefore(cutoff);
+    }
 }

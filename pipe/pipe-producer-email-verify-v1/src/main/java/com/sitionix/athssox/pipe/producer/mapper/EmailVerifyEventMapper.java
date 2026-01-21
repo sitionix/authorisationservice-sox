@@ -10,6 +10,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
 public interface EmailVerifyEventMapper {
@@ -34,5 +35,12 @@ public interface EmailVerifyEventMapper {
             return null;
         }
         return instant.toEpochMilli();
+    }
+
+    default String toString(final UUID value) {
+        if (value == null) {
+            return null;
+        }
+        return value.toString();
     }
 }

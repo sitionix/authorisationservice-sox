@@ -21,7 +21,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithTo_whenMask_thenHideEmail() {
+    void given_json_with_to_when_mask_then_hide_email() {
         //given
         final String given = this.getPayloadWithTo();
         final String expected = this.getPayloadWithMaskedTo();
@@ -34,7 +34,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithWhitespaceAndMultipleTo_whenMask_thenHideAllEmails() {
+    void given_json_with_whitespace_and_multiple_to_when_mask_then_hide_all_emails() {
         //given
         final String given = this.getPayloadWithMultipleTo();
         final String expected = this.getPayloadWithMultipleMaskedTo();
@@ -47,7 +47,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenMessageWithoutTo_whenMask_thenReturnOriginal() {
+    void given_message_without_to_when_mask_then_return_original() {
         //given
         final String given = this.getMessageWithoutTo();
 
@@ -59,7 +59,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenNullMessage_whenMask_thenReturnNull() {
+    void given_null_message_when_mask_then_return_null() {
         //given
         final String given = this.getNullMessage();
         final String expected = null;
@@ -72,7 +72,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenBlankMessage_whenMask_thenReturnBlank() {
+    void given_blank_message_when_mask_then_return_blank() {
         //given
         final String given = this.getBlankMessage();
 
@@ -84,7 +84,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithToken_whenMask_thenHideToken() {
+    void given_json_with_token_when_mask_then_hide_token() {
         //given
         final String given = this.getPayloadWithToken();
         final String expected = this.getPayloadWithMaskedToken();
@@ -97,7 +97,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithPassword_whenMask_thenHidePassword() {
+    void given_json_with_password_when_mask_then_hide_password() {
         //given
         final String given = this.getPayloadWithPassword();
         final String expected = this.getPayloadWithMaskedPassword();
@@ -110,7 +110,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithRefreshToken_whenMask_thenHideRefreshToken() {
+    void given_json_with_refresh_token_when_mask_then_hide_refresh_token() {
         //given
         final String given = this.getPayloadWithRefreshToken();
         final String expected = this.getPayloadWithMaskedRefreshToken();
@@ -123,7 +123,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenMessageWithPasswordKeyValue_whenMask_thenHidePassword() {
+    void given_message_with_password_key_value_when_mask_then_hide_password() {
         //given
         final String given = this.getMessageWithPasswordKeyValue();
         final String expected = this.getMessageWithMaskedPasswordKeyValue();
@@ -136,7 +136,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenMessageWithRefreshTokenKeyValue_whenMask_thenHideRefreshToken() {
+    void given_message_with_refresh_token_key_value_when_mask_then_hide_refresh_token() {
         //given
         final String given = this.getMessageWithRefreshTokenKeyValue();
         final String expected = this.getMessageWithMaskedRefreshTokenKeyValue();
@@ -149,7 +149,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenJsonWithVerifyUrl_whenMask_thenHideTokenInUrl() {
+    void given_json_with_verify_url_when_mask_then_hide_token_in_url() {
         //given
         final String given = this.getPayloadWithVerifyUrl();
         final String expected = this.getPayloadWithMaskedVerifyUrl();
@@ -162,7 +162,7 @@ class SensitiveDataMaskerTest {
     }
 
     @Test
-    void givenMessageWithTokenQueryParam_whenMask_thenHideTokenValue() {
+    void given_message_with_token_query_param_when_mask_then_hide_token_value() {
         //given
         final String given = this.getMessageWithTokenQueryParam();
         final String expected = this.getMessageWithMaskedTokenQueryParam();

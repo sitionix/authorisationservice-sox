@@ -1,6 +1,7 @@
 package com.sitionix.athssox.application.service;
 
 import com.sitionix.athssox.application.config.TokenConfig;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
@@ -26,15 +27,16 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
     private final Clock clock;
 
     @Override
-    public String issue(final Long userId, final UUID siteId) {
+    public EmailVerificationTokenIssue issue(final Long userId, final UUID siteId) {
         final String rawToken = generateToken();
         final String tokenHash = tokenHasher.hash(rawToken);
+        final UUID tokenId = UUID.randomUUID();
 
         final Instant expiresAt = this.clock.instant()
                 .plusSeconds(this.tokenConfig.getEmailVerificationTokenTtlSeconds());
 
         final EmailVerificationTokenRecord tokenRecord = EmailVerificationTokenRecord.builder()
-                .id(UUID.randomUUID())
+                .id(tokenId)
                 .userId(userId)
                 .siteId(siteId)
                 .tokenHash(tokenHash)
@@ -45,7 +47,7 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
 
         this.emailVerificationTokenRepository.save(tokenRecord);
 
-        return rawToken;
+        return new EmailVerificationTokenIssue(tokenId, rawToken);
     }
 
 

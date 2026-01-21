@@ -1,0 +1,26 @@
+{
+  "status": {
+    "id": 2,
+    "description": "REVOKED"
+  },
+  "revokedReason": "SUSPICIOUS",
+  "user": {
+    "email": "user@sitionix.com",
+    "siteId": "c9b1f3f4-12c7-11ec-82a8-0242ac130003",
+    "globalRole": {
+      "id": 1,
+      "description": "SITE USER"
+    },
+    "status": {
+      "id": 2,
+      "description": "ACTIVE"
+    }
+  },
+  "session": {
+    "sessionSourceId": "device-123",
+    "status": {
+      "id": 3,
+      "description": "REVOKED BY USER"
+    }
+  }
+}

@@ -83,7 +83,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenRegisterUserDO_whenExecute_thenEncodePasswordCreateUserAndReturnResponseWithMessage() {
+    void given_register_user_do_when_execute_then_encode_password_create_user_and_return_response_with_message() {
         //given
         final String rawPassword = "StrongPassword123";
         final String encodedPassword = "encoded";
@@ -146,7 +146,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenPendingSiteScopedUser_whenExecute_thenReturnExistingUserAndResend() {
+    void given_pending_site_scoped_user_when_execute_then_return_existing_user_and_resend() {
         //given
         final UUID siteId = this.getSiteId();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -193,7 +193,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenPendingSiteScopedUserAndResendNotAllowed_whenExecute_thenReturnExistingUserWithoutOutbox() {
+    void given_pending_site_scoped_user_and_resend_not_allowed_when_execute_then_return_existing_user_without_outbox() {
         //given
         final UUID siteId = UUID.randomUUID();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -226,7 +226,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenSiteScopedEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
+    void given_site_scoped_email_already_registered_when_execute_then_throw_and_do_not_encode_or_create_user() {
         //given
         final UUID siteId = UUID.randomUUID();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -259,7 +259,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenGlobalEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
+    void given_global_email_already_registered_when_execute_then_throw_and_do_not_encode_or_create_user() {
         //given
         final RegisterUserDO given = this.getRegisterUserDO(null,
                 DEFAULT_EMAIL,
@@ -291,7 +291,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenInvalidPassword_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
+    void given_invalid_password_when_execute_then_throw_and_do_not_encode_or_create_user() {
         //given
         final UUID siteId = UUID.randomUUID();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -323,7 +323,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenSiteScopedRoleWithoutSiteId_whenExecute_thenThrowMissingSiteIdException() {
+    void given_site_scoped_role_without_site_id_when_execute_then_throw_missing_site_id_exception() {
         //given
         final RegisterUserDO given = this.getRegisterUserDO(null,
                 DEFAULT_EMAIL,
@@ -346,7 +346,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void givenGlobalRoleWithSiteId_whenExecute_thenClearSiteIdAndUseGlobalUniqueness() {
+    void given_global_role_with_site_id_when_execute_then_clear_site_id_and_use_global_uniqueness() {
         //given
         final String rawPassword = this.getPassword();
         final String encodedPassword = this.getEncodedPassword();

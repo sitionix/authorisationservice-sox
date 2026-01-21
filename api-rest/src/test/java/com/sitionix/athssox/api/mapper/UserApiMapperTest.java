@@ -26,7 +26,7 @@ class UserApiMapperTest {
     }
 
     @Test
-    void givenUser_whenAsUserResponseDTO_thenReturnUserResponseDTO() {
+    void given_user_when_as_user_response_dto_then_return_user_response_dto() {
         //given
 
         final UUID siteId = UUID.randomUUID();
@@ -42,7 +42,7 @@ class UserApiMapperTest {
     }
 
     @Test
-    void givenUser_whenAsResponseRegisterUserDTO_thenReturnResponseRegisterUserDTO() {
+    void given_user_when_as_response_register_user_dto_then_return_response_register_user_dto() {
         //given
         final Long userId = 1L;
 

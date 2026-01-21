@@ -39,7 +39,7 @@ class JwksControllerTest {
     }
 
     @Test
-    void givenJwksProvider_whenGetJwks_thenReturnJwksResponse() {
+    void given_jwks_provider_when_get_jwks_then_return_jwks_response() {
         //given
         final JwksResponse expected = this.getJwksResponse("key-1");
 

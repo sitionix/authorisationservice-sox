@@ -10,8 +10,6 @@ import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
 import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
-import com.sitionix.athssox.api.ratelimit.ClientIpResolver;
-import com.sitionix.athssox.api.ratelimit.RateLimitGuard;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
@@ -47,22 +45,13 @@ public class AuthController implements AuthApi {
 
     private final HttpServletRequest httpServletRequest;
 
-    private final ClientIpResolver clientIpResolver;
-
-    private final RateLimitGuard rateLimitGuard;
-
     @Override
     public ResponseEntity<LoginResponseDTO> login(@Valid final LoginRequestDTO loginRequestDTO) {
         log.info("Received login request for email: {}", loginRequestDTO.getEmail());
 
-        final String clientIp = this.clientIpResolver.resolve(this.httpServletRequest);
-        this.rateLimitGuard.checkLogin(clientIp, loginRequestDTO.getEmail(), loginRequestDTO.getSessionSourceId());
-
         final LoginRequest loginRequest = this.authApiMapper.asLoginRequest(loginRequestDTO);
         loginRequest.setUserAgent(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT));
         final LoginResponse loginResponse = this.loginUser.execute(loginRequest);
-
-        this.rateLimitGuard.resetLoginEmail(loginRequestDTO.getEmail());
 
         log.info("Login completed for email: {}", loginRequestDTO.getEmail());
         return ResponseEntity.ok(this.authApiMapper.asLoginResponseDTO(loginResponse));
@@ -87,9 +76,6 @@ public class AuthController implements AuthApi {
 
     @Override
     public ResponseEntity<RefreshAccessTokenResponseDTO> refreshAccessToken(@Valid final RefreshAccessTokenRequestDTO refreshAccessTokenRequest) {
-        final String clientIp = this.clientIpResolver.resolve(this.httpServletRequest);
-        this.rateLimitGuard.checkRefresh(clientIp, refreshAccessTokenRequest.getSessionSourceId());
-
         final RefreshAccessTokenRequest request = this.refreshAccessTokenApiMapper.asRefreshAccessTokenRequest(refreshAccessTokenRequest);
 
         request.setUserAgent(this.httpServletRequest.getHeader(HttpHeaders.USER_AGENT));

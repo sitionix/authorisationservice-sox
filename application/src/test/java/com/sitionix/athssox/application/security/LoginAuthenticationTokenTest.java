@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 class LoginAuthenticationTokenTest {
 
     @Test
-    void givenAuthenticatedToken_whenSetAuthenticatedTrue_thenThrowException() {
+    void given_authenticated_token_when_set_authenticated_true_then_throw_exception() {
         //given
         final LoginAuthenticationToken given = LoginAuthenticationToken.authenticated(this.getAuthUser(1L, null));
 
@@ -30,7 +30,7 @@ class LoginAuthenticationTokenTest {
     }
 
     @Test
-    void givenUnauthenticatedToken_whenSetAuthenticatedFalse_thenRemainUnauthenticated() {
+    void given_unauthenticated_token_when_set_authenticated_false_then_remain_unauthenticated() {
         //given
         final LoginAuthenticationToken given = LoginAuthenticationToken.unauthenticated("user@sitionix.com",
                 "password",

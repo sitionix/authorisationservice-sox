@@ -105,4 +105,10 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepository {
                     this.outboxEventJpaRepository.save(event);
                 });
     }
+
+    @Override
+    @Transactional
+    public int deleteSentBefore(final LocalDateTime cutoff) {
+        return this.outboxEventJpaRepository.deleteSentBefore(cutoff, OutboxStatus.SENT.getId());
+    }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -40,5 +41,20 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
                 now,
                 reason);
         return updated > 0;
+    }
+
+    @Override
+    public int revokeActiveBySessionId(final UUID sessionId, final Instant now, final String reason) {
+        return this.refreshTokenJpaRepository.revokeActiveBySessionId(sessionId,
+                RefreshTokenStatus.REVOKED.getId(),
+                RefreshTokenStatus.ACTIVE.getId(),
+                now,
+                reason);
+    }
+
+    @Override
+    public int deleteInactiveBefore(final Instant cutoff) {
+        return this.refreshTokenJpaRepository.deleteInactiveBefore(cutoff,
+                RefreshTokenStatus.REVOKED.getId());
     }
 }

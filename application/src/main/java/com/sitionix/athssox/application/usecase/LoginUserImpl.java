@@ -122,6 +122,7 @@ public class LoginUserImpl implements LoginUser {
                                   final DeviceSession session,
                                   final RefreshToken refreshToken,
                                   final Instant now) {
+        this.refreshTokenRepository.revokeActiveBySessionId(session.getId(), now, "ROTATED");
         this.refreshTokenRepository.save(RefreshTokenRecord.builder()
                 .tokenHash(this.tokenHasher.hash(refreshToken.getToken()))
                 .user(user)
@@ -144,4 +145,5 @@ public class LoginUserImpl implements LoginUser {
         final Instant threshold = now.minus(throttleInterval);
         return !session.getLastUsedAt().isAfter(threshold);
     }
+
 }

@@ -22,7 +22,7 @@ class EmailVerificationTokenStatusInfraMapperTest {
     }
 
     @Test
-    void givenNullStatusEntity_whenAsStatus_thenReturnNull() {
+    void given_null_status_entity_when_as_status_then_return_null() {
         //given
         final EmailVerificationTokenStatusEntity given = null;
 
@@ -34,7 +34,7 @@ class EmailVerificationTokenStatusInfraMapperTest {
     }
 
     @Test
-    void givenStatusEntity_whenAsStatus_thenReturnStatus() {
+    void given_status_entity_when_as_status_then_return_status() {
         //given
         final EmailVerificationTokenStatusEntity given = this.getStatusEntity(1L, "ACTIVE");
         final EmailVerificationTokenStatus expected = EmailVerificationTokenStatus.ACTIVE;
@@ -47,7 +47,7 @@ class EmailVerificationTokenStatusInfraMapperTest {
     }
 
     @Test
-    void givenNullStatus_whenAsStatusEntity_thenReturnNull() {
+    void given_null_status_when_as_status_entity_then_return_null() {
         //given
         final EmailVerificationTokenStatus given = null;
 
@@ -59,7 +59,7 @@ class EmailVerificationTokenStatusInfraMapperTest {
     }
 
     @Test
-    void givenStatus_whenAsStatusEntity_thenReturnEntity() {
+    void given_status_when_as_status_entity_then_return_entity() {
         //given
         final EmailVerificationTokenStatus given = EmailVerificationTokenStatus.ACTIVE;
         final EmailVerificationTokenStatusEntity expected = this.getStatusEntity(1L, "ACTIVE");

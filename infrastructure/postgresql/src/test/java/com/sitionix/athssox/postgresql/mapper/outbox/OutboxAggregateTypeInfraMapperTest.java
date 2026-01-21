@@ -21,7 +21,7 @@ class OutboxAggregateTypeInfraMapperTest {
     }
 
     @Test
-    void givenNullAggregateType_whenAsOutboxAggregateTypeEntity_thenReturnNull() {
+    void given_null_aggregate_type_when_as_outbox_aggregate_type_entity_then_return_null() {
         //given
         final OutboxAggregateType given = null;
 
@@ -33,7 +33,7 @@ class OutboxAggregateTypeInfraMapperTest {
     }
 
     @Test
-    void givenAggregateType_whenAsOutboxAggregateTypeEntity_thenReturnEntity() {
+    void given_aggregate_type_when_as_outbox_aggregate_type_entity_then_return_entity() {
         //given
         final OutboxAggregateType given = OutboxAggregateType.USER;
         final OutboxAggregateTypeEntity expected = this.getOutboxAggregateTypeEntity(1L, "USER");
@@ -46,7 +46,7 @@ class OutboxAggregateTypeInfraMapperTest {
     }
 
     @Test
-    void givenAggregateTypeEntity_whenAsEventType_thenReturnAggregateType() {
+    void given_aggregate_type_entity_when_as_event_type_then_return_aggregate_type() {
         //given
         final OutboxAggregateTypeEntity given = this.getOutboxAggregateTypeEntity(1L, "USER");
         final OutboxAggregateType expected = OutboxAggregateType.USER;

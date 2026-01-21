@@ -50,7 +50,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenActiveUser_whenAuthenticate_thenReturnAuthenticatedToken() {
+    void given_active_user_when_authenticate_then_return_authenticated_token() {
         //given
         final UUID siteId = UUID.randomUUID();
         final String email = "user@sitionix.com";
@@ -76,7 +76,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenSiteScopedMissing_whenAuthenticate_thenFallbackToGlobalUser() {
+    void given_site_scoped_missing_when_authenticate_then_fallback_to_global_user() {
         //given
         final UUID siteId = UUID.randomUUID();
         final String email = "user@sitionix.com";
@@ -106,7 +106,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenInactiveUser_whenAuthenticate_thenThrowBadCredentialsException() {
+    void given_inactive_user_when_authenticate_then_throw_bad_credentials_exception() {
         //given
         final String email = "user@sitionix.com";
         final String password = "StrongPassword123";
@@ -128,7 +128,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenInvalidPassword_whenAuthenticate_thenThrowBadCredentialsException() {
+    void given_invalid_password_when_authenticate_then_throw_bad_credentials_exception() {
         //given
         final String email = "user@sitionix.com";
         final String password = "StrongPassword123";
@@ -154,7 +154,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenSiteScopedUserAndMissingSiteId_whenAuthenticate_thenThrowMissingSiteIdException() {
+    void given_site_scoped_user_and_missing_site_id_when_authenticate_then_throw_missing_site_id_exception() {
         //given
         final String email = "user@sitionix.com";
         final String password = "StrongPassword123";
@@ -180,7 +180,7 @@ class LoginAuthenticationProviderTest {
     }
 
     @Test
-    void givenAuthenticationClass_whenSupports_thenReturnTrue() {
+    void given_authentication_class_when_supports_then_return_true() {
         //given
         final Class<?> given = LoginAuthenticationToken.class;
 

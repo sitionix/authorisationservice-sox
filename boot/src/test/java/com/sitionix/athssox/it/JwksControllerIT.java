@@ -42,7 +42,7 @@ class JwksControllerIT {
 
     @Test
     @DisplayName("Should allow JWKS access without authentication")
-    void givenNoAuth_whenRequestJwks_thenOk() {
+    void given_no_auth_when_request_jwks_then_ok() {
         //given
 
         //when
@@ -56,7 +56,7 @@ class JwksControllerIT {
 
     @Test
     @DisplayName("Should return JWKS in valid format")
-    void givenJwksRequest_whenGetJwks_thenReturnValidKeyFormat() {
+    void given_jwks_request_when_get_jwks_then_return_valid_key_format() {
         //given
 
         //when
@@ -71,7 +71,7 @@ class JwksControllerIT {
 
     @Test
     @DisplayName("Should match JWT kid with JWKS keys")
-    void givenAccessToken_whenGetJwks_thenContainsTokenKid() {
+    void given_access_token_when_get_jwks_then_contains_token_kid() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -113,7 +113,7 @@ class JwksControllerIT {
 
     @Test
     @DisplayName("Should not expose private key fields in JWKS")
-    void givenJwksRequest_whenGetJwks_thenDoesNotExposePrivateKeyFields() {
+    void given_jwks_request_when_get_jwks_then_does_not_expose_private_key_fields() {
         //given
 
         //when
@@ -133,7 +133,7 @@ class JwksControllerIT {
 
     @Test
     @DisplayName("Should include cache headers for JWKS")
-    void givenJwksRequest_whenGetJwks_thenCacheHeadersSet() {
+    void given_jwks_request_when_get_jwks_then_cache_headers_set() {
         //given
 
         //when
@@ -148,7 +148,7 @@ class JwksControllerIT {
 
     @Test
     @DisplayName("Should return multiple keys for rotation and verify legacy token")
-    void givenLegacyKeyConfigured_whenGetJwks_thenContainsLegacyKeyAndVerifiesToken() throws Exception {
+    void given_legacy_key_configured_when_get_jwks_then_contains_legacy_key_and_verifies_token() throws Exception {
         //given
         final String applicationItYaml;
         try (InputStream inputStream = Objects.requireNonNull(this.getClass().getClassLoader()

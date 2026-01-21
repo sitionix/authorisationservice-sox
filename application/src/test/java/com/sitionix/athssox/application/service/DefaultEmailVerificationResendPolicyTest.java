@@ -43,7 +43,7 @@ class DefaultEmailVerificationResendPolicyTest {
     }
 
     @Test
-    void givenNoPreviousTokens_whenIsResendAllowed_thenReturnTrue() {
+    void given_no_previous_tokens_when_is_resend_allowed_then_return_true() {
         //given
         final Long userId = 10L;
         final Instant windowStart = this.getWindowStart();
@@ -65,7 +65,7 @@ class DefaultEmailVerificationResendPolicyTest {
     }
 
     @Test
-    void givenCooldownNotElapsed_whenIsResendAllowed_thenReturnFalse() {
+    void given_cooldown_not_elapsed_when_is_resend_allowed_then_return_false() {
         //given
         final Long userId = 11L;
         final Instant lastCreatedAt = this.getInstant("2024-01-01T09:59:40Z");
@@ -83,7 +83,7 @@ class DefaultEmailVerificationResendPolicyTest {
     }
 
     @Test
-    void givenDailyCapReached_whenIsResendAllowed_thenReturnFalse() {
+    void given_daily_cap_reached_when_is_resend_allowed_then_return_false() {
         //given
         final Long userId = 12L;
         final Instant lastCreatedAt = this.getInstant("2024-01-01T09:58:00Z");

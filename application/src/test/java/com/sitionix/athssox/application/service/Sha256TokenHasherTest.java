@@ -18,7 +18,7 @@ class Sha256TokenHasherTest {
     }
 
     @Test
-    void givenToken_whenHash_thenReturnSha256Hash() {
+    void given_token_when_hash_then_return_sha256_hash() {
         //given
         final String given = this.getToken();
         final String expected = "3c469e9d6c5875d37a43f353d4f88e61fcf812c66eee3457465a40b0da4153e0";

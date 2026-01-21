@@ -3,6 +3,8 @@ package com.sitionix.athssox.postgresql.jpa.token;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import jakarta.persistence.LockModeType;
 
@@ -18,4 +20,10 @@ public interface EmailVerificationTokenJpaRepository extends JpaRepository<Email
     Optional<EmailVerificationTokenEntity> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);
 
     long countByUser_IdAndCreatedAtAfter(Long userId, Instant createdAfter);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "DELETE FROM email_verification_tokens " +
+            "WHERE expires_at < :cutoff",
+            nativeQuery = true)
+    int deleteExpiredBefore(final Instant cutoff);
 }
