@@ -119,6 +119,42 @@ class EmailVerifyEventMapperTest {
         assertThat(actual).isEqualTo(expected);
     }
 
+    @Test
+    void given_null_instant_when_to_date_time_then_return_null() {
+        //given
+        final Instant given = null;
+
+        //when
+        final String actual = this.emailVerifyEventMapper.toDateTime(given);
+
+        //then
+        assertThat(actual).isNull();
+    }
+
+    @Test
+    void given_null_instant_when_to_epoch_millis_then_return_null() {
+        //given
+        final Instant given = null;
+
+        //when
+        final Long actual = this.emailVerifyEventMapper.toEpochMillis(given);
+
+        //then
+        assertThat(actual).isNull();
+    }
+
+    @Test
+    void given_null_uuid_when_to_string_then_return_null() {
+        //given
+        final UUID given = null;
+
+        //when
+        final String actual = this.emailVerifyEventMapper.toString(given);
+
+        //then
+        assertThat(actual).isNull();
+    }
+
     private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
                                                      final Instant requestedAt) {
         return EmailVerifyPayload.builder()
