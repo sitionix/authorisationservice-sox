@@ -14,18 +14,4 @@ public class CleanupConfig {
     private boolean enabled = true;
     private String cron = "0 0 0 * * *";
     private String zone = "Europe/Kiev";
-    private Retention refreshTokens = new Retention(14);
-    private Retention emailVerificationTokens = new Retention(2);
-    private Retention outboxEvents = new Retention(14);
-    private Retention deviceSessions = new Retention(0);
-
-    @Getter
-    @Setter
-    public static class Retention {
-        private long retentionDays;
-
-        public Retention(final long retentionDays) {
-            this.retentionDays = retentionDays;
-        }
-    }
 }

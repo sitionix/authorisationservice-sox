@@ -39,14 +39,6 @@ auth:
     enabled: true
     cron: "0 0 0 * * *"
     zone: Europe/Kiev
-    refresh-tokens:
-      retention-days: 14
-    email-verification-tokens:
-      retention-days: 2
-    outbox-events:
-      retention-days: 14
-    device-sessions:
-      retention-days: 0
 bff:
   base-url: http://localhost:8080/bffssox
 outbox:

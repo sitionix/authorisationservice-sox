@@ -21,6 +21,10 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class CleanupScheduler {
 
+    private static final long REFRESH_TOKEN_RETENTION_DAYS = 14;
+    private static final long EMAIL_VERIFICATION_TOKEN_RETENTION_DAYS = 2;
+    private static final long OUTBOX_EVENT_RETENTION_DAYS = 14;
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final OutboxEventRepository outboxEventRepository;
@@ -49,29 +53,26 @@ public class CleanupScheduler {
     }
 
     private int deleteRefreshTokens(final Instant now) {
-        final long retentionDays = this.cleanupConfig.getRefreshTokens().getRetentionDays();
-        if (retentionDays <= 0) {
+        if (REFRESH_TOKEN_RETENTION_DAYS <= 0) {
             return 0;
         }
-        final Instant cutoff = now.minus(Duration.ofDays(retentionDays));
+        final Instant cutoff = now.minus(Duration.ofDays(REFRESH_TOKEN_RETENTION_DAYS));
         return this.refreshTokenRepository.deleteInactiveBefore(cutoff);
     }
 
     private int deleteEmailVerificationTokens(final Instant now) {
-        final long retentionDays = this.cleanupConfig.getEmailVerificationTokens().getRetentionDays();
-        if (retentionDays <= 0) {
+        if (EMAIL_VERIFICATION_TOKEN_RETENTION_DAYS <= 0) {
             return 0;
         }
-        final Instant cutoff = now.minus(Duration.ofDays(retentionDays));
+        final Instant cutoff = now.minus(Duration.ofDays(EMAIL_VERIFICATION_TOKEN_RETENTION_DAYS));
         return this.emailVerificationTokenRepository.deleteExpiredBefore(cutoff);
     }
 
     private int deleteOutboxEvents(final LocalDateTime now) {
-        final long retentionDays = this.cleanupConfig.getOutboxEvents().getRetentionDays();
-        if (retentionDays <= 0) {
+        if (OUTBOX_EVENT_RETENTION_DAYS <= 0) {
             return 0;
         }
-        final LocalDateTime cutoff = now.minusDays(retentionDays);
+        final LocalDateTime cutoff = now.minusDays(OUTBOX_EVENT_RETENTION_DAYS);
         return this.outboxEventRepository.deleteSentBefore(cutoff);
     }
 }

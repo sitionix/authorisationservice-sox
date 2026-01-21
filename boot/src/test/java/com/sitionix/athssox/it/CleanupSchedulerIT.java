@@ -7,15 +7,8 @@ import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
 
 @IntegrationTest
-@TestPropertySource(properties = {
-        "auth.cleanup.refresh-tokens.retention-days=1",
-        "auth.cleanup.email-verification-tokens.retention-days=1",
-        "auth.cleanup.outbox-events.retention-days=1",
-        "auth.cleanup.device-sessions.retention-days=0"
-})
 class CleanupSchedulerIT {
 
     @Autowired
