@@ -34,7 +34,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should register new user successfully without siteId for global role")
-    void givenGlobalRoleWithoutSiteId_whenRegisterUser_thenSuccessAndUserPersisted() {
+    void given_global_role_without_site_id_when_register_user_then_success_and_user_persisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -53,7 +53,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 400 without siteId for SITE_ADMIN role")
-    void givenSiteAdminRoleWithoutSiteId_whenRegisterUser_thenReturnBadRequest() {
+    void given_site_admin_role_without_site_id_when_register_user_then_return_bad_request() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -70,7 +70,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should register a new user successfully and persist it")
-    void givenValidUserData_whenRegisterUser_thenSuccessAndUserPersisted() {
+    void given_valid_user_data_when_register_user_then_success_and_user_persisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -129,7 +129,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should not log registration password or verification token")
-    void givenRegistrationRequest_whenRegisterUser_thenSensitiveDataNotLogged() {
+    void given_registration_request_when_register_user_then_sensitive_data_not_logged() {
         //given
         final String password = "StrongPassword123";
         final Logger logger = (Logger) LoggerFactory.getLogger(UserController.class);
@@ -187,7 +187,7 @@ class UserControllerIT {
 
     @ParameterizedTest(name = "Should reject registration when {0}")
     @MethodSource("invalidRegisterUserRequests")
-    void givenInvalidRequest_whenRegisterUser_thenBadRequestAndNoUserPersisted(
+    void given_invalid_request_when_register_user_then_bad_request_and_no_user_persisted(
             final String testCase,
             final String requestResource,
             final Consumer<RegisterUserDTO> requestMutator
@@ -210,7 +210,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should reject registration when role is unknown")
-    void givenUnknownRole_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
+    void given_unknown_role_when_register_user_then_bad_request_and_no_user_persisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -229,7 +229,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should reject registration when siteId is not a UUID")
-    void givenInvalidSiteId_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
+    void given_invalid_site_id_when_register_user_then_bad_request_and_no_user_persisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -248,7 +248,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should reject registration when siteId is missing for site-scoped role")
-    void givenSiteScopedRoleAndMissingSiteId_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
+    void given_site_scoped_role_and_missing_site_id_when_register_user_then_bad_request_and_no_user_persisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -267,7 +267,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should allow registration for global role without siteId")
-    void givenGlobalRoleAndMissingSiteId_whenRegisterUser_thenCreatedAndUserPersisted() {
+    void given_global_role_and_missing_site_id_when_register_user_then_created_and_user_persisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -290,7 +290,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should ignore siteId for global role registration")
-    void givenGlobalRoleWithSiteId_whenRegisterUser_thenCreatedAndSiteIdIgnored() {
+    void given_global_role_with_site_id_when_register_user_then_created_and_site_id_ignored() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -312,7 +312,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should allow same email in different sites for site-scoped roles")
-    void givenExistingEmailDifferentSiteId_whenRegisterUser_thenRegistrationSucceeds() {
+    void given_existing_email_different_site_id_when_register_user_then_registration_succeeds() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -336,7 +336,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 201 and resend verification when pending user re-registers in same site")
-    void givenPendingEmailSameSite_whenRegisterUser_thenCreatedAndResendVerification() {
+    void given_pending_email_same_site_when_register_user_then_created_and_resend_verification() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -367,7 +367,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 201 without resend when pending user is on cooldown")
-    void givenPendingEmailSameSiteWithRecentToken_whenRegisterUser_thenCreatedWithoutResend() {
+    void given_pending_email_same_site_with_recent_token_when_register_user_then_created_without_resend() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -397,7 +397,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 409 Conflict when email is already registered in the same site for site-scoped roles")
-    void givenExistingEmailSameSite_whenRegisterUser_thenConflict() {
+    void given_existing_email_same_site_when_register_user_then_conflict() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -425,7 +425,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 409 Conflict when email is already registered for global roles")
-    void givenExistingEmailGlobalRole_whenRegisterUser_thenConflict() {
+    void given_existing_email_global_role_when_register_user_then_conflict() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -453,7 +453,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 400 Bad Request with password policy message when password format is invalid")
-    void givenInvalidPassword_whenRegisterUser_thenBadRequestWithDetails() {
+    void given_invalid_password_when_register_user_then_bad_request_with_details() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())

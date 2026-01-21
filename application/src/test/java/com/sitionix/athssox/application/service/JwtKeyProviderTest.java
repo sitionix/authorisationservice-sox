@@ -56,7 +56,7 @@ class JwtKeyProviderTest {
     }
 
     @Test
-    void givenJwtConfig_whenInit_thenPrepareSigningAlgorithmAndKeyId() {
+    void given_jwt_config_when_init_then_prepare_signing_algorithm_and_key_id() {
         //given
         final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig();
         final JwtKey activeKey = this.getJwtKey("key-1");
@@ -88,7 +88,7 @@ class JwtKeyProviderTest {
     }
 
     @Test
-    void givenInitializedProvider_whenGetJwks_thenDelegateToFactory() {
+    void given_initialized_provider_when_get_jwks_then_delegate_to_factory() {
         //given
         final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig();
         final JwtKey activeKey = this.getJwtKey("key-2");
@@ -124,7 +124,7 @@ class JwtKeyProviderTest {
     }
 
     @Test
-    void givenInvalidConfig_whenInit_thenPropagateException() {
+    void given_invalid_config_when_init_then_propagate_exception() {
         //given
         final TokenConfig.JwtConfig jwtConfig = this.getJwtConfig();
 

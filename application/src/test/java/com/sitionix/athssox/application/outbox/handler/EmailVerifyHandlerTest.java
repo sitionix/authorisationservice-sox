@@ -48,7 +48,7 @@ class EmailVerifyHandlerTest {
     }
 
     @Test
-    void givenOutboxEvent_whenDoHandle_thenPublishEvent() {
+    void given_outbox_event_when_do_handle_then_publish_event() {
         //given
         final Instant createdAt = this.getCreatedAt();
         final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
@@ -70,7 +70,7 @@ class EmailVerifyHandlerTest {
     }
 
     @Test
-    void givenPayloadJson_whenGetPayload_thenReturnEmailVerifyPayload() throws Exception {
+    void given_payload_json_when_get_payload_then_return_email_verify_payload() throws Exception {
         //given
         final String payload = this.getPayloadJson();
         final EmailVerifyPayload expected = mock(EmailVerifyPayload.class);
@@ -87,7 +87,7 @@ class EmailVerifyHandlerTest {
     }
 
     @Test
-    void givenInvalidPayload_whenGetPayload_thenThrowOutboxPayloadParseException() throws Exception {
+    void given_invalid_payload_when_get_payload_then_throw_outbox_payload_parse_exception() throws Exception {
         //given
         final String payload = this.getPayloadJson();
         final JsonProcessingException exception = new JsonProcessingException("boom") {

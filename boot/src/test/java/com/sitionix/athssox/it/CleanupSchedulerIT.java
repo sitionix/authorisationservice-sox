@@ -26,7 +26,7 @@ class CleanupSchedulerIT {
 
     @Test
     @DisplayName("Should delete expired tokens and sent outbox events while keeping active records")
-    void givenExpiredRecords_whenCleanupRuns_thenDeleteExpiredAndKeepActive() {
+    void given_expired_records_when_cleanup_runs_then_delete_expired_and_keep_active() {
         //given
         this.testManager.postgresql()
                 .create()

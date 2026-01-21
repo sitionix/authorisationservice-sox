@@ -48,7 +48,7 @@ class DeviceSessionRepositoryImplTest {
     }
 
     @Test
-    void givenUserIdAndSessionSourceId_whenFindByUserIdAndSessionSourceId_thenDeviceSession() {
+    void given_user_id_and_session_source_id_when_find_by_user_id_and_session_source_id_then_device_session() {
         // Given
         final Long userId = 1L;
         final String sessionSourceId = "session-source-id";
@@ -71,7 +71,7 @@ class DeviceSessionRepositoryImplTest {
     }
 
     @Test
-    void givenDeviceSession_whenSave_thenSavedDeviceSession() {
+    void given_device_session_when_save_then_saved_device_session() {
         // Given
         final DeviceSession deviceSession = mock(DeviceSession.class);
         final DeviceSessionEntity deviceSessionEntity = mock(DeviceSessionEntity.class);

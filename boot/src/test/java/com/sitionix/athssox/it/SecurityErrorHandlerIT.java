@@ -17,7 +17,7 @@ class SecurityErrorHandlerIT {
 
     @Test
     @DisplayName("Should return error body for invalid credentials on login")
-    void givenInvalidCredentials_whenLogin_thenUnauthorizedWithBody() {
+    void given_invalid_credentials_when_login_then_unauthorized_with_body() {
         //given
         this.testManager.postgresql()
                 .create()

@@ -36,7 +36,7 @@ class AuthRefreshMissingSessionIT {
 
     @Test
     @DisplayName("Should reject refresh when session does not exist")
-    void givenRefreshTokenWithoutSession_whenRefreshAccessToken_thenForbidden() {
+    void given_refresh_token_without_session_when_refresh_access_token_then_forbidden() {
         //given
         final RefreshTokenRecord tokenRecord = mock(RefreshTokenRecord.class);
 

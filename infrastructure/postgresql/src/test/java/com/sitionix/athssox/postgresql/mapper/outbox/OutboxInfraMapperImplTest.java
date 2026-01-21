@@ -74,7 +74,7 @@ class OutboxInfraMapperImplTest {
     }
 
     @Test
-    void givenOutboxEvent_whenToEntity_thenReturnMappedEntity() {
+    void given_outbox_event_when_to_entity_then_return_mapped_entity() {
         //given
         final LocalDateTime dateTime = this.getCreatedAt();
         final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
@@ -103,7 +103,7 @@ class OutboxInfraMapperImplTest {
     }
 
     @Test
-    void givenOutboxEventEntity_whenToOutboxEvent_thenReturnMappedEvent() {
+    void given_outbox_event_entity_when_to_outbox_event_then_return_mapped_event() {
         //given
         final LocalDateTime createdAt = this.getCreatedAt();
         final String payloadJson = this.getPayloadJson();
@@ -149,7 +149,7 @@ class OutboxInfraMapperImplTest {
     }
 
     @Test
-    void givenLocalDateTime_whenMap_thenReturnInstant() {
+    void given_local_date_time_when_map_then_return_instant() {
         //given
         final LocalDateTime given = this.getCreatedAt();
 

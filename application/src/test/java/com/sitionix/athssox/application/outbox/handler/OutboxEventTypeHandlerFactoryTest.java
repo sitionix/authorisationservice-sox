@@ -55,7 +55,7 @@ class OutboxEventTypeHandlerFactoryTest {
     }
 
     @Test
-    void givenEventTypes_whenRegisterHandlers_thenAssignHandlers() {
+    void given_event_types_when_register_handlers_then_assign_handlers() {
         //given
         final Map<OutboxEventType, EventTypeHandler<Object>> handlersByType = this.getHandlersByType();
 

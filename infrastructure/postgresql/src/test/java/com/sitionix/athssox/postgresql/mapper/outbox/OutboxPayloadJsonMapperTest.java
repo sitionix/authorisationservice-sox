@@ -21,7 +21,7 @@ class OutboxPayloadJsonMapperTest {
     }
 
     @Test
-    void givenNullPayload_whenAsJson_thenReturnNull() {
+    void given_null_payload_when_as_json_then_return_null() {
         //given
         final Object given = null;
 
@@ -33,7 +33,7 @@ class OutboxPayloadJsonMapperTest {
     }
 
     @Test
-    void givenPayload_whenAsJson_thenReturnJsonString() throws Exception {
+    void given_payload_when_as_json_then_return_json_string() throws Exception {
         //given
         final SamplePayload given = this.getSamplePayload("verify", 2);
         final String expected = this.objectMapper.writeValueAsString(given);

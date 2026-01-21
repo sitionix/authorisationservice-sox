@@ -45,7 +45,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void givenTokenRecord_whenSave_thenPersistEntity() {
+    void given_token_record_when_save_then_persist_entity() {
         //given
         final EmailVerificationTokenRecord given = mock(EmailVerificationTokenRecord.class);
         final EmailVerificationTokenEntity entity = mock(EmailVerificationTokenEntity.class);
@@ -64,7 +64,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void givenHashedToken_whenFindByHashedToken_thenReturnRecord() {
+    void given_hashed_token_when_find_by_hashed_token_then_return_record() {
         //given
         final String hashedToken = this.getHashedToken();
         final EmailVerificationTokenEntity entity = mock(EmailVerificationTokenEntity.class);
@@ -88,7 +88,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void givenHashedToken_whenFindByHashedTokenEmpty_thenReturnEmpty() {
+    void given_hashed_token_when_find_by_hashed_token_empty_then_return_empty() {
         //given
         final String hashedToken = this.getHashedToken();
 
@@ -106,7 +106,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void givenUserId_whenFindLatestCreatedAtByUserId_thenReturnCreatedAt() {
+    void given_user_id_when_find_latest_created_at_by_user_id_then_return_created_at() {
         //given
         final Long userId = 12L;
         final Instant createdAt = this.getCreatedAt();
@@ -130,7 +130,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void givenUserIdAndInstant_whenCountByUserIdAndCreatedAtAfter_thenReturnCount() {
+    void given_user_id_and_instant_when_count_by_user_id_and_created_at_after_then_return_count() {
         //given
         final Long userId = 24L;
         final Instant createdAfter = this.getCreatedAt();

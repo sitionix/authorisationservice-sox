@@ -82,7 +82,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void givenLoginRequestDto_whenLogin_thenReturnLoginResponseDto() {
+    void given_login_request_dto_when_login_then_return_login_response_dto() {
         //given
         final LoginRequestDTO given = mock(LoginRequestDTO.class);
         final LoginRequest loginRequest = mock(LoginRequest.class);
@@ -116,7 +116,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void givenEmailVerificationDto_whenVerifyEmailAndVerified_thenReturnOk() {
+    void given_email_verification_dto_when_verify_email_and_verified_then_return_ok() {
         //given
         final EmailVerificationDTO given = mock(EmailVerificationDTO.class);
         final EmailVerification emailVerification = mock(EmailVerification.class);
@@ -140,7 +140,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void givenEmailVerificationDto_whenVerifyEmailAndNotVerified_thenReturnAccepted() {
+    void given_email_verification_dto_when_verify_email_and_not_verified_then_return_accepted() {
         //given
         final EmailVerificationDTO given = mock(EmailVerificationDTO.class);
         final EmailVerification emailVerification = mock(EmailVerification.class);
@@ -164,7 +164,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void givenRefreshAccessTokenRequestDto_whenRefreshAccessToken_thenReturnRefreshAccessTokenResponseDto() {
+    void given_refresh_access_token_request_dto_when_refresh_access_token_then_return_refresh_access_token_response_dto() {
         //given
         final RefreshAccessTokenRequestDTO given = mock(RefreshAccessTokenRequestDTO.class);
         final RefreshAccessTokenRequest refreshAccessTokenRequest = mock(RefreshAccessTokenRequest.class);

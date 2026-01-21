@@ -41,7 +41,7 @@ class UserInfraMapperImplTest {
                 this.userStatusInfraMapper);
     }
     @Test
-    void givenResponseRegisterUser_whenAsUserEntity_thenReturnUserEntity() {
+    void given_response_register_user_when_as_user_entity_then_return_user_entity() {
         //given
         final UUID siteId = UUID.randomUUID();
 
@@ -61,7 +61,7 @@ class UserInfraMapperImplTest {
     }
 
     @Test
-    void givenUserEntity_whenResponseRegisterUser_thenReturnResponseRegisterUser() {
+    void given_user_entity_when_response_register_user_then_return_response_register_user() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UserEntity given = this.getUserEntityForResponse(siteId);

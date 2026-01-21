@@ -41,7 +41,7 @@ class EmailVerifyPublisherV1Test {
     }
 
     @Test
-    void givenNullEvent_whenPublish_thenSkip() {
+    void given_null_event_when_publish_then_skip() {
         //given
         final Event<EmailVerifyPayload> given = null;
 
@@ -53,7 +53,7 @@ class EmailVerifyPublisherV1Test {
     }
 
     @Test
-    void givenEvent_whenPublish_thenSendEnvelope() {
+    void given_event_when_publish_then_send_envelope() {
         //given
         final Event<EmailVerifyPayload> given = mock(Event.class);
         final EmailVerifyEventEnvelope envelope = mock(EmailVerifyEventEnvelope.class);

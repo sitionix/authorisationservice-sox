@@ -70,7 +70,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenOutboxEventWithoutInitiator_whenCreate_thenSetDefaultInitiatorType() {
+    void given_outbox_event_without_initiator_when_create_then_set_default_initiator_type() {
         //given
         final OutboxEvent<?> given = mock(OutboxEvent.class);
         final OutboxEventEntity entity = this.getOutboxEventEntity(null, 0, null);
@@ -95,7 +95,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenOutboxEventWithInitiator_whenCreate_thenPersistWithoutDefault() {
+    void given_outbox_event_with_initiator_when_create_then_persist_without_default() {
         //given
         final OutboxEvent<?> given = mock(OutboxEvent.class);
         final OutboxInitiatorTypeEntity initiatorType = this.getOutboxInitiatorTypeEntity(1L);
@@ -116,7 +116,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenEmptyEventTypes_whenClaimPendingEvents_thenReturnEmptyList() {
+    void given_empty_event_types_when_claim_pending_events_then_return_empty_list() {
         //given
         final List<String> eventTypes = List.of();
 
@@ -131,7 +131,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenPendingEvents_whenClaimPendingEvents_thenReturnMappedAndUpdateStatus() {
+    void given_pending_events_when_claim_pending_events_then_return_mapped_and_update_status() {
         //given
         final List<String> statuses = List.of("PENDING", "FAILED");
         final List<String> eventTypes = List.of("EMAIL_VERIFY");
@@ -189,7 +189,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenExistingEvent_whenMarkSent_thenUpdateStatusAndClearError() {
+    void given_existing_event_when_mark_sent_then_update_status_and_clear_error() {
         //given
         final Long eventId = 11L;
         final OutboxStatusEntity sentStatus = this.getOutboxStatusEntity(OutboxStatus.SENT);
@@ -216,7 +216,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenRetryBelowLimit_whenMarkFailed_thenSetFailedStatusAndIncrement() {
+    void given_retry_below_limit_when_mark_failed_then_set_failed_status_and_increment() {
         //given
         final Long eventId = 12L;
         final Duration retryDelay = Duration.ofSeconds(10);
@@ -247,7 +247,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void givenRetryAtLimit_whenMarkFailed_thenSetDeadStatusAndIncrement() {
+    void given_retry_at_limit_when_mark_failed_then_set_dead_status_and_increment() {
         //given
         final Long eventId = 13L;
         final Duration retryDelay = Duration.ofSeconds(5);

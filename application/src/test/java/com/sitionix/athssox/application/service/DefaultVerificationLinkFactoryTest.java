@@ -24,7 +24,7 @@ class DefaultVerificationLinkFactoryTest {
     }
 
     @Test
-    void givenTokenAndNullSiteId_whenBuildEmailVerifyUrl_thenReturnUrlWithTokenOnly() {
+    void given_token_and_null_site_id_when_build_email_verify_url_then_return_url_with_token_only() {
         //given
         final String rawToken = this.getRawToken();
         final String expected = this.getExpectedUrlWithoutSiteId(rawToken);
@@ -37,7 +37,7 @@ class DefaultVerificationLinkFactoryTest {
     }
 
     @Test
-    void givenTokenAndSiteId_whenBuildEmailVerifyUrl_thenReturnUrlWithTokenAndSiteId() {
+    void given_token_and_site_id_when_build_email_verify_url_then_return_url_with_token_and_site_id() {
         //given
         final String rawToken = this.getRawToken();
         final UUID siteId = this.getSiteId();

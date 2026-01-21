@@ -21,7 +21,7 @@ class OutboxInitiatorTypeInfraMapperTest {
     }
 
     @Test
-    void givenNullInitiatorType_whenAsInitiatorType_thenReturnNull() {
+    void given_null_initiator_type_when_as_initiator_type_then_return_null() {
         //given
         final OutboxInitiatorTypeEntity given = null;
 
@@ -33,7 +33,7 @@ class OutboxInitiatorTypeInfraMapperTest {
     }
 
     @Test
-    void givenInitiatorTypeEntity_whenAsInitiatorType_thenReturnInitiatorType() {
+    void given_initiator_type_entity_when_as_initiator_type_then_return_initiator_type() {
         //given
         final OutboxInitiatorTypeEntity given = this.getOutboxInitiatorTypeEntity(1L, "USER");
         final InitiatorType expected = InitiatorType.USER;

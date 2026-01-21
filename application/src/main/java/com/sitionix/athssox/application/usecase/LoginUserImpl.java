@@ -48,15 +48,10 @@ public class LoginUserImpl implements LoginUser {
     @Override
     @Transactional
     public LoginResponse execute(@Valid final LoginRequest loginRequest) {
-        final Authentication authentication;
-        try {
-            authentication = this.authenticationManager.authenticate(
-                    LoginAuthenticationToken.unauthenticated(loginRequest.getEmail(),
-                            loginRequest.getPassword(),
-                            loginRequest.getSiteId()));
-        } catch (final AuthenticationException exception) {
-            throw exception;
-        }
+        final Authentication authentication = this.authenticationManager.authenticate(
+                LoginAuthenticationToken.unauthenticated(loginRequest.getEmail(),
+                        loginRequest.getPassword(),
+                        loginRequest.getSiteId()));
 
         final AuthUser user = ((LoginAuthenticationToken) authentication).getUser();
         final Instant now = this.clock.instant();

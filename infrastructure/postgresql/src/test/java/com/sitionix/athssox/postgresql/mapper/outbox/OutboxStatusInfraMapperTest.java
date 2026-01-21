@@ -21,7 +21,7 @@ class OutboxStatusInfraMapperTest {
     }
 
     @Test
-    void givenNullStatus_whenAsOutboxStatusEntity_thenReturnNull() {
+    void given_null_status_when_as_outbox_status_entity_then_return_null() {
         //given
         final OutboxStatus given = null;
 
@@ -33,7 +33,7 @@ class OutboxStatusInfraMapperTest {
     }
 
     @Test
-    void givenStatus_whenAsOutboxStatusEntity_thenReturnEntity() {
+    void given_status_when_as_outbox_status_entity_then_return_entity() {
         //given
         final OutboxStatus given = OutboxStatus.PENDING;
         final OutboxStatusEntity expected = this.getOutboxStatusEntity(1L, "PENDING");
@@ -46,7 +46,7 @@ class OutboxStatusInfraMapperTest {
     }
 
     @Test
-    void givenStatusEntity_whenAsEventType_thenReturnStatus() {
+    void given_status_entity_when_as_event_type_then_return_status() {
         //given
         final OutboxStatusEntity given = this.getOutboxStatusEntity(1L, "PENDING");
         final OutboxStatus expected = OutboxStatus.PENDING;

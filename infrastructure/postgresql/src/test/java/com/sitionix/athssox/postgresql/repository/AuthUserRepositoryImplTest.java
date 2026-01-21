@@ -47,7 +47,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenEmailAndSiteId_whenFindByEmailAndSiteId_thenReturnAuthUser() {
+    void given_email_and_site_id_when_find_by_email_and_site_id_then_return_auth_user() {
         //given
         final String email = "user@sitionix.com";
         final UUID siteId = UUID.randomUUID();
@@ -71,7 +71,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenEmailAndSiteId_whenFindByEmailAndSiteIdEmpty_thenReturnEmpty() {
+    void given_email_and_site_id_when_find_by_email_and_site_id_empty_then_return_empty() {
         //given
         final String email = "user@sitionix.com";
         final UUID siteId = UUID.randomUUID();
@@ -89,7 +89,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenEmail_whenFindGlobalByEmail_thenReturnAuthUser() {
+    void given_email_when_find_global_by_email_then_return_auth_user() {
         //given
         final String email = "user@sitionix.com";
         final UserEntity userEntity = mock(UserEntity.class);
@@ -112,7 +112,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenEmail_whenExistsSiteScopedByEmail_thenReturnResult() {
+    void given_email_when_exists_site_scoped_by_email_then_return_result() {
         //given
         final String email = "user@sitionix.com";
 
@@ -129,7 +129,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenUserId_whenFindById_thenReturnAuthUser() {
+    void given_user_id_when_find_by_id_then_return_auth_user() {
         //given
         final Long userId = this.getUserId();
         final UserEntity userEntity = mock(UserEntity.class);
@@ -152,7 +152,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenUserId_whenFindByIdEmpty_thenReturnEmpty() {
+    void given_user_id_when_find_by_id_empty_then_return_empty() {
         //given
         final Long userId = this.getUserId();
 
@@ -169,7 +169,7 @@ class AuthUserRepositoryImplTest {
     }
 
     @Test
-    void givenAuthUser_whenSave_thenPersistEntity() {
+    void given_auth_user_when_save_then_persist_entity() {
         //given
         final AuthUser given = mock(AuthUser.class);
         final UserEntity userEntity = mock(UserEntity.class);

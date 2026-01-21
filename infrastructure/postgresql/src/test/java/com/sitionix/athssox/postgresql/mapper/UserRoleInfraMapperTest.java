@@ -22,7 +22,7 @@ class UserRoleInfraMapperTest {
     }
 
     @Test
-    void givenNullUserRole_whenAsGlobalRoleEntity_thenReturnNull() {
+    void given_null_user_role_when_as_global_role_entity_then_return_null() {
         //given
         final UserRole given = null;
 
@@ -34,7 +34,7 @@ class UserRoleInfraMapperTest {
     }
 
     @Test
-    void givenUserRole_whenAsGlobalRoleEntity_thenReturnGlobalRoleEntity() {
+    void given_user_role_when_as_global_role_entity_then_return_global_role_entity() {
         //given
         final UserRole given = UserRole.SITE_USER;
         final GlobalRoleEntity expected = this.getGlobalRoleEntity(1L, "SITE USER");
@@ -47,7 +47,7 @@ class UserRoleInfraMapperTest {
     }
 
     @Test
-    void givenNullGlobalRoleEntity_whenAsUserRole_thenReturnNull() {
+    void given_null_global_role_entity_when_as_user_role_then_return_null() {
         //given
         final GlobalRoleEntity given = null;
 
@@ -59,7 +59,7 @@ class UserRoleInfraMapperTest {
     }
 
     @Test
-    void givenGlobalRoleEntity_whenAsUserRole_thenReturnUserRole() {
+    void given_global_role_entity_when_as_user_role_then_return_user_role() {
         //given
         final GlobalRoleEntity given = this.getGlobalRoleEntity(4L, "SITE ADMIN");
         final UserRole expected = UserRole.SITE_ADMIN;

@@ -28,7 +28,7 @@ class JwtJwksFactoryTest {
     }
 
     @Test
-    void givenActiveAndVerificationKeys_whenBuild_thenReturnJwksResponse() {
+    void given_active_and_verification_keys_when_build_then_return_jwks_response() {
         //given
         final KeyPair activeKeyPair = this.getKeyPair();
         final KeyPair verificationKeyPair = this.getKeyPair();
@@ -48,7 +48,7 @@ class JwtJwksFactoryTest {
     }
 
     @Test
-    void givenDuplicateKeyIds_whenBuild_thenReturnUniqueKeys() {
+    void given_duplicate_key_ids_when_build_then_return_unique_keys() {
         //given
         final KeyPair activeKeyPair = this.getKeyPair();
         final KeyPair verificationKeyPair = this.getKeyPair();
