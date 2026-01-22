@@ -89,7 +89,10 @@ class EmailVerificationTokenIssueLinkIT {
 
         final String verifyUrl = verifyUrls.get(0);
         final UriComponents components = UriComponentsBuilder.fromUriString(verifyUrl).build();
-        final String expectedToken = this.buildToken(VALID_TOKEN_ID, VALID_PEPPER_ID);
+        final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
+        config.setHmacSecret(this.hmacSecret);
+        final HmacEmailVerificationTokenSigner signer = new HmacEmailVerificationTokenSigner(config);
+        final String expectedToken = signer.buildToken(VALID_TOKEN_ID, VALID_PEPPER_ID);
 
         assertThat(verifyUrl).startsWith(this.bffBaseUrl + "/api/v1/auth/email/verify");
         assertThat(components.getQueryParams().getFirst("token")).isEqualTo(expectedToken);
@@ -241,7 +244,10 @@ class EmailVerificationTokenIssueLinkIT {
         appender.start();
         logger.addAppender(appender);
 
-        final String token = this.buildToken(VALID_TOKEN_ID, VALID_PEPPER_ID);
+        final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
+        config.setHmacSecret(this.hmacSecret);
+        final HmacEmailVerificationTokenSigner signer = new HmacEmailVerificationTokenSigner(config);
+        final String token = signer.buildToken(VALID_TOKEN_ID, VALID_PEPPER_ID);
         final boolean containsSensitive;
         try {
             //when
@@ -266,11 +272,5 @@ class EmailVerificationTokenIssueLinkIT {
 
         //then
         assertThat(containsSensitive).isFalse();
-    }
-
-    private String buildToken(final UUID tokenId, final UUID pepperId) {
-        final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
-        config.setHmacSecret(this.hmacSecret);
-        return new HmacEmailVerificationTokenSigner(config).buildToken(tokenId, pepperId);
     }
 }

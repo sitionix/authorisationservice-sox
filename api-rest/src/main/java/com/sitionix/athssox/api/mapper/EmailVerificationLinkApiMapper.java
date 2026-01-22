@@ -9,6 +9,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Objects;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
 public interface EmailVerificationLinkApiMapper {
@@ -16,14 +17,14 @@ public interface EmailVerificationLinkApiMapper {
     IssueEmailVerificationLinkResponse asResponse(EmailVerificationLinkIssue issue);
 
     default URI map(final String value) {
-        if (value == null) {
+        if (Objects.isNull(value)) {
             return null;
         }
         return URI.create(value);
     }
 
     default OffsetDateTime map(final Instant value) {
-        if (value == null) {
+        if (Objects.isNull(value)) {
             return null;
         }
         return OffsetDateTime.ofInstant(value, ZoneOffset.UTC);

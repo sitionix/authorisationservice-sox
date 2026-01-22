@@ -1,0 +1,11 @@
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "tokenHash": "2bdf687a1f06c06079cd1e8a0c2acf42464f645abb7f785839c87ae1b6077e69",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "status": {
+    "id": 1,
+    "description": "ACTIVE"
+  },
+  "expiresAt": "2025-12-24T18:31:16.740787Z",
+  "usedAt": null
+}

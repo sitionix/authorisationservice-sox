@@ -23,12 +23,6 @@ class HmacEmailVerificationTokenSignerTest {
         this.signer = new HmacEmailVerificationTokenSigner(this.securityConfig);
     }
 
-    @AfterEach
-    void tearDown() {
-        this.securityConfig = null;
-        this.signer = null;
-    }
-
     @Test
     void givenTokenIdAndPepperId_whenSign_thenReturnUrlSafeSignature() {
         //given

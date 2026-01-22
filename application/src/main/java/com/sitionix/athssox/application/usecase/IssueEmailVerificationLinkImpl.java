@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -53,13 +54,13 @@ public class IssueEmailVerificationLinkImpl implements IssueEmailVerificationLin
 
         final AuthUser user = this.authUserRepository.findById(tokenRecord.getUserId())
                 .orElseThrow(() -> new EmailVerificationTokenNotFoundException("User not found for email verification token."));
-        if (user.getStatus() != UserStatus.PENDING_EMAIL_VERIFY) {
+        if (!UserStatus.PENDING_EMAIL_VERIFY.equals(user.getStatus())) {
             throw new UserAlreadyVerifiedException("User already verified.");
         }
 
         final String token = this.tokenSigner.buildToken(tokenRecord.getId(), pepperId);
         final String expectedTokenHash = this.tokenHasher.hash(token);
-        if (!expectedTokenHash.equals(tokenRecord.getTokenHash())) {
+        if (!Objects.equals(expectedTokenHash, tokenRecord.getTokenHash())) {
             log.info("Email verification token hash mismatch for tokenId: {}", tokenRecord.getId());
             throw new EmailVerificationTokenInvalidException("Email verification token is invalid.");
         }
@@ -70,10 +71,11 @@ public class IssueEmailVerificationLinkImpl implements IssueEmailVerificationLin
     }
 
     private boolean isExpired(final EmailVerificationTokenRecord tokenRecord, final Instant now) {
-        return tokenRecord.getExpiresAt() == null || !tokenRecord.getExpiresAt().isAfter(now);
+        return Objects.isNull(tokenRecord.getExpiresAt()) || !tokenRecord.getExpiresAt().isAfter(now);
     }
 
     private boolean isTokenInvalid(final EmailVerificationTokenRecord tokenRecord) {
-        return tokenRecord.getStatus() != EmailVerificationTokenStatus.ACTIVE || tokenRecord.getUsedAt() != null;
+        return !EmailVerificationTokenStatus.ACTIVE.equals(tokenRecord.getStatus())
+                || Objects.nonNull(tokenRecord.getUsedAt());
     }
 }

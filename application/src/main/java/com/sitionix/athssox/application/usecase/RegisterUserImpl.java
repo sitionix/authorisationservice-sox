@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +43,7 @@ public class RegisterUserImpl implements RegisterUser {
     private final OutboxCommand<EmailVerifyPayload> command;
     private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -89,7 +91,7 @@ public class RegisterUserImpl implements RegisterUser {
                 registerUserDO.getEmail(),
                 null,
                 null,
-                Instant.now()
+                this.clock.instant()
         );
     }
 

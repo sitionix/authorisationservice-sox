@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -48,8 +49,8 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
     }
 
     private EmailVerifyPayload buildPayload(final OutboxBuildContext ctx,
-                                            final java.util.UUID verificationTokenId,
-                                            final java.util.UUID pepperId) {
+                                            final UUID verificationTokenId,
+                                            final UUID pepperId) {
         return EmailVerifyPayload.builder()
                 .delivery(EmailVerifyPayload.Delivery.builder()
                         .channel(VerifyChannel.EMAIL)

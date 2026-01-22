@@ -1,0 +1,22 @@
+{
+  "aggregateType": {
+    "id": 1,
+    "description": "USER"
+  },
+  "aggregateId": 2,
+  "eventType": {
+    "id": 1,
+    "description": "EMAIL_VERIFY"
+  },
+  "status": {
+    "id": 1,
+    "description": "PENDING"
+  },
+  "initiatorType": {
+    "id": 2,
+    "description": "SYSTEM"
+  },
+  "initiatorId": null,
+  "retryCount": 0,
+  "payload": "{\"meta\": {\"siteId\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\", \"userId\": 2, \"traceId\": null, \"requestedAt\": \"2025-12-23T18:31:16.740787Z\"}, \"params\": {\"pepperId\": \"44444444-4444-4444-4444-444444444444\", \"emailVerificationTokenId\": \"33333333-3333-3333-3333-333333333333\"}, \"delivery\": {\"to\": \"user+second@sitionix.com\", \"channel\": \"EMAIL\"}, \"template\": \"EMAIL_VERIFY\"}"
+}

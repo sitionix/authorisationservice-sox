@@ -5,6 +5,7 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenIdGenerator;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
 import com.sitionix.athssox.domain.service.PepperIdGenerator;
 import com.sitionix.athssox.domain.service.TokenHasher;
@@ -33,6 +34,9 @@ class DefaultEmailVerificationTokenServiceTest {
     private DefaultEmailVerificationTokenService defaultEmailVerificationTokenService;
 
     @Mock
+    private EmailVerificationTokenIdGenerator tokenIdGenerator;
+
+    @Mock
     private PepperIdGenerator pepperIdGenerator;
 
     @Mock
@@ -52,7 +56,8 @@ class DefaultEmailVerificationTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        this.defaultEmailVerificationTokenService = new DefaultEmailVerificationTokenService(this.pepperIdGenerator,
+        this.defaultEmailVerificationTokenService = new DefaultEmailVerificationTokenService(this.tokenIdGenerator,
+                this.pepperIdGenerator,
                 this.tokenSigner,
                 this.tokenHasher,
                 this.emailVerificationTokenRepository,
@@ -63,6 +68,7 @@ class DefaultEmailVerificationTokenServiceTest {
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.pepperIdGenerator,
+                this.tokenIdGenerator,
                 this.tokenSigner,
                 this.tokenHasher,
                 this.emailVerificationTokenRepository,
@@ -71,16 +77,19 @@ class DefaultEmailVerificationTokenServiceTest {
     }
 
     @Test
-    void given_user_id_and_site_id_when_issue_then_persist_record_and_return_token_issue() {
+    void givenUserIdAndSiteId_whenIssue_thenPersistRecordAndReturnTokenIssue() {
         //given
         final Long userId = this.getUserId();
         final UUID siteId = this.getSiteId();
+        final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
         final Instant now = this.getNow();
         final long ttlSeconds = this.getTtlSeconds();
         final String token = this.getToken();
         final String hashedToken = this.getHashedToken();
 
+        when(this.tokenIdGenerator.generate())
+                .thenReturn(tokenId);
         when(this.pepperIdGenerator.generate())
                 .thenReturn(pepperId);
         when(this.tokenSigner.buildToken(any(UUID.class), eq(pepperId)))
@@ -100,8 +109,10 @@ class DefaultEmailVerificationTokenServiceTest {
                 ArgumentCaptor.forClass(EmailVerificationTokenRecord.class);
         final ArgumentCaptor<UUID> tokenIdCaptor = ArgumentCaptor.forClass(UUID.class);
 
-        assertThat(actual.tokenId()).isNotNull();
+        assertThat(actual.tokenId()).isEqualTo(tokenId);
         assertThat(actual.pepperId()).isEqualTo(pepperId);
+        verify(this.tokenIdGenerator)
+                .generate();
         verify(this.pepperIdGenerator)
                 .generate();
         verify(this.tokenSigner)
@@ -136,6 +147,10 @@ class DefaultEmailVerificationTokenServiceTest {
 
     private UUID getSiteId() {
         return UUID.fromString("8f24d9f6-2c05-4b77-8c4e-1bc6e1ba9b6c");
+    }
+
+    private UUID getTokenId() {
+        return UUID.fromString("8214d2c4-77f8-4c9e-b8e5-3160d0c5fd83");
     }
 
     private UUID getPepperId() {
