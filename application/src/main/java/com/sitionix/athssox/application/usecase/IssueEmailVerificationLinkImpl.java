@@ -1,0 +1,79 @@
+package com.sitionix.athssox.application.usecase;
+
+import com.sitionix.athssox.domain.exception.EmailVerificationTokenExpiredException;
+import com.sitionix.athssox.domain.exception.EmailVerificationTokenInvalidException;
+import com.sitionix.athssox.domain.exception.EmailVerificationTokenNotFoundException;
+import com.sitionix.athssox.domain.exception.UserAlreadyVerifiedException;
+import com.sitionix.athssox.domain.model.AuthUser;
+import com.sitionix.athssox.domain.model.UserStatus;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationLinkIssue;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
+import com.sitionix.athssox.domain.repository.AuthUserRepository;
+import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
+import com.sitionix.athssox.domain.service.TokenHasher;
+import com.sitionix.athssox.domain.service.VerificationLinkFactory;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
+import com.sitionix.athssox.domain.usecase.IssueEmailVerificationLink;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class IssueEmailVerificationLinkImpl implements IssueEmailVerificationLink {
+
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final AuthUserRepository authUserRepository;
+    private final EmailVerificationTokenSigner tokenSigner;
+    private final TokenHasher tokenHasher;
+    private final VerificationLinkFactory verificationLinkFactory;
+    private final Clock clock;
+
+    @Override
+    @Transactional
+    public EmailVerificationLinkIssue execute(final UUID tokenId, final UUID pepperId) {
+        final EmailVerificationTokenRecord tokenRecord = this.emailVerificationTokenRepository.findById(tokenId)
+                .orElseThrow(() -> new EmailVerificationTokenNotFoundException("Email verification token not found."));
+
+        final Instant now = this.clock.instant();
+        if (isExpired(tokenRecord, now)) {
+            throw new EmailVerificationTokenExpiredException("Email verification token expired.");
+        }
+
+        if (isTokenInvalid(tokenRecord)) {
+            throw new EmailVerificationTokenInvalidException("Email verification token is not active.");
+        }
+
+        final AuthUser user = this.authUserRepository.findById(tokenRecord.getUserId())
+                .orElseThrow(() -> new EmailVerificationTokenNotFoundException("User not found for email verification token."));
+        if (user.getStatus() != UserStatus.PENDING_EMAIL_VERIFY) {
+            throw new UserAlreadyVerifiedException("User already verified.");
+        }
+
+        final String token = this.tokenSigner.buildToken(tokenRecord.getId(), pepperId);
+        final String expectedTokenHash = this.tokenHasher.hash(token);
+        if (!expectedTokenHash.equals(tokenRecord.getTokenHash())) {
+            log.info("Email verification token hash mismatch for tokenId: {}", tokenRecord.getId());
+            throw new EmailVerificationTokenInvalidException("Email verification token is invalid.");
+        }
+
+        final String verifyUrl = this.verificationLinkFactory.buildEmailVerifyUrl(token, tokenRecord.getSiteId());
+
+        return new EmailVerificationLinkIssue(tokenRecord.getId(), verifyUrl, tokenRecord.getExpiresAt());
+    }
+
+    private boolean isExpired(final EmailVerificationTokenRecord tokenRecord, final Instant now) {
+        return tokenRecord.getExpiresAt() == null || !tokenRecord.getExpiresAt().isAfter(now);
+    }
+
+    private boolean isTokenInvalid(final EmailVerificationTokenRecord tokenRecord) {
+        return tokenRecord.getStatus() != EmailVerificationTokenStatus.ACTIVE || tokenRecord.getUsedAt() != null;
+    }
+}

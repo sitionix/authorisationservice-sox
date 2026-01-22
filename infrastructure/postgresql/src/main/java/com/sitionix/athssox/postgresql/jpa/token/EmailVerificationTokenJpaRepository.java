@@ -15,6 +15,9 @@ import java.util.UUID;
 public interface EmailVerificationTokenJpaRepository extends JpaRepository<EmailVerificationTokenEntity, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<EmailVerificationTokenEntity> findById(UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<EmailVerificationTokenEntity> findByTokenHash(String tokenHash);
 
     Optional<EmailVerificationTokenEntity> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);

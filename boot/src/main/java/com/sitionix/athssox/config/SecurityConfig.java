@@ -20,6 +20,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/login",
             "/api/v1/auth/email/verify",
+            "/api/v1/auth/emailVerificationTokens/**:issueLink",
             "/api/v1/auth/refresh",
             "/api/v1/users",
             "/.well-known/jwks.json",

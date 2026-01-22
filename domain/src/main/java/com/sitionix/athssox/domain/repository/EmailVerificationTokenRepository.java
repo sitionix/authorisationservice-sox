@@ -4,10 +4,13 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecor
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface EmailVerificationTokenRepository {
 
     void save(final EmailVerificationTokenRecord tokenRecord);
+
+    Optional<EmailVerificationTokenRecord> findById(final UUID tokenId);
 
     Optional<EmailVerificationTokenRecord> findByHashedToken(final String hashedToken);
 

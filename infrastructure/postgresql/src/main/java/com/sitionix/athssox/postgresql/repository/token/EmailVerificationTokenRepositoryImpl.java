@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -23,6 +24,12 @@ public class EmailVerificationTokenRepositoryImpl implements EmailVerificationTo
         final EmailVerificationTokenEntity entity = this.emailVerificationTokenInfraMapper.asEntity(tokenRecord);
 
         this.emailVerificationTokenJpaRepository.save(entity);
+    }
+
+    @Override
+    public Optional<EmailVerificationTokenRecord> findById(final UUID tokenId) {
+        return this.emailVerificationTokenJpaRepository.findById(tokenId)
+                .map(this.emailVerificationTokenInfraMapper::asRecord);
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.sitionix.athssox.pipe.producer.mapper;
 
 import com.app_afesox.athssox.events.emailverify.EmailVerifyEvent;
 import com.app_afesox.athssox.events.emailverify.EmailVerifyEventEnvelope;
+import com.app_afesox.athssox.events.emailverify.Params;
 import com.app_afesox.events.Metadata;
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
@@ -16,6 +17,9 @@ import java.util.UUID;
 public interface EmailVerifyEventMapper {
 
     EmailVerifyEvent asEvent(EmailVerifyPayload payload);
+
+    @Mapping(target = "verificationTokenId", source = "emailVerificationTokenId")
+    Params asParams(EmailVerifyPayload.Params params);
 
     @Mapping(target = "metadata", source = "event")
     EmailVerifyEventEnvelope asEnvelope(Event<EmailVerifyPayload> event);

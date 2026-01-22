@@ -3,11 +3,13 @@ package com.sitionix.athssox.api.controller;
 import com.app_afesox.athssox.api_first.api.AuthApi;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
+import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponse;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
+import com.sitionix.athssox.api.mapper.EmailVerificationLinkApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
 import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
@@ -15,6 +17,8 @@ import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationLinkIssue;
+import com.sitionix.athssox.domain.usecase.IssueEmailVerificationLink;
 import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
@@ -26,6 +30,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @Log4j2
 @RestController
 @RequiredArgsConstructor
@@ -34,6 +40,8 @@ public class AuthController implements AuthApi {
     private final AuthApiMapper authApiMapper;
 
     private final EmailVerifyApiMapper emailVerifyApiMapper;
+
+    private final EmailVerificationLinkApiMapper emailVerificationLinkApiMapper;
 
     private final VerifyEmail verifyEmail;
 
@@ -44,6 +52,8 @@ public class AuthController implements AuthApi {
     private final RefreshAccessTokenApiMapper refreshAccessTokenApiMapper;
 
     private final HttpServletRequest httpServletRequest;
+
+    private final IssueEmailVerificationLink issueEmailVerificationLink;
 
     @Override
     public ResponseEntity<LoginResponseDTO> login(@Valid final LoginRequestDTO loginRequestDTO) {
@@ -64,10 +74,7 @@ public class AuthController implements AuthApi {
 
         final boolean verified = this.verifyEmail.execute(emailVerification);
 
-        final EmailVerificationResponseDTO response = EmailVerificationResponseDTO.builder()
-                .message(verified ? "Email verified successfully." : "Email verification accepted.")
-                .status(verified ? EmailVerificationResponseDTO.StatusEnum.ACTIVE : null)
-                .build();
+        final EmailVerificationResponseDTO response = this.emailVerifyApiMapper.asEmailVerificationResponseDTO(verified);
 
         return verified
                 ? ResponseEntity.ok(response)
@@ -83,5 +90,15 @@ public class AuthController implements AuthApi {
         final RefreshAccessTokenResponse response = this.refreshAccessToken.execute(request);
 
         return ResponseEntity.ok(this.refreshAccessTokenApiMapper.asRefreshAccessTokenResponseDTO(response));
+    }
+
+    @Override
+    public ResponseEntity<IssueEmailVerificationLinkResponse> issueEmailVerificationLink(final UUID id, final UUID pepperId) {
+        log.info("Issuing email verification link for tokenId: {}", id);
+
+        final EmailVerificationLinkIssue issue = this.issueEmailVerificationLink.execute(id, pepperId);
+        final IssueEmailVerificationLinkResponse response = this.emailVerificationLinkApiMapper.asResponse(issue);
+
+        return ResponseEntity.ok(response);
     }
 }

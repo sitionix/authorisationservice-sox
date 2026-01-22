@@ -31,7 +31,7 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
     @Override
     public OutboxEvent<EmailVerifyPayload> build(final OutboxBuildContext ctx) {
         final EmailVerificationTokenIssue tokenIssue = this.tokenService.issue(ctx.userId(), ctx.siteId());
-        final EmailVerifyPayload payload = this.buildPayload(ctx, tokenIssue.tokenId());
+        final EmailVerifyPayload payload = this.buildPayload(ctx, tokenIssue.tokenId(), tokenIssue.pepperId());
 
         return OutboxEvent.<EmailVerifyPayload>builder()
                 .aggregateType(OutboxAggregateType.USER)
@@ -47,7 +47,9 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
                 .build();
     }
 
-    private EmailVerifyPayload buildPayload(final OutboxBuildContext ctx, final java.util.UUID verificationTokenId) {
+    private EmailVerifyPayload buildPayload(final OutboxBuildContext ctx,
+                                            final java.util.UUID verificationTokenId,
+                                            final java.util.UUID pepperId) {
         return EmailVerifyPayload.builder()
                 .delivery(EmailVerifyPayload.Delivery.builder()
                         .channel(VerifyChannel.EMAIL)
@@ -55,7 +57,8 @@ public final class EmailVerifyOutboxEventBuilder implements OutboxEventBuilder<E
                         .build())
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(EmailVerifyPayload.Params.builder()
-                        .verificationTokenId(verificationTokenId)
+                        .emailVerificationTokenId(verificationTokenId)
+                        .pepperId(pepperId)
                         .build())
                 .meta(EmailVerifyPayload.Meta.builder()
                         .userId(ctx.userId())

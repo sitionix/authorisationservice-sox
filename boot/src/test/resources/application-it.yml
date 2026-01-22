@@ -61,3 +61,6 @@ auth:
             z31RCF2v5vLV4A4icbfi9KthbonfXBS13oPds+E3XtFXxVhGV4XR/cYS7Ty0mFEL
             mwIDAQAB
             -----END PUBLIC KEY-----
+security:
+  email-verification:
+    hmac-secret: it-email-token-secret

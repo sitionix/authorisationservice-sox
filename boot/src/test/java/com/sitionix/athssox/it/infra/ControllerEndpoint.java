@@ -3,6 +3,7 @@ package com.sitionix.athssox.it.infra;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
+import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponse;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
@@ -15,6 +16,9 @@ import com.sitionix.forgeit.domain.endpoint.HttpMethod;
 import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
 
 public class ControllerEndpoint {
+
+    private static final String ISSUE_EMAIL_VERIFICATION_LINK_URL =
+            "/api/v1/auth/emailVerificationTokens/{tokenId}:issueLink";
 
     public static Endpoint<RegisterUserDTO, ResponseRegisterUserDTO> registerUser() {
         return Endpoint.createContract(
@@ -148,6 +152,26 @@ public class ControllerEndpoint {
                 Void.class,
                 JwksResponse.class,
                 (MockmvcDefault) context -> context.expectStatus(200)
+        );
+    }
+
+    public static Endpoint<Void, IssueEmailVerificationLinkResponse> issueEmailVerificationLink() {
+        return Endpoint.createContract(
+                ISSUE_EMAIL_VERIFICATION_LINK_URL,
+                HttpMethod.GET,
+                Void.class,
+                IssueEmailVerificationLinkResponse.class,
+                (MockmvcDefault) context -> context.expectStatus(200)
+        );
+    }
+
+    public static Endpoint<Void, ErrorDTO> issueEmailVerificationLinkBadRequest() {
+        return Endpoint.createContract(
+                ISSUE_EMAIL_VERIFICATION_LINK_URL,
+                HttpMethod.GET,
+                Void.class,
+                ErrorDTO.class,
+                (MockmvcDefault) context -> context.expectStatus(400)
         );
     }
 }

@@ -37,7 +37,8 @@ public class EmailVerifyPayload {
     @Jacksonized
     @EqualsAndHashCode
     public static class Params {
-        private UUID verificationTokenId;
+        private UUID emailVerificationTokenId;
+        private UUID pepperId;
     }
 
     @Data

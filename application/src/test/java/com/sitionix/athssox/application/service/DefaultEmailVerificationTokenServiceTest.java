@@ -5,6 +5,8 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
+import com.sitionix.athssox.domain.service.PepperIdGenerator;
 import com.sitionix.athssox.domain.service.TokenHasher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,13 +16,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -30,7 +32,11 @@ class DefaultEmailVerificationTokenServiceTest {
 
     private DefaultEmailVerificationTokenService defaultEmailVerificationTokenService;
 
-    private FixedSecureRandom secureRandom;
+    @Mock
+    private PepperIdGenerator pepperIdGenerator;
+
+    @Mock
+    private EmailVerificationTokenSigner tokenSigner;
 
     @Mock
     private TokenHasher tokenHasher;
@@ -46,8 +52,8 @@ class DefaultEmailVerificationTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        this.secureRandom = this.getSecureRandom();
-        this.defaultEmailVerificationTokenService = new DefaultEmailVerificationTokenService(this.secureRandom,
+        this.defaultEmailVerificationTokenService = new DefaultEmailVerificationTokenService(this.pepperIdGenerator,
+                this.tokenSigner,
                 this.tokenHasher,
                 this.emailVerificationTokenRepository,
                 this.tokenConfig,
@@ -56,7 +62,9 @@ class DefaultEmailVerificationTokenServiceTest {
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.tokenHasher,
+        verifyNoMoreInteractions(this.pepperIdGenerator,
+                this.tokenSigner,
+                this.tokenHasher,
                 this.emailVerificationTokenRepository,
                 this.tokenConfig,
                 this.clock);
@@ -67,14 +75,17 @@ class DefaultEmailVerificationTokenServiceTest {
         //given
         final Long userId = this.getUserId();
         final UUID siteId = this.getSiteId();
+        final UUID pepperId = this.getPepperId();
         final Instant now = this.getNow();
         final long ttlSeconds = this.getTtlSeconds();
-        final byte[] tokenBytes = this.getTokenBytes();
-        final String rawToken = this.getRawToken(tokenBytes);
+        final String token = this.getToken();
         final String hashedToken = this.getHashedToken();
 
-        this.secureRandom.setNextBytes(tokenBytes);
-        when(this.tokenHasher.hash(rawToken))
+        when(this.pepperIdGenerator.generate())
+                .thenReturn(pepperId);
+        when(this.tokenSigner.buildToken(any(UUID.class), eq(pepperId)))
+                .thenReturn(token);
+        when(this.tokenHasher.hash(token))
                 .thenReturn(hashedToken);
         when(this.tokenConfig.getEmailVerificationTokenTtlSeconds())
                 .thenReturn(ttlSeconds);
@@ -87,12 +98,16 @@ class DefaultEmailVerificationTokenServiceTest {
         //then
         final ArgumentCaptor<EmailVerificationTokenRecord> recordCaptor =
                 ArgumentCaptor.forClass(EmailVerificationTokenRecord.class);
+        final ArgumentCaptor<UUID> tokenIdCaptor = ArgumentCaptor.forClass(UUID.class);
 
-        assertThat(actual.rawToken()).isEqualTo(rawToken);
         assertThat(actual.tokenId()).isNotNull();
-        assertThat(this.secureRandom.getCallCount()).isEqualTo(1);
+        assertThat(actual.pepperId()).isEqualTo(pepperId);
+        verify(this.pepperIdGenerator)
+                .generate();
+        verify(this.tokenSigner)
+                .buildToken(tokenIdCaptor.capture(), eq(pepperId));
         verify(this.tokenHasher)
-                .hash(rawToken);
+                .hash(token);
         verify(this.tokenConfig)
                 .getEmailVerificationTokenTtlSeconds();
         verify(this.clock)
@@ -102,6 +117,7 @@ class DefaultEmailVerificationTokenServiceTest {
 
         final EmailVerificationTokenRecord savedRecord = recordCaptor.getValue();
         assertThat(savedRecord.getId()).isEqualTo(actual.tokenId());
+        assertThat(actual.tokenId()).isEqualTo(tokenIdCaptor.getValue());
 
         final EmailVerificationTokenRecord expected = this.getEmailVerificationTokenRecord(actual.tokenId(),
                 userId,
@@ -122,6 +138,10 @@ class DefaultEmailVerificationTokenServiceTest {
         return UUID.fromString("8f24d9f6-2c05-4b77-8c4e-1bc6e1ba9b6c");
     }
 
+    private UUID getPepperId() {
+        return UUID.fromString("2cf629c1-1b58-4aa3-a9fd-5e9be2b1d31d");
+    }
+
     private Instant getNow() {
         return Instant.parse("2024-05-01T10:15:30Z");
     }
@@ -130,22 +150,8 @@ class DefaultEmailVerificationTokenServiceTest {
         return 3600L;
     }
 
-    private FixedSecureRandom getSecureRandom() {
-        return new FixedSecureRandom();
-    }
-
-    private byte[] getTokenBytes() {
-        final byte[] bytes = new byte[32];
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] = (byte) i;
-        }
-        return bytes;
-    }
-
-    private String getRawToken(final byte[] bytes) {
-        return Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(bytes);
+    private String getToken() {
+        return "token-id.pepper-id.signature";
     }
 
     private String getHashedToken() {
@@ -170,23 +176,4 @@ class DefaultEmailVerificationTokenServiceTest {
                 .build();
     }
 
-    private static final class FixedSecureRandom extends SecureRandom {
-
-        private byte[] nextBytes;
-        private int callCount;
-
-        private void setNextBytes(final byte[] nextBytes) {
-            this.nextBytes = nextBytes.clone();
-        }
-
-        private int getCallCount() {
-            return this.callCount;
-        }
-
-        @Override
-        public void nextBytes(final byte[] bytes) {
-            this.callCount++;
-            System.arraycopy(this.nextBytes, 0, bytes, 0, bytes.length);
-        }
-    }
 }

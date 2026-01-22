@@ -48,21 +48,22 @@ class EmailVerifyOutboxEventBuilderTest {
     @Test
     void given_context_when_build_then_return_email_verify_outbox_event() {
         //given
-        final UUID siteId = UUID.randomUUID();
-        final Instant requestedAt = Instant.now();
-        final UUID tokenId = UUID.randomUUID();
+        final UUID siteId = this.getSiteId();
+        final Instant requestedAt = this.getRequestedAt();
+        final UUID tokenId = this.getTokenId();
+        final UUID pepperId = this.getPepperId();
         final OutboxBuildContext given = this.getOutboxBuildContext(siteId,
                 requestedAt);
 
         when(this.tokenService.issue(1L, siteId))
-                .thenReturn(this.getTokenIssue(tokenId));
+                .thenReturn(this.getTokenIssue(tokenId, pepperId));
 
         //when
         final OutboxEvent<EmailVerifyPayload> actual = this.builder.build(given);
 
         //then
         final OutboxEvent<EmailVerifyPayload> expected = this.getOutboxEvent(actual.getNextRetryAt(),
-                this.getEmailVerifyPayload(siteId, requestedAt, tokenId));
+                this.getEmailVerifyPayload(siteId, requestedAt, tokenId, pepperId));
 
         assertThat(actual).isEqualTo(expected);
 
@@ -91,6 +92,22 @@ class EmailVerifyOutboxEventBuilderTest {
                 requestedAt);
     }
 
+    private UUID getSiteId() {
+        return UUID.fromString("8f24d9f6-2c05-4b77-8c4e-1bc6e1ba9b6c");
+    }
+
+    private Instant getRequestedAt() {
+        return Instant.parse("2024-05-01T10:15:30Z");
+    }
+
+    private UUID getTokenId() {
+        return UUID.fromString("c9b1f3f4-12c7-11ec-82a8-0242ac130003");
+    }
+
+    private UUID getPepperId() {
+        return UUID.fromString("2cf629c1-1b58-4aa3-a9fd-5e9be2b1d31d");
+    }
+
     private OutboxEvent<EmailVerifyPayload> getOutboxEvent(final LocalDateTime nextRetryAt,
                                                            final EmailVerifyPayload payload) {
         return OutboxEvent.<EmailVerifyPayload>builder()
@@ -109,11 +126,12 @@ class EmailVerifyOutboxEventBuilderTest {
 
     private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
                                                      final Instant requestedAt,
-                                                     final UUID tokenId) {
+                                                     final UUID tokenId,
+                                                     final UUID pepperId) {
         return EmailVerifyPayload.builder()
                 .delivery(this.getDelivery())
                 .template(NotificationTemplate.EMAIL_VERIFY)
-                .params(this.getParams(tokenId))
+                .params(this.getParams(tokenId, pepperId))
                 .meta(this.getMeta(siteId, requestedAt))
                 .build();
     }
@@ -125,14 +143,15 @@ class EmailVerifyOutboxEventBuilderTest {
                 .build();
     }
 
-    private EmailVerifyPayload.Params getParams(final UUID tokenId) {
+    private EmailVerifyPayload.Params getParams(final UUID tokenId, final UUID pepperId) {
         return EmailVerifyPayload.Params.builder()
-                .verificationTokenId(tokenId)
+                .emailVerificationTokenId(tokenId)
+                .pepperId(pepperId)
                 .build();
     }
 
-    private EmailVerificationTokenIssue getTokenIssue(final UUID tokenId) {
-        return new EmailVerificationTokenIssue(tokenId, "rawToken");
+    private EmailVerificationTokenIssue getTokenIssue(final UUID tokenId, final UUID pepperId) {
+        return new EmailVerificationTokenIssue(tokenId, pepperId);
     }
 
     private EmailVerifyPayload.Meta getMeta(final UUID siteId, final Instant instant) {
