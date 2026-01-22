@@ -124,7 +124,8 @@ class UserControllerIT {
         final String payload = events.get(0).getPayload();
         assertThat(payload).doesNotContain("token=");
         assertThat(payload).doesNotContain("verifyUrl");
-        assertThat(payload).contains("verificationTokenId");
+        assertThat(payload).contains("emailVerificationTokenId");
+        assertThat(payload).contains("pepperId");
     }
 
     @Test

@@ -2,11 +2,13 @@ package com.sitionix.athssox.api.controller;
 
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
+import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponse;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
+import com.sitionix.athssox.api.mapper.EmailVerificationLinkApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
 import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
@@ -14,6 +16,8 @@ import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationLinkIssue;
+import com.sitionix.athssox.domain.usecase.IssueEmailVerificationLink;
 import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
@@ -26,6 +30,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+
+import java.time.Instant;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -45,6 +52,9 @@ class AuthControllerTest {
     private EmailVerifyApiMapper emailVerifyApiMapper;
 
     @Mock
+    private EmailVerificationLinkApiMapper emailVerificationLinkApiMapper;
+
+    @Mock
     private VerifyEmail verifyEmail;
 
     @Mock
@@ -59,26 +69,33 @@ class AuthControllerTest {
     @Mock
     private RefreshAccessTokenApiMapper refreshAccessTokenApiMapper;
 
+    @Mock
+    private IssueEmailVerificationLink issueEmailVerificationLink;
+
     @BeforeEach
     void setUp() {
         this.authController = new AuthController(this.authApiMapper,
                 this.emailVerifyApiMapper,
+                this.emailVerificationLinkApiMapper,
                 this.verifyEmail,
                 this.loginUser,
                 this.refreshAccessToken,
                 this.refreshAccessTokenApiMapper,
-                this.httpServletRequest);
+                this.httpServletRequest,
+                this.issueEmailVerificationLink);
     }
 
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.authApiMapper,
                 this.emailVerifyApiMapper,
+                this.emailVerificationLinkApiMapper,
                 this.verifyEmail,
                 this.loginUser,
                 this.refreshAccessToken,
                 this.refreshAccessTokenApiMapper,
-                this.httpServletRequest);
+                this.httpServletRequest,
+                this.issueEmailVerificationLink);
     }
 
     @Test
@@ -127,6 +144,8 @@ class AuthControllerTest {
                 .thenReturn(emailVerification);
         when(this.verifyEmail.execute(emailVerification))
                 .thenReturn(true);
+        when(this.emailVerifyApiMapper.asEmailVerificationResponseDTO(true))
+                .thenReturn(expected);
 
         //when
         final ResponseEntity<EmailVerificationResponseDTO> actual = this.authController.verifyEmail(given);
@@ -137,6 +156,8 @@ class AuthControllerTest {
                 .asEmailVerification(given);
         verify(this.verifyEmail)
                 .execute(emailVerification);
+        verify(this.emailVerifyApiMapper)
+                .asEmailVerificationResponseDTO(true);
     }
 
     @Test
@@ -151,6 +172,8 @@ class AuthControllerTest {
                 .thenReturn(emailVerification);
         when(this.verifyEmail.execute(emailVerification))
                 .thenReturn(false);
+        when(this.emailVerifyApiMapper.asEmailVerificationResponseDTO(false))
+                .thenReturn(expected);
 
         //when
         final ResponseEntity<EmailVerificationResponseDTO> actual = this.authController.verifyEmail(given);
@@ -161,6 +184,8 @@ class AuthControllerTest {
                 .asEmailVerification(given);
         verify(this.verifyEmail)
                 .execute(emailVerification);
+        verify(this.emailVerifyApiMapper)
+                .asEmailVerificationResponseDTO(false);
     }
 
     @Test
@@ -197,11 +222,50 @@ class AuthControllerTest {
                 .asRefreshAccessTokenResponseDTO(refreshAccessTokenResponse);
     }
 
+    @Test
+    void given_token_id_and_pepper_id_when_issue_email_verification_link_then_return_response_dto() {
+        //given
+        final UUID tokenId = this.getTokenId();
+        final UUID pepperId = this.getPepperId();
+        final EmailVerificationLinkIssue issue = this.getEmailVerificationLinkIssue(tokenId);
+        final IssueEmailVerificationLinkResponse expected = mock(IssueEmailVerificationLinkResponse.class);
+
+        when(this.issueEmailVerificationLink.execute(tokenId, pepperId))
+                .thenReturn(issue);
+        when(this.emailVerificationLinkApiMapper.asResponse(issue))
+                .thenReturn(expected);
+
+        //when
+        final ResponseEntity<IssueEmailVerificationLinkResponse> actual =
+                this.authController.issueEmailVerificationLink(tokenId, pepperId);
+
+        //then
+        assertThat(actual).isEqualTo(ResponseEntity.ok(expected));
+        verify(this.issueEmailVerificationLink)
+                .execute(tokenId, pepperId);
+        verify(this.emailVerificationLinkApiMapper)
+                .asResponse(issue);
+    }
+
     private EmailVerificationResponseDTO getEmailVerificationResponseDTO(final String message,
                                                                          final EmailVerificationResponseDTO.StatusEnum status) {
         return EmailVerificationResponseDTO.builder()
                 .message(message)
                 .status(status)
                 .build();
+    }
+
+    private UUID getTokenId() {
+        return UUID.fromString("8f24d9f6-2c05-4b77-8c4e-1bc6e1ba9b6c");
+    }
+
+    private UUID getPepperId() {
+        return UUID.fromString("d5d2d5de-6930-43c0-9e45-9a8e6dbe8292");
+    }
+
+    private EmailVerificationLinkIssue getEmailVerificationLinkIssue(final UUID tokenId) {
+        return new EmailVerificationLinkIssue(tokenId,
+                "https://bff.example.com/api/v1/auth/email/verify?token=token",
+                Instant.parse("2024-05-01T10:15:30Z"));
     }
 }

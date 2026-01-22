@@ -1,6 +1,7 @@
 package com.sitionix.athssox.api.mapper;
 
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
+import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import org.mapstruct.Mapper;
@@ -9,4 +10,11 @@ import org.mapstruct.Mapper;
 public interface EmailVerifyApiMapper {
 
     EmailVerification asEmailVerification(EmailVerificationDTO token);
+
+    default EmailVerificationResponseDTO asEmailVerificationResponseDTO(final boolean verified) {
+        return EmailVerificationResponseDTO.builder()
+                .message(verified ? "Email verified successfully." : "Email verification accepted.")
+                .status(verified ? EmailVerificationResponseDTO.StatusEnum.ACTIVE : null)
+                .build();
+    }
 }

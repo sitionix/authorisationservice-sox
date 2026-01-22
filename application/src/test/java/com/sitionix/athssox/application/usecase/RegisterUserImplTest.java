@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.Optional;
@@ -62,6 +63,9 @@ class RegisterUserImplTest {
     @Mock
     private EmailVerificationResendPolicy emailVerificationResendPolicy;
 
+    @Mock
+    private Clock clock;
+
     @BeforeEach
     void setUp() {
         this.registerUser = new RegisterUserImpl(this.userRepository,
@@ -69,7 +73,8 @@ class RegisterUserImplTest {
                 this.passwordPolicyValidator,
                 this.outboxCommand,
                 this.outboxEventBuilder,
-                this.emailVerificationResendPolicy);
+                this.emailVerificationResendPolicy,
+                this.clock);
     }
 
     @AfterEach
@@ -79,11 +84,12 @@ class RegisterUserImplTest {
                 this.passwordPolicyValidator,
                 this.outboxCommand,
                 this.outboxEventBuilder,
-                this.emailVerificationResendPolicy);
+                this.emailVerificationResendPolicy,
+                this.clock);
     }
 
     @Test
-    void given_register_user_do_when_execute_then_encode_password_create_user_and_return_response_with_message() {
+    void givenRegisterUserDo_whenExecute_thenEncodePasswordCreateUserAndReturnResponseWithMessage() {
         //given
         final String rawPassword = "StrongPassword123";
         final String encodedPassword = "encoded";
@@ -93,6 +99,7 @@ class RegisterUserImplTest {
                 UserRole.SITE_USER,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 rawPassword);
+        final Instant now = this.getNow();
 
         final ResponseRegisterUser createdUser = this.getResponseRegisterUser(10L,
                 UserStatus.PENDING_EMAIL_VERIFY,
@@ -108,6 +115,8 @@ class RegisterUserImplTest {
                 .thenReturn(encodedPassword);
         when(this.userRepository.createUser(given))
                 .thenReturn(createdUser);
+        when(this.clock.instant())
+                .thenReturn(now);
         when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
                 .thenReturn(outboxEvent);
 
@@ -126,6 +135,8 @@ class RegisterUserImplTest {
                 .encode(rawPassword);
         verify(this.userRepository)
                 .createUser(registerUserCaptor.capture());
+        verify(this.clock)
+                .instant();
         verify(this.outboxEventBuilder)
                 .build(buildContextCaptor.capture());
         verify(this.outboxCommand)
@@ -138,15 +149,15 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
+        assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
         assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(createdUser.getUserId(),
                 siteId,
                 DEFAULT_EMAIL,
-                buildContextCaptor.getValue().requestedAt()));
+                now));
     }
 
     @Test
-    void given_pending_site_scoped_user_when_execute_then_return_existing_user_and_resend() {
+    void givenPendingSiteScopedUser_whenExecute_thenReturnExistingUserAndResend() {
         //given
         final UUID siteId = this.getSiteId();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -154,6 +165,7 @@ class RegisterUserImplTest {
                 UserRole.SITE_USER,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "weak");
+        final Instant now = this.getNow();
         final ResponseRegisterUser existingUser = this.getResponseRegisterUser(14L,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 null);
@@ -166,6 +178,8 @@ class RegisterUserImplTest {
                 .thenReturn(Optional.of(existingUser));
         when(this.emailVerificationResendPolicy.isResendAllowed(14L))
                 .thenReturn(true);
+        when(this.clock.instant())
+                .thenReturn(now);
         when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
                 .thenReturn(outboxEvent);
 
@@ -179,21 +193,23 @@ class RegisterUserImplTest {
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verify(this.emailVerificationResendPolicy)
                 .isResendAllowed(14L);
+        verify(this.clock)
+                .instant();
         verify(this.outboxEventBuilder)
                 .build(buildContextCaptor.capture());
         verify(this.outboxCommand)
                 .execute(outboxEvent);
 
         assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
+        assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
         assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(existingUser.getUserId(),
                 siteId,
                 DEFAULT_EMAIL,
-                buildContextCaptor.getValue().requestedAt()));
+                now));
     }
 
     @Test
-    void given_pending_site_scoped_user_and_resend_not_allowed_when_execute_then_return_existing_user_without_outbox() {
+    void givenPendingSiteScopedUserAndResendNotAllowed_whenExecute_thenReturnExistingUserWithoutOutbox() {
         //given
         final UUID siteId = UUID.randomUUID();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -226,7 +242,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void given_site_scoped_email_already_registered_when_execute_then_throw_and_do_not_encode_or_create_user() {
+    void givenSiteScopedEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
         //given
         final UUID siteId = UUID.randomUUID();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -259,7 +275,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void given_global_email_already_registered_when_execute_then_throw_and_do_not_encode_or_create_user() {
+    void givenGlobalEmailAlreadyRegistered_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
         //given
         final RegisterUserDO given = this.getRegisterUserDO(null,
                 DEFAULT_EMAIL,
@@ -291,7 +307,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void given_invalid_password_when_execute_then_throw_and_do_not_encode_or_create_user() {
+    void givenInvalidPassword_whenExecute_thenThrowAndDoNotEncodeOrCreateUser() {
         //given
         final UUID siteId = UUID.randomUUID();
         final RegisterUserDO given = this.getRegisterUserDO(siteId,
@@ -323,7 +339,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void given_site_scoped_role_without_site_id_when_execute_then_throw_missing_site_id_exception() {
+    void givenSiteScopedRoleWithoutSiteId_whenExecute_thenThrowMissingSiteIdException() {
         //given
         final RegisterUserDO given = this.getRegisterUserDO(null,
                 DEFAULT_EMAIL,
@@ -346,7 +362,7 @@ class RegisterUserImplTest {
     }
 
     @Test
-    void given_global_role_with_site_id_when_execute_then_clear_site_id_and_use_global_uniqueness() {
+    void givenGlobalRoleWithSiteId_whenExecute_thenClearSiteIdAndUseGlobalUniqueness() {
         //given
         final String rawPassword = this.getPassword();
         final String encodedPassword = this.getEncodedPassword();
@@ -356,6 +372,7 @@ class RegisterUserImplTest {
                 UserRole.SUPER_ADMIN,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 rawPassword);
+        final Instant now = this.getNow();
 
         final ResponseRegisterUser createdUser = this.getResponseRegisterUser(11L,
                 UserStatus.PENDING_EMAIL_VERIFY,
@@ -371,6 +388,8 @@ class RegisterUserImplTest {
                 .thenReturn(encodedPassword);
         when(this.userRepository.createUser(given))
                 .thenReturn(createdUser);
+        when(this.clock.instant())
+                .thenReturn(now);
         when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
                 .thenReturn(outboxEvent);
 
@@ -389,6 +408,8 @@ class RegisterUserImplTest {
                 .encode(rawPassword);
         verify(this.userRepository)
                 .createUser(registerUserCaptor.capture());
+        verify(this.clock)
+                .instant();
         verify(this.outboxEventBuilder)
                 .build(buildContextCaptor.capture());
         verify(this.outboxCommand)
@@ -401,11 +422,11 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isNotNull();
+        assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
         assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(createdUser.getUserId(),
                 null,
                 DEFAULT_EMAIL,
-                buildContextCaptor.getValue().requestedAt()));
+                now));
     }
 
     private RegisterUserDO getRegisterUserDO(final UUID siteId,
@@ -458,6 +479,10 @@ class RegisterUserImplTest {
 
     private String getEncodedPassword() {
         return "encoded";
+    }
+
+    private Instant getNow() {
+        return Instant.parse("2024-05-01T10:15:30Z");
     }
 
 }

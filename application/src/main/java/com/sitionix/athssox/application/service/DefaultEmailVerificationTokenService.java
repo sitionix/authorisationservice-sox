@@ -6,21 +6,22 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecor
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
 import com.sitionix.athssox.domain.service.TokenHasher;
+import com.sitionix.athssox.domain.service.UuidGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class DefaultEmailVerificationTokenService implements EmailVerificationTokenService {
 
-    private final SecureRandom secureRandom;
+    private final UuidGenerator uuidGenerator;
+    private final EmailVerificationTokenSigner tokenSigner;
     private final TokenHasher tokenHasher;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final TokenConfig tokenConfig;
@@ -28,9 +29,10 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
 
     @Override
     public EmailVerificationTokenIssue issue(final Long userId, final UUID siteId) {
-        final String rawToken = generateToken();
-        final String tokenHash = tokenHasher.hash(rawToken);
-        final UUID tokenId = UUID.randomUUID();
+        final UUID tokenId = this.uuidGenerator.generate();
+        final UUID pepperId = this.uuidGenerator.generate();
+        final String token = this.tokenSigner.buildToken(tokenId, pepperId);
+        final String tokenHash = this.tokenHasher.hash(token);
 
         final Instant expiresAt = this.clock.instant()
                 .plusSeconds(this.tokenConfig.getEmailVerificationTokenTtlSeconds());
@@ -47,13 +49,6 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
 
         this.emailVerificationTokenRepository.save(tokenRecord);
 
-        return new EmailVerificationTokenIssue(tokenId, rawToken);
-    }
-
-
-    private String generateToken() {
-        final byte[] bytes = new byte[32];
-        secureRandom.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return new EmailVerificationTokenIssue(tokenId, pepperId);
     }
 }
