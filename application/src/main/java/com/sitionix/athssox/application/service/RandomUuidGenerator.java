@@ -1,12 +1,12 @@
 package com.sitionix.athssox.application.service;
 
-import com.sitionix.athssox.domain.service.EmailVerificationTokenIdGenerator;
+import com.sitionix.athssox.domain.service.UuidGenerator;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
-public class UuidEmailVerificationTokenIdGenerator implements EmailVerificationTokenIdGenerator {
+public class RandomUuidGenerator implements UuidGenerator {
 
     @Override
     public UUID generate() {

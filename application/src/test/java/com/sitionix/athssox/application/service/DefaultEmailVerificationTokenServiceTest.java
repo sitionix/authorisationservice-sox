@@ -5,10 +5,9 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
-import com.sitionix.athssox.domain.service.EmailVerificationTokenIdGenerator;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
-import com.sitionix.athssox.domain.service.PepperIdGenerator;
 import com.sitionix.athssox.domain.service.TokenHasher;
+import com.sitionix.athssox.domain.service.UuidGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -34,10 +34,7 @@ class DefaultEmailVerificationTokenServiceTest {
     private DefaultEmailVerificationTokenService defaultEmailVerificationTokenService;
 
     @Mock
-    private EmailVerificationTokenIdGenerator tokenIdGenerator;
-
-    @Mock
-    private PepperIdGenerator pepperIdGenerator;
+    private UuidGenerator uuidGenerator;
 
     @Mock
     private EmailVerificationTokenSigner tokenSigner;
@@ -56,8 +53,7 @@ class DefaultEmailVerificationTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        this.defaultEmailVerificationTokenService = new DefaultEmailVerificationTokenService(this.tokenIdGenerator,
-                this.pepperIdGenerator,
+        this.defaultEmailVerificationTokenService = new DefaultEmailVerificationTokenService(this.uuidGenerator,
                 this.tokenSigner,
                 this.tokenHasher,
                 this.emailVerificationTokenRepository,
@@ -67,8 +63,7 @@ class DefaultEmailVerificationTokenServiceTest {
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.pepperIdGenerator,
-                this.tokenIdGenerator,
+        verifyNoMoreInteractions(this.uuidGenerator,
                 this.tokenSigner,
                 this.tokenHasher,
                 this.emailVerificationTokenRepository,
@@ -88,10 +83,8 @@ class DefaultEmailVerificationTokenServiceTest {
         final String token = this.getToken();
         final String hashedToken = this.getHashedToken();
 
-        when(this.tokenIdGenerator.generate())
-                .thenReturn(tokenId);
-        when(this.pepperIdGenerator.generate())
-                .thenReturn(pepperId);
+        when(this.uuidGenerator.generate())
+                .thenReturn(tokenId, pepperId);
         when(this.tokenSigner.buildToken(any(UUID.class), eq(pepperId)))
                 .thenReturn(token);
         when(this.tokenHasher.hash(token))
@@ -111,9 +104,7 @@ class DefaultEmailVerificationTokenServiceTest {
 
         assertThat(actual.tokenId()).isEqualTo(tokenId);
         assertThat(actual.pepperId()).isEqualTo(pepperId);
-        verify(this.tokenIdGenerator)
-                .generate();
-        verify(this.pepperIdGenerator)
+        verify(this.uuidGenerator, times(2))
                 .generate();
         verify(this.tokenSigner)
                 .buildToken(tokenIdCaptor.capture(), eq(pepperId));

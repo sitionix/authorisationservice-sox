@@ -10,13 +10,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class UuidEmailVerificationTokenIdGeneratorTest {
+class RandomUuidGeneratorTest {
 
-    private UuidEmailVerificationTokenIdGenerator generator;
+    private RandomUuidGenerator generator;
 
     @BeforeEach
     void setUp() {
-        this.generator = new UuidEmailVerificationTokenIdGenerator();
+        this.generator = new RandomUuidGenerator();
     }
 
     @Test

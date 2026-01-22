@@ -213,7 +213,7 @@ class EmailVerificationTokenIssueLinkIT {
 
         //when
         this.testManager.mockMvc()
-                .ping(ControllerEndpoint.issueEmailVerificationLinkBadRequest())
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()

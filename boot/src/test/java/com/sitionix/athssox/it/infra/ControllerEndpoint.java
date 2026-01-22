@@ -165,13 +165,4 @@ public class ControllerEndpoint {
         );
     }
 
-    public static Endpoint<Void, ErrorDTO> issueEmailVerificationLinkBadRequest() {
-        return Endpoint.createContract(
-                ISSUE_EMAIL_VERIFICATION_LINK_URL,
-                HttpMethod.GET,
-                Void.class,
-                ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
-        );
-    }
 }

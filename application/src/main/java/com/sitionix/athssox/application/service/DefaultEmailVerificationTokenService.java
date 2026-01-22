@@ -6,10 +6,9 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecor
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
-import com.sitionix.athssox.domain.service.EmailVerificationTokenIdGenerator;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
-import com.sitionix.athssox.domain.service.PepperIdGenerator;
 import com.sitionix.athssox.domain.service.TokenHasher;
+import com.sitionix.athssox.domain.service.UuidGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DefaultEmailVerificationTokenService implements EmailVerificationTokenService {
 
-    private final EmailVerificationTokenIdGenerator tokenIdGenerator;
-    private final PepperIdGenerator pepperIdGenerator;
+    private final UuidGenerator uuidGenerator;
     private final EmailVerificationTokenSigner tokenSigner;
     private final TokenHasher tokenHasher;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
@@ -31,8 +29,8 @@ public class DefaultEmailVerificationTokenService implements EmailVerificationTo
 
     @Override
     public EmailVerificationTokenIssue issue(final Long userId, final UUID siteId) {
-        final UUID tokenId = this.tokenIdGenerator.generate();
-        final UUID pepperId = this.pepperIdGenerator.generate();
+        final UUID tokenId = this.uuidGenerator.generate();
+        final UUID pepperId = this.uuidGenerator.generate();
         final String token = this.tokenSigner.buildToken(tokenId, pepperId);
         final String tokenHash = this.tokenHasher.hash(token);
 

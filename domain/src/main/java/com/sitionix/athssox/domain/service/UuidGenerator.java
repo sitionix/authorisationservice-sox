@@ -2,7 +2,7 @@ package com.sitionix.athssox.domain.service;
 
 import java.util.UUID;
 
-public interface PepperIdGenerator {
+public interface UuidGenerator {
 
     UUID generate();
 }
