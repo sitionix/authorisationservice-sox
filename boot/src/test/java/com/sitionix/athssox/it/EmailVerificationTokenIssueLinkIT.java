@@ -53,7 +53,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should issue verification link for active token")
-    void given_active_token_when_issue_link_then_return_verify_url_and_metadata() {
+    void givenActiveToken_whenIssueLink_thenReturnVerifyUrlAndMetadata() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -99,7 +99,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should return 404 when token does not exist")
-    void given_missing_token_when_issue_link_then_not_found() {
+    void givenMissingToken_whenIssueLink_thenNotFound() {
         //given
         final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
@@ -120,7 +120,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should return 410 when token is expired")
-    void given_expired_token_when_issue_link_then_gone() {
+    void givenExpiredToken_whenIssueLink_thenGone() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -148,7 +148,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should return 410 when token is used")
-    void given_used_token_when_issue_link_then_gone() {
+    void givenUsedToken_whenIssueLink_thenGone() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -176,7 +176,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should return 409 when user is already verified")
-    void given_active_user_when_issue_link_then_conflict() {
+    void givenActiveUser_whenIssueLink_thenConflict() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -204,7 +204,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should return 400 when token id format is invalid")
-    void given_invalid_token_id_when_issue_link_then_bad_request() {
+    void givenInvalidTokenId_whenIssueLink_thenBadRequest() {
         //given
         final String tokenId = "not-a-uuid";
 
@@ -225,7 +225,7 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should not log verification token data on issue link")
-    void given_issue_link_when_logged_then_token_not_present_in_logs() {
+    void givenIssueLink_whenLogged_thenTokenNotPresentInLogs() {
         //given
         this.testManager.postgresql()
                 .create()

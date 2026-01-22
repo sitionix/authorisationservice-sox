@@ -75,7 +75,7 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     @Test
-    void given_active_token_and_pending_user_when_issue_link_then_return_issue() {
+    void givenActiveTokenAndPendingUser_whenIssueLink_thenReturnIssue() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -128,7 +128,7 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     @Test
-    void given_missing_token_when_issue_link_then_throw_not_found() {
+    void givenMissingToken_whenIssueLink_thenThrowNotFound() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -146,7 +146,7 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     @Test
-    void given_expired_token_when_issue_link_then_throw_expired() {
+    void givenExpiredToken_whenIssueLink_thenThrowExpired() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -176,7 +176,7 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     @Test
-    void given_used_token_when_issue_link_then_throw_invalid() {
+    void givenUsedToken_whenIssueLink_thenThrowInvalid() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -206,7 +206,7 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     @Test
-    void given_active_user_when_issue_link_then_throw_conflict() {
+    void givenActiveUser_whenIssueLink_thenThrowConflict() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -241,7 +241,7 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     @Test
-    void given_hash_mismatch_when_issue_link_then_throw_invalid() {
+    void givenHashMismatch_whenIssueLink_thenThrowInvalid() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();

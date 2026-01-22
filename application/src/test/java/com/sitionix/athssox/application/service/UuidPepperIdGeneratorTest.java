@@ -20,7 +20,7 @@ class UuidPepperIdGeneratorTest {
     }
 
     @Test
-    void given_generator_when_generate_then_return_unique_uuid() {
+    void givenGenerator_whenGenerate_thenReturnUniqueUuid() {
         //given
 
         //when

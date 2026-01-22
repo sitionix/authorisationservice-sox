@@ -33,7 +33,7 @@ class RegistrationEmailVerificationTokenIT {
 
     @Test
     @DisplayName("Should create outbox event with tokenId and pepperId on registration")
-    void given_registration_when_register_then_outbox_contains_token_and_pepper() {
+    void givenRegistration_whenRegister_thenOutboxContainsTokenAndPepper() {
         //given
         this.seedRegistrationDependencies();
 
@@ -80,7 +80,7 @@ class RegistrationEmailVerificationTokenIT {
 
     @Test
     @DisplayName("Should keep pepperId only in outbox payload")
-    void given_registration_when_register_then_pepper_not_persisted_in_token_table() {
+    void givenRegistration_whenRegister_thenPepperNotPersistedInTokenTable() {
         //given
         this.seedRegistrationDependencies();
 
@@ -103,7 +103,7 @@ class RegistrationEmailVerificationTokenIT {
 
     @Test
     @DisplayName("Should generate stable, URL-safe signature for tokenId and pepperId")
-    void given_token_id_and_pepper_id_when_sign_then_signature_is_stable_and_url_safe() {
+    void givenTokenIdAndPepperId_whenSign_thenSignatureIsStableAndUrlSafe() {
         //given
         this.seedRegistrationDependencies();
         this.testManager.mockMvc()
@@ -130,7 +130,7 @@ class RegistrationEmailVerificationTokenIT {
 
     @Test
     @DisplayName("Should generate different signatures for different pepperId values")
-    void given_same_token_id_when_sign_with_different_pepper_then_signatures_differ() {
+    void givenSameTokenId_whenSignWithDifferentPepper_thenSignaturesDiffer() {
         //given
         this.seedRegistrationDependencies();
         this.testManager.mockMvc()
@@ -156,7 +156,7 @@ class RegistrationEmailVerificationTokenIT {
 
     @Test
     @DisplayName("Should generate unique tokenId and pepperId across registrations")
-    void given_two_registrations_when_register_then_token_and_pepper_are_unique() {
+    void givenTwoRegistrations_whenRegister_thenTokenAndPepperAreUnique() {
         //given
         this.seedRegistrationDependencies();
 

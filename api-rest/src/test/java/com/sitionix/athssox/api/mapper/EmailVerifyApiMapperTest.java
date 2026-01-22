@@ -19,7 +19,7 @@ class EmailVerifyApiMapperTest {
     }
 
     @Test
-    void given_verified_true_when_as_email_verification_response_dto_then_return_active_response() {
+    void givenVerifiedTrue_whenAsEmailVerificationResponseDto_thenReturnActiveResponse() {
         //given
         final boolean verified = true;
         final EmailVerificationResponseDTO expected = this.getEmailVerificationResponseDTO("Email verified successfully.",
@@ -33,7 +33,7 @@ class EmailVerifyApiMapperTest {
     }
 
     @Test
-    void given_verified_false_when_as_email_verification_response_dto_then_return_accepted_response() {
+    void givenVerifiedFalse_whenAsEmailVerificationResponseDto_thenReturnAcceptedResponse() {
         //given
         final boolean verified = false;
         final EmailVerificationResponseDTO expected = this.getEmailVerificationResponseDTO("Email verification accepted.",

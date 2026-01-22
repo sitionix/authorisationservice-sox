@@ -30,7 +30,7 @@ class HmacEmailVerificationTokenSignerTest {
     }
 
     @Test
-    void given_token_id_and_pepper_id_when_sign_then_return_url_safe_signature() {
+    void givenTokenIdAndPepperId_whenSign_thenReturnUrlSafeSignature() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -45,7 +45,7 @@ class HmacEmailVerificationTokenSignerTest {
     }
 
     @Test
-    void given_same_inputs_when_sign_then_signature_is_stable() {
+    void givenSameInputs_whenSign_thenSignatureIsStable() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -59,7 +59,7 @@ class HmacEmailVerificationTokenSignerTest {
     }
 
     @Test
-    void given_different_pepper_ids_when_sign_then_signatures_differ() {
+    void givenDifferentPepperIds_whenSign_thenSignaturesDiffer() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID firstPepper = this.getPepperId();
@@ -74,7 +74,7 @@ class HmacEmailVerificationTokenSignerTest {
     }
 
     @Test
-    void given_token_id_and_pepper_id_when_build_token_then_return_token_with_signature() {
+    void givenTokenIdAndPepperId_whenBuildToken_thenReturnTokenWithSignature() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
@@ -88,7 +88,7 @@ class HmacEmailVerificationTokenSignerTest {
     }
 
     @Test
-    void given_blank_secret_when_validate_then_throw_exception() {
+    void givenBlankSecret_whenValidate_thenThrowException() {
         //given
         final EmailVerificationSecurityConfig config = this.getSecurityConfig(" ");
         final HmacEmailVerificationTokenSigner given = new HmacEmailVerificationTokenSigner(config);
