@@ -24,14 +24,9 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.afesox</groupId>-->
-<!--            <artifactId>app-afesox-athssox-api-first-stable</artifactId>-->
-<!--            <version>0.0.22</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.afesox</groupId>
-            <artifactId>app-afesox-athssox-api-first-sitionix-66-unstable</artifactId>
+            <artifactId>app-afesox-athssox-api-first-stable</artifactId>
             <version>0.0.22</version>
         </dependency>
         <dependency>

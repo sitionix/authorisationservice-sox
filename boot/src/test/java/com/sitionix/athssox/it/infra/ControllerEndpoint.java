@@ -17,9 +17,6 @@ import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
 
 public class ControllerEndpoint {
 
-    private static final String ISSUE_EMAIL_VERIFICATION_LINK_URL =
-            "/api/v1/auth/emailVerificationTokens/{tokenId}:issueLink";
-
     public static Endpoint<RegisterUserDTO, ResponseRegisterUserDTO> registerUser() {
         return Endpoint.createContract(
                 "/api/v1/users",
@@ -157,7 +154,7 @@ public class ControllerEndpoint {
 
     public static Endpoint<Void, IssueEmailVerificationLinkResponse> issueEmailVerificationLink() {
         return Endpoint.createContract(
-                ISSUE_EMAIL_VERIFICATION_LINK_URL,
+                "/api/v1/auth/emailVerificationTokens/{tokenId}:issueLink",
                 HttpMethod.GET,
                 Void.class,
                 IssueEmailVerificationLinkResponse.class,
