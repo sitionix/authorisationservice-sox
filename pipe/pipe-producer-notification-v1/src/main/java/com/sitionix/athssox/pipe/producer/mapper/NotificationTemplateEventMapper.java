@@ -6,7 +6,7 @@ import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
-public interface EmailVerifyTemplateEventMapper {
+public interface NotificationTemplateEventMapper {
 
     NotificationTemplateDTO asTemplate(NotificationTemplate template);
 }

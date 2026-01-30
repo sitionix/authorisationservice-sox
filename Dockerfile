@@ -8,14 +8,14 @@ COPY api-rest/pom.xml api-rest/pom.xml
 COPY application/pom.xml application/pom.xml
 COPY domain/pom.xml domain/pom.xml
 COPY pipe/pom.xml pipe/pom.xml
-COPY pipe/pipe-producer-email-verify-v1/pom.xml pipe/pipe-producer-email-verify-v1/pom.xml
+COPY pipe/pipe-producer-notification-v1/pom.xml pipe/pipe-producer-notification-v1/pom.xml
 COPY infrastructure/pom.xml infrastructure/pom.xml
 COPY jacoco-report/pom.xml jacoco-report/pom.xml
 COPY boot/src boot/src
 COPY api-rest/src api-rest/src
 COPY application/src application/src
 COPY domain/src domain/src
-COPY pipe/pipe-producer-email-verify-v1/src pipe/pipe-producer-email-verify-v1/src
+COPY pipe/pipe-producer-notification-v1/src pipe/pipe-producer-notification-v1/src
 COPY infrastructure infrastructure
 
 RUN --mount=type=secret,id=maven_settings,target=/root/.m2/settings.xml \

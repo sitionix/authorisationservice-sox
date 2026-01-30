@@ -8,7 +8,7 @@ import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT)
-public interface EmailVerifyDeliveryEventMapper {
+public interface NotificationDeliveryEventMapper {
 
     DeliveryDTO asDelivery(EmailVerifyPayload.Delivery delivery);
 

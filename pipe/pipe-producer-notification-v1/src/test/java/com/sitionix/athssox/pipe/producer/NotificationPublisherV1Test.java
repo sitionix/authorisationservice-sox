@@ -4,7 +4,7 @@ import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
-import com.sitionix.athssox.pipe.producer.mapper.EmailVerifyEventMapper;
+import com.sitionix.athssox.pipe.producer.mapper.NotificationEventMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,19 +19,19 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyPublisherV1Test {
+class NotificationPublisherV1Test {
 
-    private EmailVerifyPublisherV1 emailVerifyPublisherV1;
+    private NotificationPublisherV1 notificationPublisherV1;
 
     @Mock
     private NotificationsV1Producer producer;
 
     @Mock
-    private EmailVerifyEventMapper mapper;
+    private NotificationEventMapper mapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyPublisherV1 = new EmailVerifyPublisherV1(this.producer, this.mapper);
+        this.notificationPublisherV1 = new NotificationPublisherV1(this.producer, this.mapper);
     }
 
     @AfterEach
@@ -46,7 +46,7 @@ class EmailVerifyPublisherV1Test {
         final Event<EmailVerifyPayload> given = null;
 
         //when
-        this.emailVerifyPublisherV1.publish(given);
+        this.notificationPublisherV1.publish(given);
 
         //then
         verify(this.mapper, never()).asEnvelope(given);
@@ -65,7 +65,7 @@ class EmailVerifyPublisherV1Test {
                 .thenReturn(envelope);
 
         //when
-        this.emailVerifyPublisherV1.publish(given);
+        this.notificationPublisherV1.publish(given);
 
         //then
         verify(this.mapper).asEnvelope(given);

@@ -12,13 +12,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyDeliveryEventMapperTest {
+class NotificationDeliveryEventMapperTest {
 
-    private EmailVerifyDeliveryEventMapper emailVerifyDeliveryEventMapper;
+    private NotificationDeliveryEventMapper notificationDeliveryEventMapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyDeliveryEventMapper = new EmailVerifyDeliveryEventMapperImpl();
+        this.notificationDeliveryEventMapper = new NotificationDeliveryEventMapperImpl();
     }
 
     @Test
@@ -28,7 +28,7 @@ class EmailVerifyDeliveryEventMapperTest {
         final DeliveryDTO expected = this.getDeliveryDto();
 
         //when
-        final DeliveryDTO actual = this.emailVerifyDeliveryEventMapper.asDelivery(given);
+        final DeliveryDTO actual = this.notificationDeliveryEventMapper.asDelivery(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -41,7 +41,7 @@ class EmailVerifyDeliveryEventMapperTest {
         final NotificationChannelDTO expected = NotificationChannelDTO.EMAIL;
 
         //when
-        final NotificationChannelDTO actual = this.emailVerifyDeliveryEventMapper.asChannel(given);
+        final NotificationChannelDTO actual = this.notificationDeliveryEventMapper.asChannel(given);
 
         //then
         assertThat(actual).isEqualTo(expected);

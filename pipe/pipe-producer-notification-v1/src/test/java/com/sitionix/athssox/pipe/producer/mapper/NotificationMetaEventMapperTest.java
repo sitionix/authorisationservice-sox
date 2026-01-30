@@ -13,13 +13,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyMetaEventMapperTest {
+class NotificationMetaEventMapperTest {
 
-    private EmailVerifyMetaEventMapper emailVerifyMetaEventMapper;
+    private NotificationMetaEventMapper notificationMetaEventMapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyMetaEventMapper = new EmailVerifyMetaEventMapperImpl();
+        this.notificationMetaEventMapper = new NotificationMetaEventMapperImpl();
     }
 
     @Test
@@ -31,7 +31,7 @@ class EmailVerifyMetaEventMapperTest {
         final MetaDTO expected = this.getMetaDto(siteId, requestedAt);
 
         //when
-        final MetaDTO actual = this.emailVerifyMetaEventMapper.asMeta(given);
+        final MetaDTO actual = this.notificationMetaEventMapper.asMeta(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -44,7 +44,7 @@ class EmailVerifyMetaEventMapperTest {
         final String expected = given.toString();
 
         //when
-        final String actual = this.emailVerifyMetaEventMapper.toDateTime(given);
+        final String actual = this.notificationMetaEventMapper.toDateTime(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -57,7 +57,7 @@ class EmailVerifyMetaEventMapperTest {
         final String expected = given.toString();
 
         //when
-        final String actual = this.emailVerifyMetaEventMapper.toString(given);
+        final String actual = this.notificationMetaEventMapper.toString(given);
 
         //then
         assertThat(actual).isEqualTo(expected);

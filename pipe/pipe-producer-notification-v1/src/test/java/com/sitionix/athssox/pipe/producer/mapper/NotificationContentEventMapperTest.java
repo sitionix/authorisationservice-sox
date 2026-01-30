@@ -12,13 +12,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyContentEventMapperTest {
+class NotificationContentEventMapperTest {
 
-    private EmailVerifyContentEventMapper emailVerifyContentEventMapper;
+    private NotificationContentEventMapper notificationContentEventMapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyContentEventMapper = new EmailVerifyContentEventMapperImpl();
+        this.notificationContentEventMapper = new NotificationContentEventMapperImpl();
     }
 
     @Test
@@ -30,7 +30,7 @@ class EmailVerifyContentEventMapperTest {
         final EmailVerificationContentDTO expected = this.getContent(tokenId.toString(), pepperId.toString());
 
         //when
-        final EmailVerificationContentDTO actual = this.emailVerifyContentEventMapper.asContent(given);
+        final EmailVerificationContentDTO actual = this.notificationContentEventMapper.asContent(given);
 
         //then
         assertThat(actual).isEqualTo(expected);

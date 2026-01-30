@@ -30,25 +30,25 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyEventMapperTest {
+class NotificationEventMapperTest {
 
-    private EmailVerifyEventMapper emailVerifyEventMapper;
-
-    @Mock
-    private EmailVerifyContentEventMapper contentMapper;
+    private NotificationEventMapper notificationEventMapper;
 
     @Mock
-    private EmailVerifyDeliveryEventMapper deliveryMapper;
+    private NotificationContentEventMapper contentMapper;
 
     @Mock
-    private EmailVerifyMetaEventMapper metaMapper;
+    private NotificationDeliveryEventMapper deliveryMapper;
 
     @Mock
-    private EmailVerifyTemplateEventMapper templateMapper;
+    private NotificationMetaEventMapper metaMapper;
+
+    @Mock
+    private NotificationTemplateEventMapper templateMapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyEventMapper = new EmailVerifyEventMapperImpl(this.contentMapper,
+        this.notificationEventMapper = new NotificationEventMapperImpl(this.contentMapper,
                 this.deliveryMapper,
                 this.metaMapper,
                 this.templateMapper);
@@ -86,7 +86,7 @@ class EmailVerifyEventMapperTest {
         final NotificationEvent expected = this.getNotificationEvent(delivery, template, content, meta);
 
         //when
-        final NotificationEvent actual = this.emailVerifyEventMapper.asEvent(given);
+        final NotificationEvent actual = this.notificationEventMapper.asEvent(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -131,7 +131,7 @@ class EmailVerifyEventMapperTest {
         final NotificationEnvelope expected = this.getNotificationEnvelope(expectedMetadata, expectedPayload);
 
         //when
-        final NotificationEnvelope actual = this.emailVerifyEventMapper.asEnvelope(given);
+        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -159,7 +159,7 @@ class EmailVerifyEventMapperTest {
                 given.getEventType());
 
         //when
-        final Metadata actual = this.emailVerifyEventMapper.asMetadata(given);
+        final Metadata actual = this.notificationEventMapper.asMetadata(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -172,7 +172,7 @@ class EmailVerifyEventMapperTest {
         final String expected = given.toString();
 
         //when
-        final String actual = this.emailVerifyEventMapper.toDateTime(given);
+        final String actual = this.notificationEventMapper.toDateTime(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -185,7 +185,7 @@ class EmailVerifyEventMapperTest {
         final Long expected = given.toEpochMilli();
 
         //when
-        final Long actual = this.emailVerifyEventMapper.toEpochMillis(given);
+        final Long actual = this.notificationEventMapper.toEpochMillis(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -197,7 +197,7 @@ class EmailVerifyEventMapperTest {
         final Instant given = null;
 
         //when
-        final String actual = this.emailVerifyEventMapper.toDateTime(given);
+        final String actual = this.notificationEventMapper.toDateTime(given);
 
         //then
         assertThat(actual).isNull();
@@ -209,7 +209,7 @@ class EmailVerifyEventMapperTest {
         final Instant given = null;
 
         //when
-        final Long actual = this.emailVerifyEventMapper.toEpochMillis(given);
+        final Long actual = this.notificationEventMapper.toEpochMillis(given);
 
         //then
         assertThat(actual).isNull();
@@ -221,7 +221,7 @@ class EmailVerifyEventMapperTest {
         final UUID given = null;
 
         //when
-        final String actual = this.emailVerifyEventMapper.toString(given);
+        final String actual = this.notificationEventMapper.toString(given);
 
         //then
         assertThat(actual).isNull();

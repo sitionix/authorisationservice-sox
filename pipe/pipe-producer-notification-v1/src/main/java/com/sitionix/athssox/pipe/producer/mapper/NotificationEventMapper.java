@@ -17,12 +17,12 @@ import java.util.UUID;
 @Mapper(componentModel = MapstructComponent.SPRING_COMPONENT,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         uses = {
-                EmailVerifyContentEventMapper.class,
-                EmailVerifyDeliveryEventMapper.class,
-                EmailVerifyMetaEventMapper.class,
-                EmailVerifyTemplateEventMapper.class
+                NotificationContentEventMapper.class,
+                NotificationDeliveryEventMapper.class,
+                NotificationMetaEventMapper.class,
+                NotificationTemplateEventMapper.class
         })
-public interface EmailVerifyEventMapper {
+public interface NotificationEventMapper {
 
     @Mapping(target = "content", source = "params")
     NotificationEvent asEvent(EmailVerifyPayload payload);

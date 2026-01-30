@@ -10,13 +10,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyTemplateEventMapperTest {
+class NotificationTemplateEventMapperTest {
 
-    private EmailVerifyTemplateEventMapper emailVerifyTemplateEventMapper;
+    private NotificationTemplateEventMapper notificationTemplateEventMapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyTemplateEventMapper = new EmailVerifyTemplateEventMapperImpl();
+        this.notificationTemplateEventMapper = new NotificationTemplateEventMapperImpl();
     }
 
     @Test
@@ -26,7 +26,7 @@ class EmailVerifyTemplateEventMapperTest {
         final NotificationTemplateDTO expected = NotificationTemplateDTO.EMAIL_VERIFY;
 
         //when
-        final NotificationTemplateDTO actual = this.emailVerifyTemplateEventMapper.asTemplate(given);
+        final NotificationTemplateDTO actual = this.notificationTemplateEventMapper.asTemplate(given);
 
         //then
         assertThat(actual).isEqualTo(expected);

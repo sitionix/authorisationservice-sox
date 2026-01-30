@@ -10,7 +10,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>pipe-producer-email-verify-v1</artifactId>
+    <artifactId>pipe-producer-notification-v1</artifactId>
 
     <dependencies>
         <dependency>
