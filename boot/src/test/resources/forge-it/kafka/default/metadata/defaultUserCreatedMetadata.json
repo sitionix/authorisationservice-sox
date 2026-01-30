@@ -1,5 +1,5 @@
 {
   "idempotencyId": "11111111-1111-1111-1111-111111111111",
   "createdAt": 1713840930000,
-  "eventType": "email.verify"
+  "eventType": "EMAIL_VERIFY"
 }

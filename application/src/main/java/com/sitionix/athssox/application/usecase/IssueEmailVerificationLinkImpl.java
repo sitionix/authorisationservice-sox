@@ -12,7 +12,6 @@ import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatu
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.TokenHasher;
-import com.sitionix.athssox.domain.service.VerificationLinkFactory;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
 import com.sitionix.athssox.domain.usecase.IssueEmailVerificationLink;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,6 @@ public class IssueEmailVerificationLinkImpl implements IssueEmailVerificationLin
     private final AuthUserRepository authUserRepository;
     private final EmailVerificationTokenSigner tokenSigner;
     private final TokenHasher tokenHasher;
-    private final VerificationLinkFactory verificationLinkFactory;
     private final Clock clock;
 
     @Override
@@ -54,20 +52,23 @@ public class IssueEmailVerificationLinkImpl implements IssueEmailVerificationLin
 
         final AuthUser user = this.authUserRepository.findById(tokenRecord.getUserId())
                 .orElseThrow(() -> new EmailVerificationTokenNotFoundException("User not found for email verification token."));
+
         if (!UserStatus.PENDING_EMAIL_VERIFY.equals(user.getStatus())) {
             throw new UserAlreadyVerifiedException("User already verified.");
         }
 
         final String token = this.tokenSigner.buildToken(tokenRecord.getId(), pepperId);
         final String expectedTokenHash = this.tokenHasher.hash(token);
+
         if (!Objects.equals(expectedTokenHash, tokenRecord.getTokenHash())) {
-            log.info("Email verification token hash mismatch for tokenId: {}", tokenRecord.getId());
+            log.info("Email verification token hash mismatch.");
             throw new EmailVerificationTokenInvalidException("Email verification token is invalid.");
         }
 
-        final String verifyUrl = this.verificationLinkFactory.buildEmailVerifyUrl(token, tokenRecord.getSiteId());
-
-        return new EmailVerificationLinkIssue(tokenRecord.getId(), verifyUrl, tokenRecord.getExpiresAt());
+        return new EmailVerificationLinkIssue(tokenRecord.getId(),
+                tokenRecord.getSiteId(),
+                token,
+                tokenRecord.getExpiresAt());
     }
 
     private boolean isExpired(final EmailVerificationTokenRecord tokenRecord, final Instant now) {

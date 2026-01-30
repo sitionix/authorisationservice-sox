@@ -3,7 +3,7 @@ package com.sitionix.athssox.api.controller;
 import com.app_afesox.athssox.api_first.api.AuthApi;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
-import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponse;
+import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponseDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
@@ -93,11 +93,11 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    public ResponseEntity<IssueEmailVerificationLinkResponse> issueEmailVerificationLink(final UUID id, final UUID pepperId) {
-        log.info("Issuing email verification link for tokenId: {}", id);
+    public ResponseEntity<IssueEmailVerificationLinkResponseDTO> issueEmailVerificationLink(final UUID id, final UUID pepperId) {
+        log.info("Issuing email verification link.");
 
         final EmailVerificationLinkIssue issue = this.issueEmailVerificationLink.execute(id, pepperId);
-        final IssueEmailVerificationLinkResponse response = this.emailVerificationLinkApiMapper.asResponse(issue);
+        final IssueEmailVerificationLinkResponseDTO response = this.emailVerificationLinkApiMapper.asResponse(issue);
 
         return ResponseEntity.ok(response);
     }

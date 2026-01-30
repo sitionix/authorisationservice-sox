@@ -1,7 +1,7 @@
 package com.sitionix.athssox.pipe.producer;
 
-import com.app_afesox.athssox.events.emailverify.EmailVerifyEventEnvelope;
-import com.app_afesox.athssox.events.emailverify.kafka.EmailverifyV1Producer;
+import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
+import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.event.EventHandler;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
@@ -17,7 +17,7 @@ import static java.util.Objects.isNull;
 @RequiredArgsConstructor
 public class EmailVerifyPublisherV1 implements EventHandler<EmailVerifyPayload> {
 
-    private final EmailverifyV1Producer producer;
+    private final NotificationsV1Producer producer;
 
     private final EmailVerifyEventMapper mapper;
 
@@ -28,7 +28,7 @@ public class EmailVerifyPublisherV1 implements EventHandler<EmailVerifyPayload> 
             return;
         }
 
-        final EmailVerifyEventEnvelope envelope = this.mapper.asEnvelope(event);
+        final NotificationEnvelope envelope = this.mapper.asEnvelope(event);
 
         this.producer.send(event.getId(), envelope);
         log.info("Event email verify published: {}", envelope);

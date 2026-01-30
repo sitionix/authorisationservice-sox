@@ -1,7 +1,7 @@
 package com.sitionix.athssox.pipe.producer;
 
-import com.app_afesox.athssox.events.emailverify.EmailVerifyEventEnvelope;
-import com.app_afesox.athssox.events.emailverify.kafka.EmailverifyV1Producer;
+import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
+import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.pipe.producer.mapper.EmailVerifyEventMapper;
@@ -24,7 +24,7 @@ class EmailVerifyPublisherV1Test {
     private EmailVerifyPublisherV1 emailVerifyPublisherV1;
 
     @Mock
-    private EmailverifyV1Producer producer;
+    private NotificationsV1Producer producer;
 
     @Mock
     private EmailVerifyEventMapper mapper;
@@ -41,7 +41,7 @@ class EmailVerifyPublisherV1Test {
     }
 
     @Test
-    void given_null_event_when_publish_then_skip() {
+    void givenNullEvent_whenPublish_thenSkip() {
         //given
         final Event<EmailVerifyPayload> given = null;
 
@@ -53,10 +53,10 @@ class EmailVerifyPublisherV1Test {
     }
 
     @Test
-    void given_event_when_publish_then_send_envelope() {
+    void givenEvent_whenPublish_thenSendEnvelope() {
         //given
         final Event<EmailVerifyPayload> given = mock(Event.class);
-        final EmailVerifyEventEnvelope envelope = mock(EmailVerifyEventEnvelope.class);
+        final NotificationEnvelope envelope = mock(NotificationEnvelope.class);
         final String eventId = "event-1";
 
         when(given.getId())
@@ -69,6 +69,8 @@ class EmailVerifyPublisherV1Test {
 
         //then
         verify(this.mapper).asEnvelope(given);
+        verify(given).getId();
         verify(this.producer).send(eventId, envelope);
+        verifyNoMoreInteractions(given, envelope);
     }
 }
