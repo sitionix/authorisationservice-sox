@@ -37,8 +37,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should issue verification link for active token")
     void givenActiveToken_whenIssueLink_thenReturnResponse() {
         //given
-        final UUID tokenId = this.getValidTokenId();
-        final UUID pepperId = this.getValidPepperId();
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         this.testManager.postgresql()
                 .create()
@@ -67,8 +67,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 404 when token does not exist")
     void givenMissingToken_whenIssueLink_thenNotFound() {
         //given
-        final UUID tokenId = this.getMissingTokenId();
-        final UUID pepperId = this.getValidPepperId();
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         //when
         this.testManager.mockMvc()
@@ -89,8 +89,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 410 when token is expired")
     void givenExpiredToken_whenIssueLink_thenGone() {
         //given
-        final UUID tokenId = this.getExpiredTokenId();
-        final UUID pepperId = this.getExpiredPepperId();
+        final UUID tokenId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        final UUID pepperId = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
         this.testManager.postgresql()
                 .create()
@@ -120,8 +120,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 410 when token is used")
     void givenUsedToken_whenIssueLink_thenGone() {
         //given
-        final UUID tokenId = this.getUsedTokenId();
-        final UUID pepperId = this.getUsedPepperId();
+        final UUID tokenId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        final UUID pepperId = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
         this.testManager.postgresql()
                 .create()
@@ -151,8 +151,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 409 when user is already verified")
     void givenActiveUser_whenIssueLink_thenConflict() {
         //given
-        final UUID tokenId = this.getValidTokenId();
-        final UUID pepperId = this.getValidPepperId();
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         this.testManager.postgresql()
                 .create()
@@ -182,8 +182,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 400 when token id format is invalid")
     void givenInvalidTokenId_whenIssueLink_thenBadRequest() {
         //given
-        final String tokenId = this.getInvalidTokenId();
-        final UUID pepperId = this.getValidPepperId();
+        final String tokenId = "not-a-uuid";
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         //when
         this.testManager.mockMvc()
@@ -204,8 +204,8 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should not log verification token data on issue link")
     void givenIssueLink_whenLogged_thenTokenNotPresentInLogs() {
         //given
-        final UUID tokenId = this.getValidTokenId();
-        final UUID pepperId = this.getValidPepperId();
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         this.testManager.postgresql()
                 .create()
@@ -251,35 +251,4 @@ class EmailVerificationTokenIssueLinkIT {
         assertThat(containsSensitive).isFalse();
     }
 
-    private UUID getValidTokenId() {
-        return UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    }
-
-    private UUID getUsedTokenId() {
-        return UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-    }
-
-    private UUID getExpiredTokenId() {
-        return UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    }
-
-    private UUID getMissingTokenId() {
-        return UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    }
-
-    private UUID getValidPepperId() {
-        return UUID.fromString("11111111-1111-1111-1111-111111111111");
-    }
-
-    private UUID getUsedPepperId() {
-        return UUID.fromString("22222222-2222-2222-2222-222222222222");
-    }
-
-    private UUID getExpiredPepperId() {
-        return UUID.fromString("33333333-3333-3333-3333-333333333333");
-    }
-
-    private String getInvalidTokenId() {
-        return "not-a-uuid";
-    }
 }
