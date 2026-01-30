@@ -14,32 +14,52 @@ import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EmailVerifyEventMapperTest {
 
     private EmailVerifyEventMapper emailVerifyEventMapper;
 
+    @Mock
+    private EmailVerifyContentEventMapper contentMapper;
+
+    @Mock
+    private EmailVerifyDeliveryEventMapper deliveryMapper;
+
+    @Mock
+    private EmailVerifyMetaEventMapper metaMapper;
+
+    @Mock
+    private EmailVerifyTemplateEventMapper templateMapper;
+
     @BeforeEach
     void setUp() {
-        final EmailVerifyContentEventMapper contentMapper = new EmailVerifyContentEventMapperImpl();
-        final EmailVerifyDeliveryEventMapper deliveryMapper = new EmailVerifyDeliveryEventMapperImpl();
-        final EmailVerifyMetaEventMapper metaMapper = new EmailVerifyMetaEventMapperImpl();
-        final EmailVerifyTemplateEventMapper templateMapper = new EmailVerifyTemplateEventMapperImpl();
+        this.emailVerifyEventMapper = new EmailVerifyEventMapperImpl(this.contentMapper,
+                this.deliveryMapper,
+                this.metaMapper,
+                this.templateMapper);
+    }
 
-        this.emailVerifyEventMapper = new EmailVerifyEventMapperImpl(contentMapper,
-                deliveryMapper,
-                metaMapper,
-                templateMapper);
+    @AfterEach
+    void tearDown() {
+        verifyNoMoreInteractions(this.contentMapper,
+                this.deliveryMapper,
+                this.metaMapper,
+                this.templateMapper);
     }
 
     @Test
@@ -49,13 +69,35 @@ class EmailVerifyEventMapperTest {
         final Instant requestedAt = this.getInstant("2024-04-22T08:15:30Z");
 
         final EmailVerifyPayload given = this.getEmailVerifyPayload(siteId, requestedAt);
-        final NotificationEvent expected = this.getNotificationEvent(siteId, requestedAt);
+        final EmailVerificationContentDTO content = this.getContent();
+        final DeliveryDTO delivery = this.getDelivery();
+        final MetaDTO meta = this.getMeta(siteId, requestedAt);
+        final NotificationTemplateDTO template = this.getTemplate();
+
+        when(this.contentMapper.asContent(given.getParams()))
+                .thenReturn(content);
+        when(this.deliveryMapper.asDelivery(given.getDelivery()))
+                .thenReturn(delivery);
+        when(this.metaMapper.asMeta(given.getMeta()))
+                .thenReturn(meta);
+        when(this.templateMapper.asTemplate(given.getTemplate()))
+                .thenReturn(template);
+
+        final NotificationEvent expected = this.getNotificationEvent(delivery, template, content, meta);
 
         //when
         final NotificationEvent actual = this.emailVerifyEventMapper.asEvent(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
+        verify(this.contentMapper)
+                .asContent(given.getParams());
+        verify(this.deliveryMapper)
+                .asDelivery(given.getDelivery());
+        verify(this.metaMapper)
+                .asMeta(given.getMeta());
+        verify(this.templateMapper)
+                .asTemplate(given.getTemplate());
     }
 
     @Test
@@ -68,7 +110,21 @@ class EmailVerifyEventMapperTest {
         final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt);
         final Event<EmailVerifyPayload> given = this.getEvent(payload, createdAt);
 
-        final NotificationEvent expectedPayload = this.getNotificationEvent(siteId, requestedAt);
+        final EmailVerificationContentDTO content = this.getContent();
+        final DeliveryDTO delivery = this.getDelivery();
+        final MetaDTO meta = this.getMeta(siteId, requestedAt);
+        final NotificationTemplateDTO template = this.getTemplate();
+
+        when(this.contentMapper.asContent(payload.getParams()))
+                .thenReturn(content);
+        when(this.deliveryMapper.asDelivery(payload.getDelivery()))
+                .thenReturn(delivery);
+        when(this.metaMapper.asMeta(payload.getMeta()))
+                .thenReturn(meta);
+        when(this.templateMapper.asTemplate(payload.getTemplate()))
+                .thenReturn(template);
+
+        final NotificationEvent expectedPayload = this.getNotificationEvent(delivery, template, content, meta);
         final Metadata expectedMetadata = this.getMetadata(given.getIdempotencyId(),
                 createdAt,
                 given.getEventType());
@@ -79,6 +135,14 @@ class EmailVerifyEventMapperTest {
 
         //then
         assertThat(actual).isEqualTo(expected);
+        verify(this.contentMapper)
+                .asContent(payload.getParams());
+        verify(this.deliveryMapper)
+                .asDelivery(payload.getDelivery());
+        verify(this.metaMapper)
+                .asMeta(payload.getMeta());
+        verify(this.templateMapper)
+                .asTemplate(payload.getTemplate());
     }
 
     @Test
@@ -197,13 +261,15 @@ class EmailVerifyEventMapperTest {
                 .build();
     }
 
-    private NotificationEvent getNotificationEvent(final UUID siteId,
-                                                   final Instant requestedAt) {
+    private NotificationEvent getNotificationEvent(final DeliveryDTO delivery,
+                                                   final NotificationTemplateDTO template,
+                                                   final EmailVerificationContentDTO content,
+                                                   final MetaDTO meta) {
         return NotificationEvent.newBuilder()
-                .setDelivery(this.getDelivery())
-                .setTemplate(NotificationTemplateDTO.EMAIL_VERIFY)
-                .setContent(this.getContent())
-                .setMeta(this.getMeta(siteId, requestedAt))
+                .setDelivery(delivery)
+                .setTemplate(template)
+                .setContent(content)
+                .setMeta(meta)
                 .build();
     }
 
@@ -229,6 +295,10 @@ class EmailVerifyEventMapperTest {
                 .setTraceId("trace-123")
                 .setRequestedAt(requestedAt.toString())
                 .build();
+    }
+
+    private NotificationTemplateDTO getTemplate() {
+        return NotificationTemplateDTO.EMAIL_VERIFY;
     }
 
     private Event<EmailVerifyPayload> getEvent(final EmailVerifyPayload payload,
