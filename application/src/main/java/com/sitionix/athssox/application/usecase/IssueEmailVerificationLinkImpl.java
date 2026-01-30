@@ -52,14 +52,12 @@ public class IssueEmailVerificationLinkImpl implements IssueEmailVerificationLin
 
         final AuthUser user = this.authUserRepository.findById(tokenRecord.getUserId())
                 .orElseThrow(() -> new EmailVerificationTokenNotFoundException("User not found for email verification token."));
-
         if (!UserStatus.PENDING_EMAIL_VERIFY.equals(user.getStatus())) {
             throw new UserAlreadyVerifiedException("User already verified.");
         }
 
         final String token = this.tokenSigner.buildToken(tokenRecord.getId(), pepperId);
         final String expectedTokenHash = this.tokenHasher.hash(token);
-
         if (!Objects.equals(expectedTokenHash, tokenRecord.getTokenHash())) {
             log.info("Email verification token hash mismatch.");
             throw new EmailVerificationTokenInvalidException("Email verification token is invalid.");

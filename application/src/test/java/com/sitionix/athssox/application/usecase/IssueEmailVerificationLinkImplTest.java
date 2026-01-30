@@ -77,7 +77,6 @@ class IssueEmailVerificationLinkImplTest {
         final Instant expiresAt = this.getExpiresAt();
         final String token = this.getToken();
         final String tokenHash = this.getTokenHash();
-
         final EmailVerificationTokenRecord tokenRecord = this.getTokenRecord(tokenId,
                 this.getUserId(),
                 this.getSiteId(),
@@ -102,7 +101,10 @@ class IssueEmailVerificationLinkImplTest {
         final EmailVerificationLinkIssue actual = this.issueEmailVerificationLink.execute(tokenId, pepperId);
 
         //then
-        final EmailVerificationLinkIssue expected = this.getEmailVerificationLinkIssue();
+        final EmailVerificationLinkIssue expected = this.getEmailVerificationLinkIssue(tokenId,
+                this.getSiteId(),
+                token,
+                expiresAt);
         assertThat(actual).isEqualTo(expected);
         verify(this.emailVerificationTokenRepository)
                 .findById(tokenId);
@@ -346,7 +348,10 @@ class IssueEmailVerificationLinkImplTest {
                 .build();
     }
 
-    private EmailVerificationLinkIssue getEmailVerificationLinkIssue() {
-        return new EmailVerificationLinkIssue(this.getTokenId(), this.getSiteId(), this.getToken(), this.getExpiresAt());
+    private EmailVerificationLinkIssue getEmailVerificationLinkIssue(final UUID tokenId,
+                                                                     final UUID siteId,
+                                                                     final String token,
+                                                                     final Instant expiresAt) {
+        return new EmailVerificationLinkIssue(tokenId, siteId, token, expiresAt);
     }
 }

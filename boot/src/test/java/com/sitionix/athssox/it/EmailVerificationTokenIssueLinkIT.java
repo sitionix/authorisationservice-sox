@@ -35,10 +35,11 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Test
     @DisplayName("Should issue verification link for active token")
-    void givenActiveToken_whenIssueLink_thenReturnVerifyUrlAndMetadata() {
+    void givenActiveToken_whenIssueLink_thenReturnResponse() {
         //given
         final UUID tokenId = this.getValidTokenId();
         final UUID pepperId = this.getValidPepperId();
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -90,6 +91,7 @@ class EmailVerificationTokenIssueLinkIT {
         //given
         final UUID tokenId = this.getExpiredTokenId();
         final UUID pepperId = this.getExpiredPepperId();
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -120,6 +122,7 @@ class EmailVerificationTokenIssueLinkIT {
         //given
         final UUID tokenId = this.getUsedTokenId();
         final UUID pepperId = this.getUsedPepperId();
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -150,6 +153,7 @@ class EmailVerificationTokenIssueLinkIT {
         //given
         final UUID tokenId = this.getValidTokenId();
         final UUID pepperId = this.getValidPepperId();
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
@@ -202,6 +206,7 @@ class EmailVerificationTokenIssueLinkIT {
         //given
         final UUID tokenId = this.getValidTokenId();
         final UUID pepperId = this.getValidPepperId();
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -216,7 +221,10 @@ class EmailVerificationTokenIssueLinkIT {
         appender.start();
         logger.addAppender(appender);
 
-        final String token = this.buildToken(tokenId, pepperId);
+        final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
+        config.setHmacSecret(this.hmacSecret);
+        final HmacEmailVerificationTokenSigner signer = new HmacEmailVerificationTokenSigner(config);
+        final String token = signer.buildToken(tokenId, pepperId);
         final boolean containsSensitive;
         try {
             //when
@@ -241,12 +249,6 @@ class EmailVerificationTokenIssueLinkIT {
 
         //then
         assertThat(containsSensitive).isFalse();
-    }
-
-    private String buildToken(final UUID tokenId, final UUID pepperId) {
-        final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
-        config.setHmacSecret(this.hmacSecret);
-        return new HmacEmailVerificationTokenSigner(config).buildToken(tokenId, pepperId);
     }
 
     private UUID getValidTokenId() {

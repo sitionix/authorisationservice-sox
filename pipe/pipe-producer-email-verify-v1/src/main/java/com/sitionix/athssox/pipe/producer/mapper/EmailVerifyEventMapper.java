@@ -1,8 +1,8 @@
 package com.sitionix.athssox.pipe.producer.mapper;
 
+import com.app_afesox.events.Metadata;
 import com.app_afesox.ntfssox.events.notifications.NotificationEvent;
 import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
-import com.app_afesox.events.Metadata;
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
@@ -34,14 +34,14 @@ public interface EmailVerifyEventMapper {
     @Mapping(target = "createdAt", source = "createdAt")
     Metadata asMetadata(Event<EmailVerifyPayload> event);
 
-    default String toDateTime(Instant instant) {
+    default String toDateTime(final Instant instant) {
         if (instant == null) {
             return null;
         }
         return instant.toString();
     }
 
-    default Long toEpochMillis(Instant instant) {
+    default Long toEpochMillis(final Instant instant) {
         if (instant == null) {
             return null;
         }

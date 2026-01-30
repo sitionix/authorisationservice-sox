@@ -224,7 +224,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void givenTokenIdAndPepperId_whenIssueEmailVerificationLink_thenReturnResponseDto() {
+    void givenTokenIdAndPepperId_whenIssueEmailVerificationLink_thenReturnResponse() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
