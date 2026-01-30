@@ -1,57 +1,107 @@
 package com.sitionix.athssox.pipe.producer.mapper;
 
-import com.app_afesox.athssox.events.emailverify.Delivery;
-import com.app_afesox.athssox.events.emailverify.EmailVerifyEvent;
-import com.app_afesox.athssox.events.emailverify.EmailVerifyEventEnvelope;
-import com.app_afesox.athssox.events.emailverify.Meta;
-import com.app_afesox.athssox.events.emailverify.Params;
 import com.app_afesox.events.Metadata;
+import com.app_afesox.ntfssox.events.notifications.DeliveryDTO;
+import com.app_afesox.ntfssox.events.notifications.MetaDTO;
+import com.app_afesox.ntfssox.events.notifications.NotificationChannelDTO;
+import com.app_afesox.ntfssox.events.notifications.NotificationEvent;
+import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
+import com.app_afesox.ntfssox.events.notifications.NotificationTemplateDTO;
+import com.app_afesox.ntfssox.events.notifications.contents.EmailVerificationContentDTO;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.app_afesox.athssox.events.emailverify.OutboxEventType.EMAIL_VERIFY;
-import static com.app_afesox.athssox.events.emailverify.VerifyChannel.EMAIL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyEventMapperTest {
+class NotificationEventMapperTest {
 
-    private EmailVerifyEventMapper emailVerifyEventMapper;
+    private NotificationEventMapper notificationEventMapper;
+
+    @Mock
+    private NotificationContentEventMapper contentMapper;
+
+    @Mock
+    private NotificationDeliveryEventMapper deliveryMapper;
+
+    @Mock
+    private NotificationMetaEventMapper metaMapper;
+
+    @Mock
+    private NotificationTemplateEventMapper templateMapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyEventMapper = new EmailVerifyEventMapperImpl();
+        this.notificationEventMapper = new NotificationEventMapperImpl(this.contentMapper,
+                this.deliveryMapper,
+                this.metaMapper,
+                this.templateMapper);
+    }
+
+    @AfterEach
+    void tearDown() {
+        verifyNoMoreInteractions(this.contentMapper,
+                this.deliveryMapper,
+                this.metaMapper,
+                this.templateMapper);
     }
 
     @Test
-    void given_email_verify_payload_when_as_event_then_return_email_verify_event() {
+    void givenEmailVerifyPayload_whenAsEvent_thenReturnNotificationEvent() {
         //given
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getInstant("2024-04-22T08:15:30Z");
 
         final EmailVerifyPayload given = this.getEmailVerifyPayload(siteId, requestedAt);
-        final EmailVerifyEvent expected = this.getEmailVerifyEvent(siteId, requestedAt);
+        final EmailVerificationContentDTO content = this.getContent();
+        final DeliveryDTO delivery = this.getDelivery();
+        final MetaDTO meta = this.getMeta(siteId, requestedAt);
+        final NotificationTemplateDTO template = this.getTemplate();
+
+        when(this.contentMapper.asContent(given.getParams()))
+                .thenReturn(content);
+        when(this.deliveryMapper.asDelivery(given.getDelivery()))
+                .thenReturn(delivery);
+        when(this.metaMapper.asMeta(given.getMeta()))
+                .thenReturn(meta);
+        when(this.templateMapper.asTemplate(given.getTemplate()))
+                .thenReturn(template);
+
+        final NotificationEvent expected = this.getNotificationEvent(delivery, template, content, meta);
 
         //when
-        final EmailVerifyEvent actual = this.emailVerifyEventMapper.asEvent(given);
+        final NotificationEvent actual = this.notificationEventMapper.asEvent(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
+        verify(this.contentMapper)
+                .asContent(given.getParams());
+        verify(this.deliveryMapper)
+                .asDelivery(given.getDelivery());
+        verify(this.metaMapper)
+                .asMeta(given.getMeta());
+        verify(this.templateMapper)
+                .asTemplate(given.getTemplate());
     }
 
     @Test
-    void given_event_when_as_envelope_then_return_email_verify_event_envelope() {
+    void givenEvent_whenAsEnvelope_thenReturnNotificationEventEnvelope() {
         //given
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getInstant("2024-04-22T08:15:30Z");
@@ -60,21 +110,43 @@ class EmailVerifyEventMapperTest {
         final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt);
         final Event<EmailVerifyPayload> given = this.getEvent(payload, createdAt);
 
-        final EmailVerifyEvent expectedPayload = this.getEmailVerifyEvent(siteId, requestedAt);
+        final EmailVerificationContentDTO content = this.getContent();
+        final DeliveryDTO delivery = this.getDelivery();
+        final MetaDTO meta = this.getMeta(siteId, requestedAt);
+        final NotificationTemplateDTO template = this.getTemplate();
+
+        when(this.contentMapper.asContent(payload.getParams()))
+                .thenReturn(content);
+        when(this.deliveryMapper.asDelivery(payload.getDelivery()))
+                .thenReturn(delivery);
+        when(this.metaMapper.asMeta(payload.getMeta()))
+                .thenReturn(meta);
+        when(this.templateMapper.asTemplate(payload.getTemplate()))
+                .thenReturn(template);
+
+        final NotificationEvent expectedPayload = this.getNotificationEvent(delivery, template, content, meta);
         final Metadata expectedMetadata = this.getMetadata(given.getIdempotencyId(),
                 createdAt,
                 given.getEventType());
-        final EmailVerifyEventEnvelope expected = this.getEmailVerifyEventEnvelope(expectedMetadata, expectedPayload);
+        final NotificationEnvelope expected = this.getNotificationEnvelope(expectedMetadata, expectedPayload);
 
         //when
-        final EmailVerifyEventEnvelope actual = this.emailVerifyEventMapper.asEnvelope(given);
+        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
+        verify(this.contentMapper)
+                .asContent(payload.getParams());
+        verify(this.deliveryMapper)
+                .asDelivery(payload.getDelivery());
+        verify(this.metaMapper)
+                .asMeta(payload.getMeta());
+        verify(this.templateMapper)
+                .asTemplate(payload.getTemplate());
     }
 
     @Test
-    void given_event_when_as_metadata_then_return_metadata() {
+    void givenEvent_whenAsMetadata_thenReturnMetadata() {
         //given
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getInstant("2024-04-23T08:15:30Z");
@@ -87,69 +159,69 @@ class EmailVerifyEventMapperTest {
                 given.getEventType());
 
         //when
-        final Metadata actual = this.emailVerifyEventMapper.asMetadata(given);
+        final Metadata actual = this.notificationEventMapper.asMetadata(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void given_instant_when_to_date_time_then_return_date_time_string() {
+    void givenInstant_whenToDateTime_thenReturnDateTimeString() {
         //given
         final Instant given = this.getInstant("2024-04-24T08:15:30Z");
         final String expected = given.toString();
 
         //when
-        final String actual = this.emailVerifyEventMapper.toDateTime(given);
+        final String actual = this.notificationEventMapper.toDateTime(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void given_instant_when_to_epoch_millis_then_return_epoch_millis() {
+    void givenInstant_whenToEpochMillis_thenReturnEpochMillis() {
         //given
         final Instant given = this.getInstant("2024-04-25T08:15:30Z");
         final Long expected = given.toEpochMilli();
 
         //when
-        final Long actual = this.emailVerifyEventMapper.toEpochMillis(given);
+        final Long actual = this.notificationEventMapper.toEpochMillis(given);
 
         //then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void given_null_instant_when_to_date_time_then_return_null() {
+    void givenNullInstant_whenToDateTime_thenReturnNull() {
         //given
         final Instant given = null;
 
         //when
-        final String actual = this.emailVerifyEventMapper.toDateTime(given);
+        final String actual = this.notificationEventMapper.toDateTime(given);
 
         //then
         assertThat(actual).isNull();
     }
 
     @Test
-    void given_null_instant_when_to_epoch_millis_then_return_null() {
+    void givenNullInstant_whenToEpochMillis_thenReturnNull() {
         //given
         final Instant given = null;
 
         //when
-        final Long actual = this.emailVerifyEventMapper.toEpochMillis(given);
+        final Long actual = this.notificationEventMapper.toEpochMillis(given);
 
         //then
         assertThat(actual).isNull();
     }
 
     @Test
-    void given_null_uuid_when_to_string_then_return_null() {
+    void givenNullUuid_whenToString_thenReturnNull() {
         //given
         final UUID given = null;
 
         //when
-        final String actual = this.emailVerifyEventMapper.toString(given);
+        final String actual = this.notificationEventMapper.toString(given);
 
         //then
         assertThat(actual).isNull();
@@ -189,38 +261,44 @@ class EmailVerifyEventMapperTest {
                 .build();
     }
 
-    private EmailVerifyEvent getEmailVerifyEvent(final UUID siteId,
-                                                 final Instant requestedAt) {
-        return EmailVerifyEvent.newBuilder()
-                .setDelivery(this.getDelivery())
-                .setTemplate(EMAIL_VERIFY)
-                .setParams(this.getParams())
-                .setMeta(this.getMeta(siteId, requestedAt))
+    private NotificationEvent getNotificationEvent(final DeliveryDTO delivery,
+                                                   final NotificationTemplateDTO template,
+                                                   final EmailVerificationContentDTO content,
+                                                   final MetaDTO meta) {
+        return NotificationEvent.newBuilder()
+                .setDelivery(delivery)
+                .setTemplate(template)
+                .setContent(content)
+                .setMeta(meta)
                 .build();
     }
 
-    private Delivery getDelivery() {
-        return Delivery.newBuilder()
-                .setChannel(EMAIL)
+    private DeliveryDTO getDelivery() {
+        return DeliveryDTO.newBuilder()
+                .setChannel(NotificationChannelDTO.EMAIL)
                 .setTo("user@sitionix.com")
                 .build();
     }
 
-    private Params getParams() {
-        return Params.newBuilder()
+    private EmailVerificationContentDTO getContent() {
+        return EmailVerificationContentDTO.newBuilder()
                 .setVerificationTokenId("11111111-1111-1111-1111-111111111111")
                 .setPepperId("22222222-2222-2222-2222-222222222222")
                 .build();
     }
 
-    private Meta getMeta(final UUID siteId,
-                         final Instant requestedAt) {
-        return Meta.newBuilder()
+    private MetaDTO getMeta(final UUID siteId,
+                            final Instant requestedAt) {
+        return MetaDTO.newBuilder()
                 .setUserId(42L)
                 .setSiteId(siteId.toString())
                 .setTraceId("trace-123")
                 .setRequestedAt(requestedAt.toString())
                 .build();
+    }
+
+    private NotificationTemplateDTO getTemplate() {
+        return NotificationTemplateDTO.EMAIL_VERIFY;
     }
 
     private Event<EmailVerifyPayload> getEvent(final EmailVerifyPayload payload,
@@ -256,9 +334,9 @@ class EmailVerifyEventMapperTest {
                 .build();
     }
 
-    private EmailVerifyEventEnvelope getEmailVerifyEventEnvelope(final Metadata metadata,
-                                                                 final EmailVerifyEvent payload) {
-        return EmailVerifyEventEnvelope.newBuilder()
+    private NotificationEnvelope getNotificationEnvelope(final Metadata metadata,
+                                                         final NotificationEvent payload) {
+        return NotificationEnvelope.newBuilder()
                 .setMetadata(metadata)
                 .setPayload(payload)
                 .build();

@@ -10,13 +10,13 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>pipe-producer-email-verify-v1</artifactId>
+    <artifactId>pipe-producer-notification-v1</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>com.afesox</groupId>
-            <artifactId>app-afesox-athssox-event-emailverify-producer-stable</artifactId>
-            <version>0.0.6</version>
+            <artifactId>app-afesox-ntfssox-event-notifications-producer-stable</artifactId>
+            <version>0.0.3</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -69,4 +69,28 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <phase>test</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

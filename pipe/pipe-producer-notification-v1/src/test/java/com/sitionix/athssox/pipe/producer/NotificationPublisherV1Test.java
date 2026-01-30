@@ -1,10 +1,10 @@
 package com.sitionix.athssox.pipe.producer;
 
-import com.app_afesox.athssox.events.emailverify.EmailVerifyEventEnvelope;
-import com.app_afesox.athssox.events.emailverify.kafka.EmailverifyV1Producer;
+import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
+import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
-import com.sitionix.athssox.pipe.producer.mapper.EmailVerifyEventMapper;
+import com.sitionix.athssox.pipe.producer.mapper.NotificationEventMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,19 +19,19 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyPublisherV1Test {
+class NotificationPublisherV1Test {
 
-    private EmailVerifyPublisherV1 emailVerifyPublisherV1;
-
-    @Mock
-    private EmailverifyV1Producer producer;
+    private NotificationPublisherV1 notificationPublisherV1;
 
     @Mock
-    private EmailVerifyEventMapper mapper;
+    private NotificationsV1Producer producer;
+
+    @Mock
+    private NotificationEventMapper mapper;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyPublisherV1 = new EmailVerifyPublisherV1(this.producer, this.mapper);
+        this.notificationPublisherV1 = new NotificationPublisherV1(this.producer, this.mapper);
     }
 
     @AfterEach
@@ -41,22 +41,22 @@ class EmailVerifyPublisherV1Test {
     }
 
     @Test
-    void given_null_event_when_publish_then_skip() {
+    void givenNullEvent_whenPublish_thenSkip() {
         //given
         final Event<EmailVerifyPayload> given = null;
 
         //when
-        this.emailVerifyPublisherV1.publish(given);
+        this.notificationPublisherV1.publish(given);
 
         //then
         verify(this.mapper, never()).asEnvelope(given);
     }
 
     @Test
-    void given_event_when_publish_then_send_envelope() {
+    void givenEvent_whenPublish_thenSendEnvelope() {
         //given
         final Event<EmailVerifyPayload> given = mock(Event.class);
-        final EmailVerifyEventEnvelope envelope = mock(EmailVerifyEventEnvelope.class);
+        final NotificationEnvelope envelope = mock(NotificationEnvelope.class);
         final String eventId = "event-1";
 
         when(given.getId())
@@ -65,10 +65,12 @@ class EmailVerifyPublisherV1Test {
                 .thenReturn(envelope);
 
         //when
-        this.emailVerifyPublisherV1.publish(given);
+        this.notificationPublisherV1.publish(given);
 
         //then
         verify(this.mapper).asEnvelope(given);
+        verify(given).getId();
         verify(this.producer).send(eventId, envelope);
+        verifyNoMoreInteractions(given, envelope);
     }
 }

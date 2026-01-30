@@ -3,7 +3,6 @@ package com.sitionix.athssox.it;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.jayway.jsonpath.JsonPath;
 import com.sitionix.athssox.api.controller.AuthController;
 import com.sitionix.athssox.application.config.EmailVerificationSecurityConfig;
 import com.sitionix.athssox.application.service.HmacEmailVerificationTokenSigner;
@@ -20,12 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,28 +27,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 class EmailVerificationTokenIssueLinkIT {
 
-    private static final UUID VALID_TOKEN_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    private static final UUID USED_TOKEN_ID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-    private static final UUID EXPIRED_TOKEN_ID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    private static final UUID VALID_PEPPER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final UUID USED_PEPPER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
-    private static final UUID EXPIRED_PEPPER_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
-    private static final UUID SITE_ID = UUID.fromString("c9b1f3f4-12c7-11ec-82a8-0242ac130003");
-    private static final String EXPECTED_EXPIRES_AT = "2099-01-02T12:00:00Z";
-
     @Autowired
     private TestManager testManager;
-
-    @Value("${bff.base-url}")
-    private String bffBaseUrl;
 
     @Value("${security.email-verification.hmac-secret}")
     private String hmacSecret;
 
     @Test
     @DisplayName("Should issue verification link for active token")
-    void givenActiveToken_whenIssueLink_thenReturnVerifyUrlAndMetadata() {
+    void givenActiveToken_whenIssueLink_thenReturnResponse() {
         //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -64,40 +49,18 @@ class EmailVerificationTokenIssueLinkIT {
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenIssueLinkValid.json"))
                 .build();
 
-        final List<String> verifyUrls = new ArrayList<>();
-        final List<String> expiresAt = new ArrayList<>();
-        final List<String> tokenIds = new ArrayList<>();
-
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
                 .withPathParameters(PathParams.create()
-                        .add("tokenId", VALID_TOKEN_ID))
+                        .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
-                        .add("pepper", VALID_PEPPER_ID))
+                        .add("pepper", pepperId))
                 .expectStatus(HttpStatus.OK)
-                .andExpectPath(result -> verifyUrls.add(JsonPath.read(result.getResponse().getContentAsString(), "$.verifyUrl")))
-                .andExpectPath(result -> expiresAt.add(JsonPath.read(result.getResponse().getContentAsString(), "$.expiresAt")))
-                .andExpectPath(result -> tokenIds.add(JsonPath.read(result.getResponse().getContentAsString(), "$.tokenId")))
-                .andExpectPath(MockMvcResultMatchers.jsonPath("$.token").doesNotExist())
+                .expectResponse("issueEmailVerificationLinkResponse.json")
                 .assertAndCreate();
 
         //then
-        assertThat(verifyUrls).hasSize(1);
-        assertThat(expiresAt).hasSize(1);
-        assertThat(tokenIds).containsExactly(VALID_TOKEN_ID.toString());
-
-        final String verifyUrl = verifyUrls.get(0);
-        final UriComponents components = UriComponentsBuilder.fromUriString(verifyUrl).build();
-        final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
-        config.setHmacSecret(this.hmacSecret);
-        final HmacEmailVerificationTokenSigner signer = new HmacEmailVerificationTokenSigner(config);
-        final String expectedToken = signer.buildToken(VALID_TOKEN_ID, VALID_PEPPER_ID);
-
-        assertThat(verifyUrl).startsWith(this.bffBaseUrl + "/api/v1/auth/email/verify");
-        assertThat(components.getQueryParams().getFirst("token")).isEqualTo(expectedToken);
-        assertThat(components.getQueryParams().getFirst("siteId")).isEqualTo(SITE_ID.toString());
-        assertThat(OffsetDateTime.parse(expiresAt.get(0))).isEqualTo(OffsetDateTime.parse(EXPECTED_EXPIRES_AT));
     }
 
     @Test
@@ -105,6 +68,7 @@ class EmailVerificationTokenIssueLinkIT {
     void givenMissingToken_whenIssueLink_thenNotFound() {
         //given
         final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         //when
         this.testManager.mockMvc()
@@ -112,7 +76,7 @@ class EmailVerificationTokenIssueLinkIT {
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
-                        .add("pepper", VALID_PEPPER_ID))
+                        .add("pepper", pepperId))
                 .expectStatus(HttpStatus.NOT_FOUND)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.NOT_FOUND.value()))
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.NOT_FOUND.getReasonPhrase()))
@@ -125,6 +89,9 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 410 when token is expired")
     void givenExpiredToken_whenIssueLink_thenGone() {
         //given
+        final UUID tokenId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        final UUID pepperId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -138,9 +105,9 @@ class EmailVerificationTokenIssueLinkIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
                 .withPathParameters(PathParams.create()
-                        .add("tokenId", EXPIRED_TOKEN_ID))
+                        .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
-                        .add("pepper", EXPIRED_PEPPER_ID))
+                        .add("pepper", pepperId))
                 .expectStatus(HttpStatus.GONE)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.GONE.value()))
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.GONE.getReasonPhrase()))
@@ -153,6 +120,9 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 410 when token is used")
     void givenUsedToken_whenIssueLink_thenGone() {
         //given
+        final UUID tokenId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        final UUID pepperId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -166,9 +136,9 @@ class EmailVerificationTokenIssueLinkIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
                 .withPathParameters(PathParams.create()
-                        .add("tokenId", USED_TOKEN_ID))
+                        .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
-                        .add("pepper", USED_PEPPER_ID))
+                        .add("pepper", pepperId))
                 .expectStatus(HttpStatus.GONE)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.GONE.value()))
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.GONE.getReasonPhrase()))
@@ -181,6 +151,9 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should return 409 when user is already verified")
     void givenActiveUser_whenIssueLink_thenConflict() {
         //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(2L))
@@ -194,9 +167,9 @@ class EmailVerificationTokenIssueLinkIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
                 .withPathParameters(PathParams.create()
-                        .add("tokenId", VALID_TOKEN_ID))
+                        .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
-                        .add("pepper", VALID_PEPPER_ID))
+                        .add("pepper", pepperId))
                 .expectStatus(HttpStatus.CONFLICT)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.CONFLICT.value()))
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.CONFLICT.getReasonPhrase()))
@@ -210,6 +183,7 @@ class EmailVerificationTokenIssueLinkIT {
     void givenInvalidTokenId_whenIssueLink_thenBadRequest() {
         //given
         final String tokenId = "not-a-uuid";
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         //when
         this.testManager.mockMvc()
@@ -217,7 +191,7 @@ class EmailVerificationTokenIssueLinkIT {
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
-                        .add("pepper", VALID_PEPPER_ID))
+                        .add("pepper", pepperId))
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
@@ -230,6 +204,9 @@ class EmailVerificationTokenIssueLinkIT {
     @DisplayName("Should not log verification token data on issue link")
     void givenIssueLink_whenLogged_thenTokenNotPresentInLogs() {
         //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
         this.testManager.postgresql()
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
@@ -247,16 +224,16 @@ class EmailVerificationTokenIssueLinkIT {
         final EmailVerificationSecurityConfig config = new EmailVerificationSecurityConfig();
         config.setHmacSecret(this.hmacSecret);
         final HmacEmailVerificationTokenSigner signer = new HmacEmailVerificationTokenSigner(config);
-        final String token = signer.buildToken(VALID_TOKEN_ID, VALID_PEPPER_ID);
+        final String token = signer.buildToken(tokenId, pepperId);
         final boolean containsSensitive;
         try {
             //when
             this.testManager.mockMvc()
                     .ping(ControllerEndpoint.issueEmailVerificationLink())
                     .withPathParameters(PathParams.create()
-                            .add("tokenId", VALID_TOKEN_ID))
+                            .add("tokenId", tokenId))
                     .withQueryParameters(QueryParams.create()
-                            .add("pepper", VALID_PEPPER_ID))
+                            .add("pepper", pepperId))
                     .expectStatus(HttpStatus.OK)
                     .assertAndCreate();
 
@@ -264,7 +241,7 @@ class EmailVerificationTokenIssueLinkIT {
                     .map(ILoggingEvent::getFormattedMessage)
                     .anyMatch(message -> message.contains("token=")
                             || message.contains(token)
-                            || message.contains(VALID_PEPPER_ID.toString()));
+                            || message.contains(pepperId.toString()));
         } finally {
             logger.detachAppender(appender);
             appender.stop();
@@ -273,4 +250,5 @@ class EmailVerificationTokenIssueLinkIT {
         //then
         assertThat(containsSensitive).isFalse();
     }
+
 }

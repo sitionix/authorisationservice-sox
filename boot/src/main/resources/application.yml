@@ -42,8 +42,6 @@ auth:
 security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
-bff:
-  base-url: http://localhost:8080/bffssox
 outbox:
   worker:
     poll-delay-ms: 5000

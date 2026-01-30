@@ -2,7 +2,7 @@ package com.sitionix.athssox.api.controller;
 
 import com.app_afesox.athssox.api_first.dto.EmailVerificationDTO;
 import com.app_afesox.athssox.api_first.dto.EmailVerificationResponseDTO;
-import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponse;
+import com.app_afesox.athssox.api_first.dto.IssueEmailVerificationLinkResponseDTO;
 import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
@@ -99,7 +99,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_login_request_dto_when_login_then_return_login_response_dto() {
+    void givenLoginRequestDto_whenLogin_thenReturnLoginResponseDto() {
         //given
         final LoginRequestDTO given = mock(LoginRequestDTO.class);
         final LoginRequest loginRequest = mock(LoginRequest.class);
@@ -133,7 +133,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_email_verification_dto_when_verify_email_and_verified_then_return_ok() {
+    void givenEmailVerificationDto_whenVerifyEmailAndVerified_thenReturnOk() {
         //given
         final EmailVerificationDTO given = mock(EmailVerificationDTO.class);
         final EmailVerification emailVerification = mock(EmailVerification.class);
@@ -161,7 +161,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_email_verification_dto_when_verify_email_and_not_verified_then_return_accepted() {
+    void givenEmailVerificationDto_whenVerifyEmailAndNotVerified_thenReturnAccepted() {
         //given
         final EmailVerificationDTO given = mock(EmailVerificationDTO.class);
         final EmailVerification emailVerification = mock(EmailVerification.class);
@@ -189,7 +189,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void given_refresh_access_token_request_dto_when_refresh_access_token_then_return_refresh_access_token_response_dto() {
+    void givenRefreshAccessTokenRequestDto_whenRefreshAccessToken_thenReturnRefreshAccessTokenResponseDto() {
         //given
         final RefreshAccessTokenRequestDTO given = mock(RefreshAccessTokenRequestDTO.class);
         final RefreshAccessTokenRequest refreshAccessTokenRequest = mock(RefreshAccessTokenRequest.class);
@@ -220,15 +220,16 @@ class AuthControllerTest {
                 .execute(refreshAccessTokenRequest);
         verify(this.refreshAccessTokenApiMapper)
                 .asRefreshAccessTokenResponseDTO(refreshAccessTokenResponse);
+        verifyNoMoreInteractions(refreshAccessTokenRequest);
     }
 
     @Test
-    void given_token_id_and_pepper_id_when_issue_email_verification_link_then_return_response_dto() {
+    void givenTokenIdAndPepperId_whenIssueEmailVerificationLink_thenReturnResponse() {
         //given
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
         final EmailVerificationLinkIssue issue = this.getEmailVerificationLinkIssue(tokenId);
-        final IssueEmailVerificationLinkResponse expected = mock(IssueEmailVerificationLinkResponse.class);
+        final IssueEmailVerificationLinkResponseDTO expected = mock(IssueEmailVerificationLinkResponseDTO.class);
 
         when(this.issueEmailVerificationLink.execute(tokenId, pepperId))
                 .thenReturn(issue);
@@ -236,7 +237,7 @@ class AuthControllerTest {
                 .thenReturn(expected);
 
         //when
-        final ResponseEntity<IssueEmailVerificationLinkResponse> actual =
+        final ResponseEntity<IssueEmailVerificationLinkResponseDTO> actual =
                 this.authController.issueEmailVerificationLink(tokenId, pepperId);
 
         //then
@@ -265,7 +266,8 @@ class AuthControllerTest {
 
     private EmailVerificationLinkIssue getEmailVerificationLinkIssue(final UUID tokenId) {
         return new EmailVerificationLinkIssue(tokenId,
-                "https://bff.example.com/api/v1/auth/email/verify?token=token",
+                UUID.fromString("1a546d09-1161-48bd-9b2a-1d2f416aaf2f"),
+                "token",
                 Instant.parse("2024-05-01T10:15:30Z"));
     }
 }

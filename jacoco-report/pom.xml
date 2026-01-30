@@ -50,6 +50,11 @@
             <artifactId>postgresql</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipe-producer-notification-v1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

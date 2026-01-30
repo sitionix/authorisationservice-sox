@@ -13,7 +13,6 @@ import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenSigner;
 import com.sitionix.athssox.domain.service.TokenHasher;
-import com.sitionix.athssox.domain.service.VerificationLinkFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,9 +48,6 @@ class IssueEmailVerificationLinkImplTest {
     private TokenHasher tokenHasher;
 
     @Mock
-    private VerificationLinkFactory verificationLinkFactory;
-
-    @Mock
     private Clock clock;
 
     @BeforeEach
@@ -60,7 +56,6 @@ class IssueEmailVerificationLinkImplTest {
                 this.authUserRepository,
                 this.tokenSigner,
                 this.tokenHasher,
-                this.verificationLinkFactory,
                 this.clock);
     }
 
@@ -70,7 +65,6 @@ class IssueEmailVerificationLinkImplTest {
                 this.authUserRepository,
                 this.tokenSigner,
                 this.tokenHasher,
-                this.verificationLinkFactory,
                 this.clock);
     }
 
@@ -83,8 +77,6 @@ class IssueEmailVerificationLinkImplTest {
         final Instant expiresAt = this.getExpiresAt();
         final String token = this.getToken();
         final String tokenHash = this.getTokenHash();
-        final String verifyUrl = this.getVerifyUrl();
-
         final EmailVerificationTokenRecord tokenRecord = this.getTokenRecord(tokenId,
                 this.getUserId(),
                 this.getSiteId(),
@@ -104,14 +96,15 @@ class IssueEmailVerificationLinkImplTest {
                 .thenReturn(token);
         when(this.tokenHasher.hash(token))
                 .thenReturn(tokenHash);
-        when(this.verificationLinkFactory.buildEmailVerifyUrl(token, this.getSiteId()))
-                .thenReturn(verifyUrl);
 
         //when
         final EmailVerificationLinkIssue actual = this.issueEmailVerificationLink.execute(tokenId, pepperId);
 
         //then
-        final EmailVerificationLinkIssue expected = this.getEmailVerificationLinkIssue(tokenId, verifyUrl, expiresAt);
+        final EmailVerificationLinkIssue expected = this.getEmailVerificationLinkIssue(tokenId,
+                this.getSiteId(),
+                token,
+                expiresAt);
         assertThat(actual).isEqualTo(expected);
         verify(this.emailVerificationTokenRepository)
                 .findById(tokenId);
@@ -123,8 +116,6 @@ class IssueEmailVerificationLinkImplTest {
                 .buildToken(tokenId, pepperId);
         verify(this.tokenHasher)
                 .hash(token);
-        verify(this.verificationLinkFactory)
-                .buildEmailVerifyUrl(token, this.getSiteId());
     }
 
     @Test
@@ -332,10 +323,6 @@ class IssueEmailVerificationLinkImplTest {
         return "token-hash";
     }
 
-    private String getVerifyUrl() {
-        return "https://bff.example.com/api/v1/auth/email/verify?token=token";
-    }
-
     private EmailVerificationTokenRecord getTokenRecord(final UUID tokenId,
                                                         final Long userId,
                                                         final UUID siteId,
@@ -362,8 +349,9 @@ class IssueEmailVerificationLinkImplTest {
     }
 
     private EmailVerificationLinkIssue getEmailVerificationLinkIssue(final UUID tokenId,
-                                                                     final String verifyUrl,
+                                                                     final UUID siteId,
+                                                                     final String token,
                                                                      final Instant expiresAt) {
-        return new EmailVerificationLinkIssue(tokenId, verifyUrl, expiresAt);
+        return new EmailVerificationLinkIssue(tokenId, siteId, token, expiresAt);
     }
 }

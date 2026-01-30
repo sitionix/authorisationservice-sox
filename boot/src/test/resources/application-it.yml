@@ -3,7 +3,7 @@ server:
   port: 9090
 forge-it:
   kafka:
-    email-verify-topic: athssox.it.email-verify.public.v1
+    notifications-topic: ntfssox.it.notification.public.unified.v1
 auth:
   tokens:
     jwt:
