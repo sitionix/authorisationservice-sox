@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.afesox</groupId>
             <artifactId>app-afesox-ntfssox-event-notifications-producer-stable</artifactId>
-            <version>0.0.2</version>
+            <version>0.0.3</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
