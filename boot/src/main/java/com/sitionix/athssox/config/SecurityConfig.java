@@ -25,7 +25,7 @@ public class SecurityConfig {
             "/api/v1/auth/refresh",
             "/api/v1/users",
             "/.well-known/jwks.json",
-            "/oauth2/jwks"
+            "/oauth2/v1/keys"
     };
 
     @Bean

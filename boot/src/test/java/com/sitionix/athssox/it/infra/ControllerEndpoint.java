@@ -10,7 +10,7 @@ import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
-import com.sitionix.athssox.domain.model.jwks.JwksResponse;
+import com.app_afesox.athssox.api_first.dto.JwksResponse;
 import com.sitionix.forgeit.domain.endpoint.Endpoint;
 import com.sitionix.forgeit.domain.endpoint.HttpMethod;
 import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
