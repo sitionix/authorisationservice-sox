@@ -10,7 +10,7 @@ import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
-import com.sitionix.athssox.domain.model.jwks.JwksResponse;
+import com.app_afesox.athssox.api_first.dto.JwksResponseDTO;
 import com.sitionix.forgeit.domain.endpoint.Endpoint;
 import com.sitionix.forgeit.domain.endpoint.HttpMethod;
 import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
@@ -132,12 +132,22 @@ public class ControllerEndpoint {
         );
     }
 
-    public static Endpoint<Void, JwksResponse> jwks() {
+    public static Endpoint<Void, JwksResponseDTO> jwks() {
         return Endpoint.createContract(
                 "/.well-known/jwks.json",
                 HttpMethod.GET,
                 Void.class,
-                JwksResponse.class,
+                JwksResponseDTO.class,
+                (MockmvcDefault) context -> context.expectStatus(200)
+        );
+    }
+
+    public static Endpoint<Void, JwksResponseDTO> jwksAlias() {
+        return Endpoint.createContract(
+                "/oauth2/v1/keys",
+                HttpMethod.GET,
+                Void.class,
+                JwksResponseDTO.class,
                 (MockmvcDefault) context -> context.expectStatus(200)
         );
     }

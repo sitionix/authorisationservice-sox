@@ -2,7 +2,7 @@
 
 ## JWT signing (RS256)
 - Access tokens are signed with RS256 and include a `kid` header.
-- JWKS endpoint: `GET /.well-known/jwks.json` (alias: `GET /oauth2/jwks`).
+- JWKS endpoint: `GET /.well-known/jwks.json` (alias: `GET /oauth2/v1/keys`).
 - Only public key parameters are exposed; private keys are never returned.
 
 ## Configuration

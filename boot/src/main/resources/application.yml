@@ -33,6 +33,8 @@ auth:
         public-key-path: ${AUTH_JWT_PUBLIC_KEY_PATH:./keys/jwt-public.pem}
         private-key: ${AUTH_JWT_PRIVATE_KEY:}
         public-key: ${AUTH_JWT_PUBLIC_KEY:}
+    jwks:
+      cache-seconds: 300
   session:
     last-used-throttle-minutes: 5
   cleanup:
