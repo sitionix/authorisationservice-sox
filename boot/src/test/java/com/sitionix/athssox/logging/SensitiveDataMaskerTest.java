@@ -174,6 +174,32 @@ class SensitiveDataMaskerTest {
         assertThat(actual).isEqualTo(expected);
     }
 
+    @Test
+    void given_message_with_authorization_header_when_mask_then_hide_authorization_value() {
+        //given
+        final String given = this.getMessageWithAuthorizationHeader();
+        final String expected = this.getMessageWithMaskedAuthorizationHeader();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void given_json_with_authorization_field_when_mask_then_hide_authorization_value() {
+        //given
+        final String given = this.getPayloadWithAuthorization();
+        final String expected = this.getPayloadWithMaskedAuthorization();
+
+        //when
+        final String actual = SensitiveDataMasker.mask(given);
+
+        //then
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private String getPayloadWithTo() {
         return "{\"delivery\":{\"to\":\"email@sitionix.com\"}}";
     }
@@ -256,5 +282,21 @@ class SensitiveDataMaskerTest {
 
     private String getMessageWithMaskedTokenQueryParam() {
         return "https://frontend.sitionix.com/auth/email/verify?token=***";
+    }
+
+    private String getMessageWithAuthorizationHeader() {
+        return "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.signature";
+    }
+
+    private String getMessageWithMaskedAuthorizationHeader() {
+        return "Authorization: ***";
+    }
+
+    private String getPayloadWithAuthorization() {
+        return "{\"authorization\":\"Bearer token-value\"}";
+    }
+
+    private String getPayloadWithMaskedAuthorization() {
+        return "{\"authorization\":\"***\"}";
     }
 }

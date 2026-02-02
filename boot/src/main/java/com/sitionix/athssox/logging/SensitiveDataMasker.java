@@ -22,6 +22,10 @@ public final class SensitiveDataMasker {
             Pattern.compile("(?i)(password\\s*[=:]\\s*)([^,\\s\\)]+)([,\\)])?");
     private static final Pattern REFRESH_TOKEN_KEY_VALUE_PATTERN =
             Pattern.compile("(?i)(refreshToken\\s*[=:]\\s*)([^,\\s\\)]+)([,\\)])?");
+    private static final Pattern AUTHORIZATION_FIELD_PATTERN =
+            Pattern.compile("\"authorization\"\\s*:\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AUTHORIZATION_HEADER_PATTERN =
+            Pattern.compile("(?i)(authorization\\s*[:=]\\s*)([^,\\r\\n]+)(,)?");
 
     private SensitiveDataMasker() {
     }
@@ -37,9 +41,11 @@ public final class SensitiveDataMasker {
         masked = maskJsonField(masked, PASSWORD_FIELD_PATTERN, value -> "***", "password");
         masked = maskJsonField(masked, REFRESH_TOKEN_FIELD_PATTERN, value -> "***", "refreshToken");
         masked = maskJsonField(masked, VERIFY_URL_FIELD_PATTERN, SensitiveDataMasker::maskVerifyUrl, "verifyUrl");
+        masked = maskJsonField(masked, AUTHORIZATION_FIELD_PATTERN, value -> "***", "authorization");
         masked = maskTokenQueryParam(masked);
         masked = maskKeyValue(masked, PASSWORD_KEY_VALUE_PATTERN);
         masked = maskKeyValue(masked, REFRESH_TOKEN_KEY_VALUE_PATTERN);
+        masked = maskKeyValue(masked, AUTHORIZATION_HEADER_PATTERN);
 
         return masked;
     }

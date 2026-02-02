@@ -12,6 +12,9 @@ import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import com.sitionix.forgeit.mockmvc.api.PathParams;
 import com.sitionix.forgeit.mockmvc.api.QueryParams;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.UUID;
+import java.time.Instant;
+import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,6 +37,30 @@ class EmailVerificationTokenIssueLinkIT {
 
     @Value("${security.email-verification.hmac-secret}")
     private String hmacSecret;
+
+    @Value("${security.internal-auth.dev.jwt-secret}")
+    private String internalJwtSecret;
+
+    @Value("${security.internal-auth.dev.issuer}")
+    private String internalJwtIssuer;
+
+    @Value("${security.internal-auth.dev.audience[0]}")
+    private String internalJwtAudience;
+
+    private String serviceToken;
+
+    @BeforeEach
+    void setUp() {
+        final Instant now = Instant.now();
+        this.serviceToken = JWT.create()
+                .withIssuer(this.internalJwtIssuer)
+                .withSubject("notificationservice-sox")
+                .withAudience(this.internalJwtAudience)
+                .withIssuedAt(Date.from(now))
+                .withExpiresAt(Date.from(now.plusSeconds(300)))
+                .withClaim("scope", "email.verify.link.issue")
+                .sign(Algorithm.HMAC256(this.internalJwtSecret));
+    }
 
     @Test
     @DisplayName("Should issue verification link for active token")
@@ -52,6 +81,7 @@ class EmailVerificationTokenIssueLinkIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + this.serviceToken)
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
@@ -73,6 +103,7 @@ class EmailVerificationTokenIssueLinkIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + this.serviceToken)
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
@@ -104,6 +135,7 @@ class EmailVerificationTokenIssueLinkIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + this.serviceToken)
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
@@ -135,6 +167,7 @@ class EmailVerificationTokenIssueLinkIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + this.serviceToken)
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
@@ -166,6 +199,7 @@ class EmailVerificationTokenIssueLinkIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + this.serviceToken)
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
@@ -188,6 +222,7 @@ class EmailVerificationTokenIssueLinkIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + this.serviceToken)
                 .withPathParameters(PathParams.create()
                         .add("tokenId", tokenId))
                 .withQueryParameters(QueryParams.create()
@@ -195,6 +230,124 @@ class EmailVerificationTokenIssueLinkIT {
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.BAD_REQUEST.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return 401 when Authorization header is missing")
+    void givenMissingAuthorization_whenIssueLink_thenUnauthorized() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return 401 when JWT signature is invalid")
+    void givenInvalidJwtSignature_whenIssueLink_thenUnauthorized() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        final Instant now = Instant.now();
+        final String token = JWT.create()
+                .withIssuer(this.internalJwtIssuer)
+                .withSubject("notificationservice-sox")
+                .withAudience(this.internalJwtAudience)
+                .withIssuedAt(Date.from(now))
+                .withExpiresAt(Date.from(now.plusSeconds(300)))
+                .withClaim("scope", "email.verify.link.issue")
+                .sign(Algorithm.HMAC256("invalid-secret"));
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + token)
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return 403 when service is not allowed")
+    void givenWrongServiceName_whenIssueLink_thenForbidden() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        final Instant now = Instant.now();
+        final String token = JWT.create()
+                .withIssuer(this.internalJwtIssuer)
+                .withSubject("otherservice-sox")
+                .withAudience(this.internalJwtAudience)
+                .withIssuedAt(Date.from(now))
+                .withExpiresAt(Date.from(now.plusSeconds(300)))
+                .withClaim("scope", "email.verify.link.issue")
+                .sign(Algorithm.HMAC256(this.internalJwtSecret));
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + token)
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.FORBIDDEN.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return 403 when scope is missing")
+    void givenMissingScope_whenIssueLink_thenForbidden() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        final Instant now = Instant.now();
+        final String token = JWT.create()
+                .withIssuer(this.internalJwtIssuer)
+                .withSubject("notificationservice-sox")
+                .withAudience(this.internalJwtAudience)
+                .withIssuedAt(Date.from(now))
+                .withExpiresAt(Date.from(now.plusSeconds(300)))
+                .withClaim("scope", "other.scope")
+                .sign(Algorithm.HMAC256(this.internalJwtSecret));
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + token)
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .expectStatus(HttpStatus.FORBIDDEN)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.FORBIDDEN.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.FORBIDDEN.getReasonPhrase()))
                 .assertAndCreate();
 
         //then
@@ -230,6 +383,7 @@ class EmailVerificationTokenIssueLinkIT {
             //when
             this.testManager.mockMvc()
                     .ping(ControllerEndpoint.issueEmailVerificationLink())
+                    .token("Bearer " + this.serviceToken)
                     .withPathParameters(PathParams.create()
                             .add("tokenId", tokenId))
                     .withQueryParameters(QueryParams.create()
