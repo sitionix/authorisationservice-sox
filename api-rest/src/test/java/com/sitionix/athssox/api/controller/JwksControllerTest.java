@@ -1,7 +1,9 @@
 package com.sitionix.athssox.api.controller;
 
-import com.app_afesox.athssox.api_first.dto.JwksResponse;
+import com.app_afesox.athssox.api_first.dto.JwksResponseDTO;
+import com.sitionix.athssox.api.config.JwksConfig;
 import com.sitionix.athssox.api.mapper.JwksApiMapper;
+import com.sitionix.athssox.domain.model.jwks.JwksResponse;
 import com.sitionix.athssox.domain.service.JwksProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,63 +33,76 @@ class JwksControllerTest {
     @Mock
     private JwksApiMapper jwksApiMapper;
 
+    @Mock
+    private JwksConfig jwksConfig;
+
     @BeforeEach
     void setUp() {
-        this.jwksController = new JwksController(this.jwksProvider, this.jwksApiMapper);
+        this.jwksController = new JwksController(this.jwksProvider, this.jwksApiMapper, this.jwksConfig);
     }
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.jwksProvider, this.jwksApiMapper);
+        verifyNoMoreInteractions(this.jwksProvider, this.jwksApiMapper, this.jwksConfig);
     }
 
     @Test
-    void given_jwks_provider_when_get_jwks_alias_then_return_jwks_response() {
+    void givenJwksProvider_whenGetJwksAlias_thenReturnJwksResponse() {
         //given
-        final com.sitionix.athssox.domain.model.jwks.JwksResponse domainResponse =
-                mock(com.sitionix.athssox.domain.model.jwks.JwksResponse.class);
-        final JwksResponse expected = mock(JwksResponse.class);
+        final JwksResponse domainResponse = mock(JwksResponse.class);
+        final JwksResponseDTO expected = mock(JwksResponseDTO.class);
+
+        final long cacheSeconds = 15L;
 
         when(this.jwksProvider.getJwks())
                 .thenReturn(domainResponse);
         when(this.jwksApiMapper.asJwksResponseDTO(domainResponse))
                 .thenReturn(expected);
+        when(this.jwksConfig.getCacheSeconds())
+                .thenReturn(cacheSeconds);
 
         //when
-        final ResponseEntity<JwksResponse> actual = this.jwksController.getJwksAlias();
+        final ResponseEntity<JwksResponseDTO> actual = this.jwksController.getJwksAlias();
 
         //then
         assertThat(actual).isEqualTo(ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(300L, TimeUnit.SECONDS).cachePublic())
+                .cacheControl(CacheControl.maxAge(cacheSeconds, TimeUnit.SECONDS).cachePublic())
                 .body(expected));
         verify(this.jwksProvider)
                 .getJwks();
         verify(this.jwksApiMapper)
                 .asJwksResponseDTO(domainResponse);
+        verify(this.jwksConfig)
+                .getCacheSeconds();
     }
 
     @Test
-    void given_jwks_provider_when_get_jwks_canonical_then_return_jwks_response() {
+    void givenJwksProvider_whenGetJwksCanonical_thenReturnJwksResponse() {
         //given
-        final com.sitionix.athssox.domain.model.jwks.JwksResponse domainResponse =
-                mock(com.sitionix.athssox.domain.model.jwks.JwksResponse.class);
-        final JwksResponse expected = mock(JwksResponse.class);
+        final JwksResponse domainResponse = mock(JwksResponse.class);
+        final JwksResponseDTO expected = mock(JwksResponseDTO.class);
+
+        final long cacheSeconds = 15L;
 
         when(this.jwksProvider.getJwks())
                 .thenReturn(domainResponse);
         when(this.jwksApiMapper.asJwksResponseDTO(domainResponse))
                 .thenReturn(expected);
+        when(this.jwksConfig.getCacheSeconds())
+                .thenReturn(cacheSeconds);
 
         //when
-        final ResponseEntity<JwksResponse> actual = this.jwksController.getJwksCanonical();
+        final ResponseEntity<JwksResponseDTO> actual = this.jwksController.getJwksCanonical();
 
         //then
         assertThat(actual).isEqualTo(ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(300L, TimeUnit.SECONDS).cachePublic())
+                .cacheControl(CacheControl.maxAge(cacheSeconds, TimeUnit.SECONDS).cachePublic())
                 .body(expected));
         verify(this.jwksProvider)
                 .getJwks();
         verify(this.jwksApiMapper)
                 .asJwksResponseDTO(domainResponse);
+        verify(this.jwksConfig)
+                .getCacheSeconds();
     }
 }

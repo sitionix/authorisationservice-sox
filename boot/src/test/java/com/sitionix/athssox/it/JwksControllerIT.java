@@ -112,6 +112,61 @@ class JwksControllerIT {
     }
 
     @Test
+    @DisplayName("Should allow JWKS alias access without authentication")
+    void givenNoAuth_whenRequestJwksAlias_thenOk() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.jwksAlias())
+                .expectStatus(HttpStatus.OK)
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return JWKS alias in valid format")
+    void givenJwksRequest_whenGetJwksAlias_thenReturnValidKeyFormat() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.jwksAlias())
+                .expectStatus(HttpStatus.OK)
+                .expectResponse("jwksResponse.json")
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return identical JWKS payload for canonical and alias endpoints")
+    void givenJwksRequest_whenCompareAliasAndCanonical_thenSameResponse() {
+        //given
+        final List<String> canonicalBodies = new ArrayList<>();
+        final List<String> aliasBodies = new ArrayList<>();
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.jwks())
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(result -> canonicalBodies.add(result.getResponse().getContentAsString()))
+                .assertAndCreate();
+
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.jwksAlias())
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(result -> aliasBodies.add(result.getResponse().getContentAsString()))
+                .assertAndCreate();
+
+        //then
+        assertThat(canonicalBodies).hasSize(1);
+        assertThat(aliasBodies).hasSize(1);
+        assertThat(aliasBodies.get(0)).isEqualTo(canonicalBodies.get(0));
+    }
+
+    @Test
     @DisplayName("Should not expose private key fields in JWKS")
     void given_jwks_request_when_get_jwks_then_does_not_expose_private_key_fields() {
         //given
@@ -119,6 +174,26 @@ class JwksControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.jwks())
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$..d").doesNotExist())
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$..p").doesNotExist())
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$..q").doesNotExist())
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$..dp").doesNotExist())
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$..dq").doesNotExist())
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$..qi").doesNotExist())
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should not expose private key fields in JWKS alias")
+    void givenJwksRequest_whenGetJwksAlias_thenDoesNotExposePrivateKeyFields() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.jwksAlias())
                 .expectStatus(HttpStatus.OK)
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$..d").doesNotExist())
                 .andExpectPath(MockMvcResultMatchers.jsonPath("$..p").doesNotExist())
@@ -140,7 +215,22 @@ class JwksControllerIT {
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.jwks())
                 .expectStatus(HttpStatus.OK)
-                .andExpectPath(MockMvcResultMatchers.header().string("Cache-Control", "max-age=300, public"))
+                .andExpectPath(MockMvcResultMatchers.header().string("Cache-Control", "max-age=5, public"))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should include cache headers for JWKS alias")
+    void givenJwksRequest_whenGetJwksAlias_thenCacheHeadersSet() {
+        //given
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.jwksAlias())
+                .expectStatus(HttpStatus.OK)
+                .andExpectPath(MockMvcResultMatchers.header().string("Cache-Control", "max-age=5, public"))
                 .assertAndCreate();
 
         //then
