@@ -21,8 +21,6 @@ public class InternalAuthConfig {
 
     private String serviceName;
 
-    private List<String> protectedEndpoints = new ArrayList<>();
-
     private DevJwtConfig dev = new DevJwtConfig();
 
     private Map<String, PolicyConfig> policies = new HashMap<>();
@@ -35,7 +33,7 @@ public class InternalAuthConfig {
 
         private String issuer = "sitionix-internal";
 
-        private List<String> audience = new ArrayList<>();
+        private List<String> acceptedAudiences = new ArrayList<>();
 
         private long ttlSeconds = 300L;
     }

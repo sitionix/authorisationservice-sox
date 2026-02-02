@@ -44,7 +44,7 @@ class EmailVerificationTokenIssueLinkIT {
     @Value("${security.internal-auth.dev.issuer}")
     private String internalJwtIssuer;
 
-    @Value("${security.internal-auth.dev.audience[0]}")
+    @Value("${security.internal-auth.dev.accepted-audiences[0]}")
     private String internalJwtAudience;
 
     private String serviceToken;
@@ -272,6 +272,38 @@ class EmailVerificationTokenIssueLinkIT {
                 .withExpiresAt(Date.from(now.plusSeconds(300)))
                 .withClaim("scope", "email.verify.link.issue")
                 .sign(Algorithm.HMAC256("invalid-secret"));
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .token("Bearer " + token)
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return 401 when audience is invalid")
+    void givenInvalidAudience_whenIssueLink_thenUnauthorized() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        final Instant now = Instant.now();
+        final String token = JWT.create()
+                .withIssuer(this.internalJwtIssuer)
+                .withSubject("notificationservice-sox")
+                .withAudience("wrong-audience")
+                .withIssuedAt(Date.from(now))
+                .withExpiresAt(Date.from(now.plusSeconds(300)))
+                .withClaim("scope", "email.verify.link.issue")
+                .sign(Algorithm.HMAC256(this.internalJwtSecret));
 
         //when
         this.testManager.mockMvc()

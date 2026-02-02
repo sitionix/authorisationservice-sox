@@ -68,16 +68,17 @@ security:
     hmac-secret: it-email-token-secret
   internal-auth:
     mode: dev-jwt
-    service-name: athssox
-    protected-endpoints:
-      - /api/v1/auth/emailVerificationTokens/**:issueLink
+    service-name: authorisationservice-sox
     dev:
       jwt-secret: it-internal-auth-secret
       issuer: sitionix-internal
-      audience:
-        - athssox
+      accepted-audiences:
+        - authorisationservice-sox
       ttl-seconds: 300
     policies:
       notificationservice-sox:
         allow:
-          - email.verify.link.issue
+          - GET /api/v1/auth/emailVerificationTokens/*:issueLink
+      bffservice-sox:
+        allow:
+          - "*"

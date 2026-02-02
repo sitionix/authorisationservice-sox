@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @IntegrationTest
-class AuthRefreshMissingSessionIT {
+class AuthRefreshMissingSessionIT extends InternalAuthITSupport {
 
     @Autowired
     private TestManager testManager;
@@ -55,6 +55,7 @@ class AuthRefreshMissingSessionIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_session.json")
                 .expectStatus(HttpStatus.FORBIDDEN)

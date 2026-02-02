@@ -33,7 +33,7 @@ public class DevJwtServiceIdentityVerifier {
         }
         final InternalAuthConfig.DevJwtConfig devConfig = this.internalAuthConfig.getDev();
         final Algorithm algorithm = Algorithm.HMAC256(devConfig.getJwtSecret());
-        final List<String> audiences = this.getAudiences(devConfig);
+        final List<String> audiences = this.getAcceptedAudiences(devConfig);
         this.jwtVerifier = JWT.require(algorithm)
                 .withIssuer(devConfig.getIssuer())
                 .withAudience(audiences.toArray(String[]::new))
@@ -99,10 +99,10 @@ public class DevJwtServiceIdentityVerifier {
         return scopes;
     }
 
-    private List<String> getAudiences(final InternalAuthConfig.DevJwtConfig devConfig) {
-        if (devConfig.getAudience() == null || devConfig.getAudience().isEmpty()) {
+    private List<String> getAcceptedAudiences(final InternalAuthConfig.DevJwtConfig devConfig) {
+        if (devConfig.getAcceptedAudiences() == null || devConfig.getAcceptedAudiences().isEmpty()) {
             return List.of();
         }
-        return devConfig.getAudience();
+        return devConfig.getAcceptedAudiences();
     }
 }

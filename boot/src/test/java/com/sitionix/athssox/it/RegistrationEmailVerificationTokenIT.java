@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 @Import(RegistrationEmailVerificationTokenIT.TestConfig.class)
-class RegistrationEmailVerificationTokenIT {
+class RegistrationEmailVerificationTokenIT extends InternalAuthITSupport {
 
     private static final UUID SITE_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID OTHER_PEPPER_ID = UUID.fromString("99999999-9999-9999-9999-999999999999");
@@ -64,6 +64,7 @@ class RegistrationEmailVerificationTokenIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json")
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
@@ -109,6 +110,7 @@ class RegistrationEmailVerificationTokenIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json")
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
@@ -136,6 +138,7 @@ class RegistrationEmailVerificationTokenIT {
         //given
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json")
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
@@ -167,6 +170,7 @@ class RegistrationEmailVerificationTokenIT {
         //given
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json")
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
@@ -198,12 +202,14 @@ class RegistrationEmailVerificationTokenIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json", (RegisterUserDTO request) -> request.setEmail("user+first@sitionix.com"))
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
 
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json", (RegisterUserDTO request) -> request.setEmail("user+second@sitionix.com"))
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();

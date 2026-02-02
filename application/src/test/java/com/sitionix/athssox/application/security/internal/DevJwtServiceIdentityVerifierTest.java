@@ -100,7 +100,7 @@ class DevJwtServiceIdentityVerifierTest {
         final InternalAuthConfig.DevJwtConfig devJwtConfig = new InternalAuthConfig.DevJwtConfig();
         devJwtConfig.setJwtSecret("dev-secret");
         devJwtConfig.setIssuer("sitionix-internal");
-        devJwtConfig.setAudience(List.of("athssox"));
+        devJwtConfig.setAcceptedAudiences(List.of("athssox"));
         config.setDev(devJwtConfig);
         return config;
     }

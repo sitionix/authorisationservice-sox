@@ -30,10 +30,34 @@ class InternalAuthPolicyEnforcerTest {
         final ServiceIdentity identity = this.getServiceIdentity("notificationservice-sox",
                 List.of("email.verify.link.issue"));
         final String requestPath = "/api/v1/auth/emailVerificationTokens/123:issueLink";
+        final InternalAuthConfig config = new InternalAuthConfig();
+        final InternalAuthConfig.PolicyConfig policy = new InternalAuthConfig.PolicyConfig();
+        policy.setAllow(List.of("scope:email.verify.link.issue"));
+        config.setPolicies(Map.of("notificationservice-sox", policy));
+        this.internalAuthPolicyEnforcer = new InternalAuthPolicyEnforcer(config);
 
         //when
         final Throwable actualThrowable = catchThrowable(() ->
-                this.internalAuthPolicyEnforcer.assertAllowed(identity, requestPath));
+                this.internalAuthPolicyEnforcer.assertAllowed(identity, "GET", requestPath));
+
+        //then
+        assertThat(actualThrowable).isNull();
+    }
+
+    @Test
+    void given_allow_all_when_authorize_then_allow_any_endpoint() {
+        //given
+        final InternalAuthConfig config = new InternalAuthConfig();
+        final InternalAuthConfig.PolicyConfig policy = new InternalAuthConfig.PolicyConfig();
+        policy.setAllow(List.of("*"));
+        config.setPolicies(Map.of("notificationservice-sox", policy));
+        this.internalAuthPolicyEnforcer = new InternalAuthPolicyEnforcer(config);
+        final ServiceIdentity identity = this.getServiceIdentity("notificationservice-sox", List.of());
+        final String requestPath = "/api/v1/auth/login";
+
+        //when
+        final Throwable actualThrowable = catchThrowable(() ->
+                this.internalAuthPolicyEnforcer.assertAllowed(identity, "POST", requestPath));
 
         //then
         assertThat(actualThrowable).isNull();
@@ -49,7 +73,7 @@ class InternalAuthPolicyEnforcerTest {
 
         //when
         final Throwable actualThrowable = catchThrowable(() ->
-                this.internalAuthPolicyEnforcer.assertAllowed(identity, requestPath));
+                this.internalAuthPolicyEnforcer.assertAllowed(identity, "GET", requestPath));
 
         //then
         assertThat(actualThrowable).isNull();
@@ -63,7 +87,7 @@ class InternalAuthPolicyEnforcerTest {
 
         //when
         final Throwable actualThrowable = catchThrowable(() ->
-                this.internalAuthPolicyEnforcer.assertAllowed(identity, requestPath));
+                this.internalAuthPolicyEnforcer.assertAllowed(identity, "GET", requestPath));
 
         //then
         assertThat(actualThrowable)
@@ -79,7 +103,7 @@ class InternalAuthPolicyEnforcerTest {
 
         //when
         final Throwable actualThrowable = catchThrowable(() ->
-                this.internalAuthPolicyEnforcer.assertAllowed(identity, requestPath));
+                this.internalAuthPolicyEnforcer.assertAllowed(identity, "GET", requestPath));
 
         //then
         assertThat(actualThrowable)
@@ -90,7 +114,7 @@ class InternalAuthPolicyEnforcerTest {
     private InternalAuthConfig getInternalAuthConfig() {
         final InternalAuthConfig config = new InternalAuthConfig();
         final InternalAuthConfig.PolicyConfig policy = new InternalAuthConfig.PolicyConfig();
-        policy.setAllow(List.of("email.verify.link.issue"));
+        policy.setAllow(List.of("scope:email.verify.link.issue"));
         config.setPolicies(Map.of("notificationservice-sox", policy));
         return config;
     }
@@ -98,7 +122,7 @@ class InternalAuthPolicyEnforcerTest {
     private InternalAuthConfig getInternalAuthConfigWithEndpointPolicy() {
         final InternalAuthConfig config = new InternalAuthConfig();
         final InternalAuthConfig.PolicyConfig policy = new InternalAuthConfig.PolicyConfig();
-        policy.setAllow(List.of("/api/v1/auth/emailVerificationTokens/**:issueLink"));
+        policy.setAllow(List.of("GET /api/v1/auth/emailVerificationTokens/*:issueLink"));
         config.setPolicies(Map.of("notificationservice-sox", policy));
         return config;
     }

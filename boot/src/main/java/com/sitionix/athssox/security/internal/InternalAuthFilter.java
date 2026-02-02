@@ -65,7 +65,7 @@ public class InternalAuthFilter extends OncePerRequestFilter {
 
     private void authorize(final ServiceIdentity identity, final HttpServletRequest request) {
         final String requestPath = InternalAuthRequestHelper.resolvePath(request);
-        this.internalAuthPolicyEnforcer.assertAllowed(identity, requestPath);
+        this.internalAuthPolicyEnforcer.assertAllowed(identity, request.getMethod(), requestPath);
     }
 
     private String extractBearerToken(final HttpServletRequest request) {

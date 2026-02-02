@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 @Import(AuthRefreshControllerIT.FixedClockConfig.class)
-class AuthRefreshControllerIT {
+class AuthRefreshControllerIT extends InternalAuthITSupport {
 
     @Autowired
     private TestManager testManager;
@@ -62,6 +62,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -101,6 +102,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -133,6 +135,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -165,6 +168,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken("refresh-token-expired"))
                 .expectResponse("refreshAccessTokenResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -195,6 +199,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken("refresh-token-unknown"))
                 .expectResponse("refreshAccessTokenResponse_forbidden_invalid.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -224,6 +229,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_session.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -263,6 +269,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken("refresh-token-revoked"))
                 .expectResponse("refreshAccessTokenResponse_forbidden_invalid.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -301,6 +308,7 @@ class AuthRefreshControllerIT {
 
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -309,6 +317,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_invalid.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -353,6 +362,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -397,6 +407,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json", request -> request.setSessionSourceId("device-999"))
                 .expectResponse("refreshAccessTokenResponse_forbidden_mismatch.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -436,6 +447,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_session.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -475,6 +487,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_session.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -520,6 +533,7 @@ class AuthRefreshControllerIT {
             try {
                 this.testManager.mockMvc()
                         .ping(ControllerEndpoint.refreshAccessToken())
+                        .token("Bearer " + this.serviceToken)
                         .withRequest("refreshAccessTokenRequest.json")
                         .andExpectPath(result -> statuses.add(result.getResponse().getStatus()))
                         .assertAndCreate();
@@ -583,6 +597,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -594,6 +609,7 @@ class AuthRefreshControllerIT {
 
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken(refreshTokens.get(0)))
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -639,6 +655,7 @@ class AuthRefreshControllerIT {
             //when
             this.testManager.mockMvc()
                     .ping(ControllerEndpoint.refreshAccessToken())
+                    .token("Bearer " + this.serviceToken)
                     .withRequest("refreshAccessTokenRequest.json")
                     .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                     .expectStatus(HttpStatus.OK)
@@ -674,6 +691,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -710,6 +728,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_user.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -740,6 +759,7 @@ class AuthRefreshControllerIT {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
+                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json")
                 .expectResponse("refreshAccessTokenResponse_forbidden_user.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
