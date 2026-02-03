@@ -70,12 +70,7 @@ forge:
   security:
     mode: dev-jwt
     service-name: authorisationservice-sox
-    dev:
-      jwt-secret: it-internal-auth-secret
-      issuer: sitionix-internal
-      accepted-audiences:
-        - authorisationservice-sox
-      ttl-seconds: 300
+    dev: "eyJhbGciOiJIUzI1NiIsImtpZCI6Iml0IiwidHlwIjoiSldUIn0.eyJpc3MiOiJzaXRpb25peC1pbnRlcm5hbCIsInN1YiI6Iml0LXN0YXRpYyIsImF1ZCI6WyIqIl0sImlhdCI6MH0.mcHvkplVU4G7BXc8TjOJoQtdOJLlwfV3Ycg6hf-_riI"
     server:
       enabled: true
       excludes:

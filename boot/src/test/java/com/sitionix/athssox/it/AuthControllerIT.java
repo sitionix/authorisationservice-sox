@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 @IntegrationTest
-class AuthControllerIT extends InternalAuthITSupport {
+class AuthControllerIT {
 
     @Autowired
     private TestManager testManager;
@@ -53,7 +53,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -83,40 +82,6 @@ class AuthControllerIT extends InternalAuthITSupport {
     }
 
     @Test
-    @DisplayName("Should forbid login when notification service calls auth endpoint")
-    void given_notification_service_when_login_then_forbidden() {
-        //given
-        final String token = this.buildServiceToken("notificationservice-sox");
-
-        //when
-        this.testManager.mockMvc()
-                .ping(ControllerEndpoint.login())
-                .token("Bearer " + token)
-                .withRequest("loginRequest.json")
-                .expectStatus(HttpStatus.FORBIDDEN)
-                .assertAndCreate();
-
-        //then
-    }
-
-    @Test
-    @DisplayName("Should forbid login when unknown service calls auth endpoint")
-    void given_unknown_service_when_login_then_forbidden() {
-        //given
-        final String token = this.buildServiceToken("otherservice-sox");
-
-        //when
-        this.testManager.mockMvc()
-                .ping(ControllerEndpoint.login())
-                .token("Bearer " + token)
-                .withRequest("loginRequest.json")
-                .expectStatus(HttpStatus.FORBIDDEN)
-                .assertAndCreate();
-
-        //then
-    }
-
-    @Test
     @DisplayName("Should reject login with invalid credentials")
     void given_invalid_credentials_when_login_then_unauthorized() {
         //given
@@ -130,7 +95,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setPassword("wrong-password"))
                 .expectResponse("loginResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -158,7 +122,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -168,7 +131,6 @@ class AuthControllerIT extends InternalAuthITSupport {
 
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -177,7 +139,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //then
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.refreshAccessToken())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("refreshAccessTokenRequest.json", request -> request.setRefreshToken(refreshTokens.get(0)))
                 .expectResponse("refreshAccessTokenResponse_forbidden_invalid.json")
                 .expectStatus(HttpStatus.FORBIDDEN)
@@ -214,7 +175,6 @@ class AuthControllerIT extends InternalAuthITSupport {
             //when
             this.testManager.mockMvc()
                     .ping(ControllerEndpoint.loginUnauthorized())
-                    .token("Bearer " + this.serviceToken)
                     .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setPassword(password))
                     .expectResponse("loginResponse_unauthorized.json")
                     .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -246,7 +206,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -254,7 +213,6 @@ class AuthControllerIT extends InternalAuthITSupport {
 
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -290,7 +248,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -298,7 +255,6 @@ class AuthControllerIT extends InternalAuthITSupport {
 
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json", request -> request.setSessionSourceId("device-999"))
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -336,7 +292,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -372,7 +327,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -398,7 +352,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -424,7 +377,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -442,7 +394,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)
@@ -475,7 +426,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -503,7 +453,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setEmail("not-an-email"))
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -528,7 +477,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json", (LoginRequestDTO request) -> request.setSiteId(null))
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -553,7 +501,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json", (LoginRequestDTO request) -> {
                     request.setEmail("global-user@sitionix.com");
                     request.setSiteId(null);
@@ -583,7 +530,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -629,7 +575,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -678,7 +623,6 @@ class AuthControllerIT extends InternalAuthITSupport {
             try {
                 this.testManager.mockMvc()
                         .ping(ControllerEndpoint.login())
-                        .token("Bearer " + this.serviceToken)
                         .withRequest("loginRequest.json")
                         .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                         .expectStatus(HttpStatus.OK)
@@ -727,7 +671,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.login())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json")
                 .expectResponse("loginResponse.json", "accessToken", "refreshToken")
                 .expectStatus(HttpStatus.OK)
@@ -757,7 +700,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailOk())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-valid"))
                 .expectResponse("verifyEmailResponse_ok.json")
                 .expectStatus(HttpStatus.OK)
@@ -795,7 +737,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailAccepted())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> {
                     request.setToken("verify-token-valid");
                     request.setSiteId(null);
@@ -836,7 +777,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailOk())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> {
                     request.setToken("verify-token-global");
                     request.setSiteId(null);
@@ -877,7 +817,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailAccepted())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-used"))
                 .expectResponse("verifyEmailResponse_accepted.json")
                 .expectStatus(HttpStatus.ACCEPTED)
@@ -915,7 +854,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailAccepted())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-expired"))
                 .expectResponse("verifyEmailResponse_accepted.json")
                 .expectStatus(HttpStatus.ACCEPTED)
@@ -951,7 +889,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailAccepted())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-unknown"))
                 .expectResponse("verifyEmailResponse_accepted.json")
                 .expectStatus(HttpStatus.ACCEPTED)
@@ -985,7 +922,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailAccepted())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-mismatch"))
                 .expectResponse("verifyEmailResponse_accepted.json")
                 .expectStatus(HttpStatus.ACCEPTED)
@@ -1023,7 +959,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailAccepted())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken("verify-token-revoked"))
                 .expectResponse("verifyEmailResponse_accepted.json")
                 .expectStatus(HttpStatus.ACCEPTED)
@@ -1053,7 +988,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setToken(null))
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -1069,7 +1003,6 @@ class AuthControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.verifyEmailBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("verifyEmailRequest.json", (EmailVerificationDTO request) -> request.setSiteId(null))
                 .expectStatus(HttpStatus.ACCEPTED)
                 .assertAndCreate();

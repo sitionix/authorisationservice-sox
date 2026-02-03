@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 @IntegrationTest
-class SecurityErrorHandlerIT extends InternalAuthITSupport {
+class SecurityErrorHandlerIT {
 
     @Autowired
     private TestManager testManager;
@@ -29,7 +29,6 @@ class SecurityErrorHandlerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("loginRequest.json", request -> request.setPassword("wrong-password"))
                 .expectResponse("loginResponse_unauthorized.json")
                 .expectStatus(HttpStatus.UNAUTHORIZED)

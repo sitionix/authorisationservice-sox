@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
-class UserControllerIT extends InternalAuthITSupport {
+class UserControllerIT {
 
     @Autowired
     private TestManager testManager;
@@ -38,7 +38,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_globalRoleNoSiteId.json")
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
@@ -58,7 +57,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_siteAdminRoleNoSiteId.json")
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .expectResponse("responseBadRequest.json")
@@ -76,7 +74,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json")
                 .expectResponse("registerUserResponse.json", "userId")
                 .expectStatus(HttpStatus.CREATED)
@@ -115,7 +112,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json")
                 .expectResponse("registerUserResponse.json", "userId")
                 .expectStatus(HttpStatus.CREATED)
@@ -148,7 +144,6 @@ class UserControllerIT extends InternalAuthITSupport {
             //when
             this.testManager.mockMvc()
                     .ping(ControllerEndpoint.registerUser())
-                    .token("Bearer " + this.serviceToken)
                     .withRequest("registerUserRequest.json", (RegisterUserDTO request) -> request.setPassword(password))
                     .expectResponse("registerUserResponse.json", "userId")
                     .expectStatus(HttpStatus.CREATED)
@@ -201,7 +196,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest(requestResource, requestMutator)
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -221,7 +215,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_invalidRole.json")
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -241,7 +234,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_invalidSiteId.json")
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -261,7 +253,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> request.setSiteId(null))
                 .expectStatus(HttpStatus.BAD_REQUEST)
                 .assertAndCreate();
@@ -281,7 +272,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> {
                     request.setEmail("global-admin@sitionix.com");
                     request.setRole(RegisterUserDTO.RoleEnum.SUPER_ADMIN);
@@ -305,7 +295,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> {
                     request.setEmail("global-admin@sitionix.com");
                     request.setRole(RegisterUserDTO.RoleEnum.SUPER_ADMIN);
@@ -336,7 +325,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_sameEmailDifferentSiteId.json")
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
@@ -361,7 +349,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_duplicateEmailSameSite.json")
                 .expectResponse("registerUserResponse_pendingEmailVerify.json", "userId")
                 .expectStatus(HttpStatus.CREATED)
@@ -395,7 +382,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_duplicateEmailSameSite.json")
                 .expectResponse("registerUserResponse_pendingEmailVerify.json", "userId")
                 .expectStatus(HttpStatus.CREATED)
@@ -424,7 +410,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_duplicateEmailSameSite.json")
                 .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Registration already processed. Please check your email."))
                 .expectStatus(HttpStatus.CONFLICT)
@@ -453,7 +438,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserConflict())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest_duplicateEmailGlobalRole.json")
                 .expectResponse("registerUserResponse_duplicateEmail.json", r -> r.setDetails("Registration already processed. Please check your email."))
                 .expectStatus(HttpStatus.CONFLICT)
@@ -474,7 +458,6 @@ class UserControllerIT extends InternalAuthITSupport {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
-                .token("Bearer " + this.serviceToken)
                 .withRequest("registerUserRequest.json", (Consumer<RegisterUserDTO>) request -> request.setPassword("weak"))
                 .expectResponse("registerUserResponse_invalidPassword.json")
                 .expectStatus(HttpStatus.BAD_REQUEST)

@@ -17,6 +17,9 @@ import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
 
 public class ControllerEndpoint {
 
+    private static final String INTERNAL_TOKEN =
+            "Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Iml0IiwidHlwIjoiSldUIn0.eyJpc3MiOiJzaXRpb25peC1pbnRlcm5hbCIsInN1YiI6Iml0LXN0YXRpYyIsImF1ZCI6WyIqIl0sImlhdCI6MH0.mcHvkplVU4G7BXc8TjOJoQtdOJLlwfV3Ycg6hf-_riI";
+
     public static Endpoint<RegisterUserDTO, ResponseRegisterUserDTO> registerUser() {
         return Endpoint.createContract(
                 "/api/v1/users",
@@ -24,6 +27,7 @@ public class ControllerEndpoint {
                 RegisterUserDTO.class,
                 ResponseRegisterUserDTO.class,
                 (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
                         .withRequest("registerUserRequest.json")
                         .expectResponse("registerUserResponse.json")
                         .expectStatus(201)
@@ -36,7 +40,9 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 RegisterUserDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
+                (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
+                        .expectStatus(400)
         );
     }
 
@@ -46,7 +52,9 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 RegisterUserDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(409)
+                (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
+                        .expectStatus(409)
         );
     }
 
@@ -57,6 +65,7 @@ public class ControllerEndpoint {
                 LoginRequestDTO.class,
                 LoginResponseDTO.class,
                 (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
                         .withRequest("loginRequest.json")
                         .expectResponse("loginResponse.json")
                         .expectStatus(200)
@@ -69,7 +78,9 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(401)
+                (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
+                        .expectStatus(401)
         );
     }
 
@@ -79,9 +90,12 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
+                (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
+                        .expectStatus(400)
         );
     }
+
 
     public static Endpoint<EmailVerificationDTO, EmailVerificationResponseDTO> verifyEmailOk() {
         return Endpoint.createContract(
@@ -90,6 +104,7 @@ public class ControllerEndpoint {
                 EmailVerificationDTO.class,
                 EmailVerificationResponseDTO.class,
                 (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
                         .withRequest("verifyEmailRequest.json")
                         .expectResponse("verifyEmailResponse_ok.json")
                         .expectStatus(200)
@@ -103,6 +118,7 @@ public class ControllerEndpoint {
                 EmailVerificationDTO.class,
                 EmailVerificationResponseDTO.class,
                 (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
                         .withRequest("verifyEmailRequest.json")
                         .expectResponse("verifyEmailResponse_accepted.json")
                         .expectStatus(202)
@@ -115,7 +131,9 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 EmailVerificationDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
+                (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
+                        .expectStatus(400)
         );
     }
 
@@ -126,6 +144,7 @@ public class ControllerEndpoint {
                 RefreshAccessTokenRequestDTO.class,
                 RefreshAccessTokenResponseDTO.class,
                 (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
                         .withRequest("refreshAccessTokenRequest.json")
                         .expectResponse("refreshAccessTokenResponse.json")
                         .expectStatus(200)
@@ -158,7 +177,9 @@ public class ControllerEndpoint {
                 HttpMethod.GET,
                 Void.class,
                 IssueEmailVerificationLinkResponseDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(200)
+                (MockmvcDefault) context -> context
+                        .token(INTERNAL_TOKEN)
+                        .expectStatus(200)
         );
     }
 
