@@ -66,7 +66,8 @@ auth:
 security:
   email-verification:
     hmac-secret: it-email-token-secret
-  internal-auth:
+forge:
+  security:
     mode: dev-jwt
     service-name: authorisationservice-sox
     dev:
@@ -75,6 +76,11 @@ security:
       accepted-audiences:
         - authorisationservice-sox
       ttl-seconds: 300
+    server:
+      enabled: true
+      excludes:
+        - "/.well-known/jwks.json"
+        - "/oauth2/v1/keys"
     policies:
       notificationservice-sox:
         allow:

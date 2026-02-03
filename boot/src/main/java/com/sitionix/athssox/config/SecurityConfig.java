@@ -1,12 +1,9 @@
 package com.sitionix.athssox.config;
 
 import com.sitionix.athssox.application.security.LoginAuthenticationProvider;
-import com.sitionix.athssox.security.internal.InternalAuthFilter;
-import com.sitionix.athssox.security.internal.InternalEndpointRequestMatcher;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import com.sitionix.forge.security.server.web.ForgeInternalAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,35 +25,17 @@ public class SecurityConfig {
     };
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain internalSecurityFilterChain(final HttpSecurity http,
-                                                           final SecurityErrorHandler securityErrorHandler,
-                                                           final InternalAuthFilter internalAuthFilter,
-                                                           final InternalEndpointRequestMatcher internalEndpointRequestMatcher)
-            throws Exception {
-        return http
-                .securityMatcher(internalEndpointRequestMatcher)
-                .csrf(AbstractHttpConfigurer::disable) // NOSONAR
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated())
-                .addFilterBefore(internalAuthFilter, AuthorizationFilter.class)
-                .exceptionHandling(exceptionHandling -> exceptionHandling
-                        .authenticationEntryPoint(securityErrorHandler)
-                        .accessDeniedHandler(securityErrorHandler))
-                .build();
-    }
-
-    @Bean
-    @Order(2)
     public SecurityFilterChain securityFilterChain(final HttpSecurity http,
-                                                   final SecurityErrorHandler securityErrorHandler) throws Exception {
+                                                   final SecurityErrorHandler securityErrorHandler,
+                                                   final ForgeInternalAuthFilter forgeInternalAuthFilter)
+            throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable) // NOSONAR
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(forgeInternalAuthFilter, AuthorizationFilter.class)
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(securityErrorHandler)
                         .accessDeniedHandler(securityErrorHandler))
@@ -68,11 +47,4 @@ public class SecurityConfig {
         return new ProviderManager(List.of(loginAuthenticationProvider));
     }
 
-    @Bean
-    public FilterRegistrationBean<InternalAuthFilter> internalAuthFilterRegistration(
-            final InternalAuthFilter internalAuthFilter) {
-        final FilterRegistrationBean<InternalAuthFilter> registration = new FilterRegistrationBean<>(internalAuthFilter);
-        registration.setEnabled(false);
-        return registration;
-    }
 }

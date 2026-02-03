@@ -44,22 +44,6 @@ auth:
 security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
-  internal-auth:
-    mode: dev-jwt
-    service-name: ${SECURITY_INTERNAL_AUTH_SERVICE_NAME:authorisationservice-sox}
-    dev:
-      jwt-secret: ${SECURITY_INTERNAL_AUTH_DEV_JWT_SECRET:}
-      issuer: ${SECURITY_INTERNAL_AUTH_DEV_ISSUER:sitionix-internal}
-      accepted-audiences:
-        - ${SECURITY_INTERNAL_AUTH_DEV_ACCEPTED_AUDIENCES:authorisationservice-sox}
-      ttl-seconds: ${SECURITY_INTERNAL_AUTH_DEV_TTL_SECONDS:300}
-    policies:
-      notificationservice-sox:
-        allow:
-          - GET /api/v1/auth/emailVerificationTokens/*:issueLink
-      bffservice-sox:
-        allow:
-          - "*"
 outbox:
   worker:
     poll-delay-ms: 5000

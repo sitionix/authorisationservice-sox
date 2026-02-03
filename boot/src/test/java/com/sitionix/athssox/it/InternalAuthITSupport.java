@@ -10,16 +10,16 @@ import java.util.Date;
 
 abstract class InternalAuthITSupport {
 
-    @Value("${security.internal-auth.dev.jwt-secret}")
+    @Value("${forge.security.dev.jwt-secret}")
     private String internalJwtSecret;
 
-    @Value("${security.internal-auth.dev.issuer}")
+    @Value("${forge.security.dev.issuer}")
     private String internalJwtIssuer;
 
-    @Value("${security.internal-auth.dev.accepted-audiences[0]}")
+    @Value("${forge.security.dev.accepted-audiences[0]}")
     private String internalJwtAudience;
 
-    @Value("${security.internal-auth.dev.ttl-seconds}")
+    @Value("${forge.security.dev.ttl-seconds}")
     private long internalJwtTtlSeconds;
 
     protected String serviceToken;
