@@ -201,6 +201,53 @@ class EmailVerificationTokenIssueLinkIT {
     }
 
     @Test
+    @DisplayName("Should return 401 when Authorization header is missing")
+    void givenMissingAuthorization_whenIssueLink_thenUnauthorized() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .token("")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+    @Test
+    @DisplayName("Should return 401 when Authorization token is invalid")
+    void givenInvalidAuthorizationToken_whenIssueLink_thenUnauthorized() {
+        //given
+        final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        final UUID pepperId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+        //when
+        this.testManager.mockMvc()
+                .ping(ControllerEndpoint.issueEmailVerificationLink())
+                .withPathParameters(PathParams.create()
+                        .add("tokenId", tokenId))
+                .withQueryParameters(QueryParams.create()
+                        .add("pepper", pepperId))
+                .token("Bearer invalid")
+                .expectStatus(HttpStatus.UNAUTHORIZED)
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.code").value(HttpStatus.UNAUTHORIZED.value()))
+                .andExpectPath(MockMvcResultMatchers.jsonPath("$.title").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .assertAndCreate();
+
+        //then
+    }
+
+
+    @Test
     @DisplayName("Should not log verification token data on issue link")
     void givenIssueLink_whenLogged_thenTokenNotPresentInLogs() {
         //given

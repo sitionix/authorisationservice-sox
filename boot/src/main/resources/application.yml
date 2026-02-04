@@ -44,6 +44,24 @@ auth:
 security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
+forge:
+  security:
+    service-id: sitionixAuth
+    dev:
+      jwt-secret: ${FORGE_SECURITY_DEV_JWT_SECRET:dev-internal-auth-secret}
+      issuer: ${FORGE_SECURITY_DEV_ISSUER:sitionix-internal}
+      ttl-seconds: ${FORGE_SECURITY_DEV_TTL_SECONDS:300}
+    policies:
+      sitionixNotification:
+        allow:
+          - GET /api/v1/auth/emailVerificationTokens/*:issueLink
+      sitionixBff:
+        allow:
+          - "*"
+    server:
+      excludes:
+        - "/.well-known/jwks.json"
+        - "/oauth2/v1/keys"
 outbox:
   worker:
     poll-delay-ms: 5000

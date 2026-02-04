@@ -4,6 +4,9 @@ server:
 forge-it:
   kafka:
     notifications-topic: ntfssox.it.notification.public.unified.v1
+  modules:
+    mock-mvc:
+      default-token: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzaXRpb25peC1pbnRlcm5hbCIsInN1YiI6InNpdGlvbml4QmZmIiwiYXVkIjoic2l0aW9uaXhBdXRoIiwiaWF0IjowLCJleHAiOjQxMDI0NDQ4MDB9.tFkYKRMvwavRhqv_rIN6vUEiIvo0Yxkdl--bAuk8mNY"
 auth:
   tokens:
     jwt:
@@ -66,3 +69,21 @@ auth:
 security:
   email-verification:
     hmac-secret: it-email-token-secret
+forge:
+  security:
+    service-id: sitionixAuth
+    dev:
+      jwt-secret: dev-internal-auth-secret
+      issuer: sitionix-internal
+      ttl-seconds: 300
+    policies:
+      sitionixNotification:
+        allow:
+          - GET /api/v1/auth/emailVerificationTokens/*:issueLink
+      sitionixBff:
+        allow:
+          - "*"
+    server:
+      excludes:
+        - "/.well-known/jwks.json"
+        - "/oauth2/v1/keys"

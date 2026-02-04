@@ -1,6 +1,7 @@
 package com.sitionix.athssox.config;
 
 import com.sitionix.athssox.application.security.LoginAuthenticationProvider;
+import com.sitionix.forge.security.server.web.ForgeInternalAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 import java.util.List;
 
@@ -18,25 +20,22 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/login",
-            "/api/v1/auth/email/verify",
-            "/api/v1/auth/emailVerificationTokens/**:issueLink",
-            "/api/v1/auth/emailVerificationTokens/**",
-            "/api/v1/auth/refresh",
-            "/api/v1/users",
             "/.well-known/jwks.json",
             "/oauth2/v1/keys"
     };
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http,
-                                                   final SecurityErrorHandler securityErrorHandler) throws Exception {
+                                                   final SecurityErrorHandler securityErrorHandler,
+                                                   final ForgeInternalAuthFilter forgeInternalAuthFilter)
+            throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable) // NOSONAR
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(forgeInternalAuthFilter, AuthorizationFilter.class)
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(securityErrorHandler)
                         .accessDeniedHandler(securityErrorHandler))
@@ -47,4 +46,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(final LoginAuthenticationProvider loginAuthenticationProvider) {
         return new ProviderManager(List.of(loginAuthenticationProvider));
     }
+
 }

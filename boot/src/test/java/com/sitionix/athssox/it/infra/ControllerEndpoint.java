@@ -36,7 +36,8 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 RegisterUserDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
+                (MockmvcDefault) context -> context
+                        .expectStatus(400)
         );
     }
 
@@ -46,7 +47,8 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 RegisterUserDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(409)
+                (MockmvcDefault) context -> context
+                        .expectStatus(409)
         );
     }
 
@@ -69,7 +71,8 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(401)
+                (MockmvcDefault) context -> context
+                        .expectStatus(401)
         );
     }
 
@@ -79,9 +82,11 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 LoginRequestDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
+                (MockmvcDefault) context -> context
+                        .expectStatus(400)
         );
     }
+
 
     public static Endpoint<EmailVerificationDTO, EmailVerificationResponseDTO> verifyEmailOk() {
         return Endpoint.createContract(
@@ -115,7 +120,8 @@ public class ControllerEndpoint {
                 HttpMethod.POST,
                 EmailVerificationDTO.class,
                 ErrorDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(400)
+                (MockmvcDefault) context -> context
+                        .expectStatus(400)
         );
     }
 
@@ -158,7 +164,8 @@ public class ControllerEndpoint {
                 HttpMethod.GET,
                 Void.class,
                 IssueEmailVerificationLinkResponseDTO.class,
-                (MockmvcDefault) context -> context.expectStatus(200)
+                (MockmvcDefault) context -> context
+                        .expectStatus(200)
         );
     }
 
