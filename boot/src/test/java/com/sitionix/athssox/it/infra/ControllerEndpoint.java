@@ -11,6 +11,7 @@ import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.ResponseRegisterUserDTO;
 import com.app_afesox.athssox.api_first.dto.JwksResponseDTO;
+import com.app_afesox.athssox.api_first.dto.ResendEmailVerificationResponseDTO;
 import com.sitionix.forgeit.domain.endpoint.Endpoint;
 import com.sitionix.forgeit.domain.endpoint.HttpMethod;
 import com.sitionix.forgeit.domain.endpoint.mockmvc.MockmvcDefault;
@@ -166,6 +167,18 @@ public class ControllerEndpoint {
                 IssueEmailVerificationLinkResponseDTO.class,
                 (MockmvcDefault) context -> context
                         .expectStatus(200)
+        );
+    }
+
+    public static Endpoint<Object, ResendEmailVerificationResponseDTO> resendEmailVerification() {
+        return Endpoint.createContract(
+                "/api/v1/auth/email/verify/resend",
+                HttpMethod.POST,
+                Object.class,
+                ResendEmailVerificationResponseDTO.class,
+                (MockmvcDefault) context -> context
+                        .withRequest("resendEmailVerificationRequest.json")
+                        .expectStatus(202)
         );
     }
 

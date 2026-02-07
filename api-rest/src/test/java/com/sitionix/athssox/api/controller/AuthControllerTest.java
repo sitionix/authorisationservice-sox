@@ -7,19 +7,23 @@ import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
+import com.app_afesox.athssox.api_first.dto.ResendEmailVerificationResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerificationLinkApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
 import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
+import com.sitionix.athssox.api.mapper.ResendEmailVerificationApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenResponse;
+import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationLinkIssue;
 import com.sitionix.athssox.domain.usecase.IssueEmailVerificationLink;
 import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
+import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -72,6 +76,12 @@ class AuthControllerTest {
     @Mock
     private IssueEmailVerificationLink issueEmailVerificationLink;
 
+    @Mock
+    private ResendEmailVerification resendEmailVerification;
+
+    @Mock
+    private ResendEmailVerificationApiMapper resendEmailVerificationApiMapper;
+
     @BeforeEach
     void setUp() {
         this.authController = new AuthController(this.authApiMapper,
@@ -82,7 +92,9 @@ class AuthControllerTest {
                 this.refreshAccessToken,
                 this.refreshAccessTokenApiMapper,
                 this.httpServletRequest,
-                this.issueEmailVerificationLink);
+                this.issueEmailVerificationLink,
+                this.resendEmailVerification,
+                this.resendEmailVerificationApiMapper);
     }
 
     @AfterEach
@@ -95,7 +107,9 @@ class AuthControllerTest {
                 this.refreshAccessToken,
                 this.refreshAccessTokenApiMapper,
                 this.httpServletRequest,
-                this.issueEmailVerificationLink);
+                this.issueEmailVerificationLink,
+                this.resendEmailVerification,
+                this.resendEmailVerificationApiMapper);
     }
 
     @Test
@@ -246,6 +260,30 @@ class AuthControllerTest {
                 .execute(tokenId, pepperId);
         verify(this.emailVerificationLinkApiMapper)
                 .asResponse(issue);
+    }
+
+    @Test
+    void givenAccessToken_whenResendEmailVerification_thenReturnAcceptedResponse() {
+        //given
+        final Object body = new Object();
+        final ResendEmailVerificationResponse response = mock(ResendEmailVerificationResponse.class);
+        final ResendEmailVerificationResponseDTO responseDTO = mock(ResendEmailVerificationResponseDTO.class);
+
+        when(this.resendEmailVerification.execute())
+                .thenReturn(response);
+        when(this.resendEmailVerificationApiMapper.asResendEmailVerificationResponseDTO(response))
+                .thenReturn(responseDTO);
+
+        //when
+        final ResponseEntity<ResendEmailVerificationResponseDTO> actual =
+                this.authController.resendEmailVerification(body);
+
+        //then
+        assertThat(actual).isEqualTo(ResponseEntity.accepted().body(responseDTO));
+        verify(this.resendEmailVerification)
+                .execute();
+        verify(this.resendEmailVerificationApiMapper)
+                .asResendEmailVerificationResponseDTO(response);
     }
 
     private EmailVerificationResponseDTO getEmailVerificationResponseDTO(final String message,

@@ -47,8 +47,8 @@
         <jacoco.version>0.8.10</jacoco.version>
         <validation.version>2.0.1.Final</validation.version>
         <spring.version>3.3.4</spring.version>
-        <forgeit.version>0.0.34</forgeit.version>
-        <forge.security.version>0.0.3</forge.security.version>
+        <forgeit.version>0.0.35</forgeit.version>
+        <forge.security.version>0.0.4</forge.security.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -183,6 +183,16 @@
         <repository>
             <id>github-app-afesox</id>
             <url>https://maven.pkg.github.com/sitionix/app-afesox</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>github-forge-security</id>
+            <url>https://maven.pkg.github.com/sitionix/forge-security</url>
             <releases>
                 <enabled>true</enabled>
             </releases>

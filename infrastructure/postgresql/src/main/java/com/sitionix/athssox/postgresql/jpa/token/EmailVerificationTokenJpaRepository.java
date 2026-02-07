@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 
@@ -23,6 +24,15 @@ public interface EmailVerificationTokenJpaRepository extends JpaRepository<Email
     Optional<EmailVerificationTokenEntity> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);
 
     long countByUser_IdAndCreatedAtAfter(Long userId, Instant createdAfter);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE email_verification_tokens " +
+            "SET status_id = :revokedStatusId " +
+            "WHERE user_id = :userId AND status_id = :activeStatusId",
+            nativeQuery = true)
+    int revokeActiveByUserId(@Param("userId") Long userId,
+                             @Param("activeStatusId") Long activeStatusId,
+                             @Param("revokedStatusId") Long revokedStatusId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "DELETE FROM email_verification_tokens " +

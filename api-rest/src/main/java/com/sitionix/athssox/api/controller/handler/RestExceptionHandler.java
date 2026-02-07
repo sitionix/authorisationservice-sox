@@ -2,6 +2,7 @@ package com.sitionix.athssox.api.controller.handler;
 
 import com.app_afesox.athssox.api_first.dto.ErrorDTO;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
+import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedException;
 import com.sitionix.athssox.domain.exception.EmailVerificationTokenExpiredException;
 import com.sitionix.athssox.domain.exception.EmailVerificationTokenInvalidException;
 import com.sitionix.athssox.domain.exception.EmailVerificationTokenNotFoundException;
@@ -13,6 +14,7 @@ import com.sitionix.athssox.domain.exception.RefreshTokenInvalidException;
 import com.sitionix.athssox.domain.exception.SessionMismatchException;
 import com.sitionix.athssox.domain.exception.SessionNotActiveException;
 import com.sitionix.athssox.domain.exception.UserAlreadyVerifiedException;
+import com.sitionix.athssox.domain.exception.AccessTokenAuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -37,6 +39,11 @@ public class RestExceptionHandler {
     @ExceptionHandler(InvalidPasswordException.class)
     public ResponseEntity<ErrorDTO> handleInvalidPassword(final InvalidPasswordException exception) {
         return buildError(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(AccessTokenAuthenticationException.class)
+    public ResponseEntity<ErrorDTO> handleAccessTokenAuthentication(final AccessTokenAuthenticationException exception) {
+        return buildError(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
     @ExceptionHandler(MissingSiteIdException.class)
@@ -72,6 +79,11 @@ public class RestExceptionHandler {
     @ExceptionHandler(UserAlreadyVerifiedException.class)
     public ResponseEntity<ErrorDTO> handleUserAlreadyVerified(final UserAlreadyVerifiedException exception) {
         return buildError(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(EmailVerificationResendNotAllowedException.class)
+    public ResponseEntity<ErrorDTO> handleEmailVerificationResendNotAllowed(final EmailVerificationResendNotAllowedException exception) {
+        return buildError(HttpStatus.TOO_MANY_REQUESTS, exception.getMessage());
     }
 
     @ExceptionHandler(RefreshTokenExpiredException.class)

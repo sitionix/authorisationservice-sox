@@ -1,6 +1,7 @@
 package com.sitionix.athssox.postgresql.repository;
 
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.athssox.postgresql.jpa.token.EmailVerificationTokenJpaRepository;
 import com.sitionix.athssox.postgresql.mapper.token.EmailVerificationTokenInfraMapper;
@@ -163,6 +164,27 @@ class EmailVerificationTokenRepositoryImplTest {
         assertThat(actual).isEqualTo(4);
         verify(this.emailVerificationTokenJpaRepository)
                 .deleteExpiredBefore(cutoff);
+    }
+
+    @Test
+    void givenUserId_whenRevokeActiveByUserId_thenReturnCount() {
+        //given
+        final Long userId = 7L;
+
+        when(this.emailVerificationTokenJpaRepository.revokeActiveByUserId(userId,
+                EmailVerificationTokenStatus.ACTIVE.getId(),
+                EmailVerificationTokenStatus.REVOKED.getId()))
+                .thenReturn(2);
+
+        //when
+        final int actual = this.emailVerificationTokenRepository.revokeActiveByUserId(userId);
+
+        //then
+        assertThat(actual).isEqualTo(2);
+        verify(this.emailVerificationTokenJpaRepository)
+                .revokeActiveByUserId(userId,
+                        EmailVerificationTokenStatus.ACTIVE.getId(),
+                        EmailVerificationTokenStatus.REVOKED.getId());
     }
 
     private String getHashedToken() {
