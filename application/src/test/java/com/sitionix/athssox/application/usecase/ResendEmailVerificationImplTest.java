@@ -13,7 +13,7 @@ import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
-import com.sitionix.athssox.application.security.CurrentUserIdProvider;
+import com.sitionix.forge.security.server.user.ForgeUserClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class ResendEmailVerificationImplTest {
     private Clock clock;
 
     @Mock
-    private CurrentUserIdProvider currentUserIdProvider;
+    private ForgeUserClient forgeUserClient;
 
     @BeforeEach
     void setUp() {
@@ -65,7 +65,7 @@ class ResendEmailVerificationImplTest {
                 this.outboxCommand,
                 this.outboxEventBuilder,
                 this.clock,
-                this.currentUserIdProvider);
+                this.forgeUserClient);
     }
 
     @AfterEach
@@ -76,7 +76,7 @@ class ResendEmailVerificationImplTest {
                 this.outboxCommand,
                 this.outboxEventBuilder,
                 this.clock,
-                this.currentUserIdProvider);
+                this.forgeUserClient);
     }
 
     @Test
@@ -85,7 +85,7 @@ class ResendEmailVerificationImplTest {
         final Long userId = 12L;
         final ResendEmailVerificationResponse expected = this.resendEmailVerificationResponse();
 
-        when(this.currentUserIdProvider.currentUserId())
+        when(this.forgeUserClient.getUserId())
                 .thenReturn(userId);
         when(this.authUserRepository.findById(userId))
                 .thenReturn(Optional.empty());
@@ -95,7 +95,7 @@ class ResendEmailVerificationImplTest {
 
         //then
         assertThat(actual).isEqualTo(expected);
-        verify(this.currentUserIdProvider).currentUserId();
+        verify(this.forgeUserClient).getUserId();
         verify(this.authUserRepository).findById(userId);
     }
 
@@ -106,7 +106,7 @@ class ResendEmailVerificationImplTest {
         final ResendEmailVerificationResponse expected = this.resendEmailVerificationResponse();
         final AuthUser user = this.getAuthUser(userId, UserStatus.ACTIVE);
 
-        when(this.currentUserIdProvider.currentUserId())
+        when(this.forgeUserClient.getUserId())
                 .thenReturn(userId);
         when(this.authUserRepository.findById(userId))
                 .thenReturn(Optional.of(user));
@@ -116,7 +116,7 @@ class ResendEmailVerificationImplTest {
 
         //then
         assertThat(actual).isEqualTo(expected);
-        verify(this.currentUserIdProvider).currentUserId();
+        verify(this.forgeUserClient).getUserId();
         verify(this.authUserRepository).findById(userId);
     }
 
@@ -126,7 +126,7 @@ class ResendEmailVerificationImplTest {
         final Long userId = 4L;
         final AuthUser user = this.getAuthUser(userId, UserStatus.PENDING_EMAIL_VERIFY);
 
-        when(this.currentUserIdProvider.currentUserId())
+        when(this.forgeUserClient.getUserId())
                 .thenReturn(userId);
         when(this.authUserRepository.findById(userId))
                 .thenReturn(Optional.of(user));
@@ -138,7 +138,7 @@ class ResendEmailVerificationImplTest {
 
         //then
         assertThat(actual).isInstanceOf(EmailVerificationResendNotAllowedException.class);
-        verify(this.currentUserIdProvider).currentUserId();
+        verify(this.forgeUserClient).getUserId();
         verify(this.authUserRepository).findById(userId);
         verify(this.emailVerificationResendPolicy).isResendAllowed(userId);
     }
@@ -152,7 +152,7 @@ class ResendEmailVerificationImplTest {
         final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
         final ResendEmailVerificationResponse expected = this.resendEmailVerificationResponse();
 
-        when(this.currentUserIdProvider.currentUserId())
+        when(this.forgeUserClient.getUserId())
                 .thenReturn(userId);
         when(this.authUserRepository.findById(userId))
                 .thenReturn(Optional.of(user));
@@ -168,7 +168,7 @@ class ResendEmailVerificationImplTest {
 
         //then
         assertThat(actual).isEqualTo(expected);
-        verify(this.currentUserIdProvider).currentUserId();
+        verify(this.forgeUserClient).getUserId();
         verify(this.authUserRepository).findById(userId);
         verify(this.emailVerificationResendPolicy).isResendAllowed(userId);
         verify(this.emailVerificationTokenRepository).revokeActiveByUserId(userId);

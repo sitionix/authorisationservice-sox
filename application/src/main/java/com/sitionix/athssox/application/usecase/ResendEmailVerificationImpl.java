@@ -13,7 +13,7 @@ import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
-import com.sitionix.athssox.application.security.CurrentUserIdProvider;
+import com.sitionix.forge.security.server.user.ForgeUserClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,12 +31,12 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
     private final OutboxCommand<EmailVerifyPayload> outboxCommand;
     private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
     private final Clock clock;
-    private final CurrentUserIdProvider currentUserIdProvider;
+    private final ForgeUserClient forgeUserClient;
 
     @Override
     @Transactional
     public ResendEmailVerificationResponse execute() {
-        final Long userId = this.currentUserIdProvider.currentUserId();
+        final Long userId = this.forgeUserClient.getUserId();
         final AuthUser user = this.authUserRepository.findById(userId).orElse(null);
         if (Objects.isNull(user) || !UserStatus.PENDING_EMAIL_VERIFY.equals(user.getStatus())) {
             return this.buildResponse();
