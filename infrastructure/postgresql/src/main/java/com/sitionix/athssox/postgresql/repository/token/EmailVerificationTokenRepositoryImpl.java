@@ -1,6 +1,7 @@
 package com.sitionix.athssox.postgresql.repository.token;
 
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenRecord;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenStatus;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.athssox.postgresql.jpa.token.EmailVerificationTokenJpaRepository;
@@ -47,6 +48,13 @@ public class EmailVerificationTokenRepositoryImpl implements EmailVerificationTo
     @Override
     public long countByUserIdAndCreatedAtAfter(final Long userId, final Instant createdAfter) {
         return this.emailVerificationTokenJpaRepository.countByUser_IdAndCreatedAtAfter(userId, createdAfter);
+    }
+
+    @Override
+    public int revokeActiveByUserId(final Long userId) {
+        return this.emailVerificationTokenJpaRepository.revokeActiveByUserId(userId,
+                EmailVerificationTokenStatus.ACTIVE.getId(),
+                EmailVerificationTokenStatus.REVOKED.getId());
     }
 
     @Override

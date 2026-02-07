@@ -48,7 +48,7 @@
         <validation.version>2.0.1.Final</validation.version>
         <spring.version>3.3.4</spring.version>
         <forgeit.version>0.0.34</forgeit.version>
-        <forge.security.version>0.0.3</forge.security.version>
+        <forge.security.version>0.0.4</forge.security.version>
     </properties>
     <dependencyManagement>
         <dependencies>

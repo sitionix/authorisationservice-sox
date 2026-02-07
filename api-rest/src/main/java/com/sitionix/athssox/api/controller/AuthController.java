@@ -8,19 +8,23 @@ import com.app_afesox.athssox.api_first.dto.LoginRequestDTO;
 import com.app_afesox.athssox.api_first.dto.LoginResponseDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenRequestDTO;
 import com.app_afesox.athssox.api_first.dto.RefreshAccessTokenResponseDTO;
+import com.app_afesox.athssox.api_first.dto.ResendEmailVerificationResponseDTO;
 import com.sitionix.athssox.api.mapper.AuthApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerificationLinkApiMapper;
 import com.sitionix.athssox.api.mapper.EmailVerifyApiMapper;
 import com.sitionix.athssox.api.mapper.RefreshAccessTokenApiMapper;
+import com.sitionix.athssox.api.mapper.ResendEmailVerificationApiMapper;
 import com.sitionix.athssox.domain.model.LoginRequest;
 import com.sitionix.athssox.domain.model.LoginResponse;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenRequest;
 import com.sitionix.athssox.domain.model.RefreshAccessTokenResponse;
+import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerification;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationLinkIssue;
 import com.sitionix.athssox.domain.usecase.IssueEmailVerificationLink;
 import com.sitionix.athssox.domain.usecase.LoginUser;
 import com.sitionix.athssox.domain.usecase.RefreshAccessToken;
+import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
 import com.sitionix.athssox.domain.usecase.VerifyEmail;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -54,6 +58,10 @@ public class AuthController implements AuthApi {
     private final HttpServletRequest httpServletRequest;
 
     private final IssueEmailVerificationLink issueEmailVerificationLink;
+
+    private final ResendEmailVerification resendEmailVerification;
+
+    private final ResendEmailVerificationApiMapper resendEmailVerificationApiMapper;
 
     @Override
     public ResponseEntity<LoginResponseDTO> login(@Valid final LoginRequestDTO loginRequestDTO) {
@@ -100,5 +108,12 @@ public class AuthController implements AuthApi {
         final IssueEmailVerificationLinkResponseDTO response = this.emailVerificationLinkApiMapper.asResponse(issue);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ResendEmailVerificationResponseDTO> resendEmailVerification(final Object body) {
+        final ResendEmailVerificationResponse response = this.resendEmailVerification.execute();
+        return ResponseEntity.accepted()
+                .body(this.resendEmailVerificationApiMapper.asResendEmailVerificationResponseDTO(response));
     }
 }

@@ -18,5 +18,7 @@ public interface EmailVerificationTokenRepository {
 
     long countByUserIdAndCreatedAtAfter(final Long userId, final Instant createdAfter);
 
+    int revokeActiveByUserId(final Long userId);
+
     int deleteExpiredBefore(final Instant cutoff);
 }

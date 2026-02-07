@@ -25,11 +25,18 @@
             <version>${spring.version}</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>com.afesox</groupId>-->
+<!--            <artifactId>app-afesox-athssox-api-first-stable</artifactId>-->
+<!--            <version>0.0.24</version>-->
+<!--        </dependency>-->
+
         <dependency>
             <groupId>com.afesox</groupId>
-            <artifactId>app-afesox-athssox-api-first-stable</artifactId>
-            <version>0.0.24</version>
+            <artifactId>app-afesox-athssox-api-first-sitionix-68-unstable</artifactId>
+            <version>0.0.25</version>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
