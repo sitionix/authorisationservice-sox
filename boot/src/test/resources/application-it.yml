@@ -8,6 +8,10 @@ forge-it:
     mock-mvc:
       default-token: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzaXRpb25peC1pbnRlcm5hbCIsInN1YiI6InNpdGlvbml4QmZmIiwiYXVkIjoic2l0aW9uaXhBdXRoIiwiaWF0IjowLCJleHAiOjQxMDI0NDQ4MDB9.tFkYKRMvwavRhqv_rIN6vUEiIvo0Yxkdl--bAuk8mNY"
 auth:
+  email-verification:
+    resend:
+      cooldown-seconds: 0
+      daily-cap: 0
   tokens:
     jwt:
       alg: RS256
