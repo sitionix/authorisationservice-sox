@@ -3,8 +3,6 @@ package com.sitionix.athssox.it;
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
-import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
@@ -12,12 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 class ResendEmailVerificationIT {
@@ -33,16 +25,17 @@ class ResendEmailVerificationIT {
                 .create()
                 .to(DatabaseContract.USER_STATUS_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.GLOBAL_ROLE_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(3L))
+                .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.USER_ENTITY_DB_CONTRACT.withJson("authUserPendingEmailVerifyEntity.json"))
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenValid.json"))
                 .build();
 
-        final List<UserEntity> users = this.testManager.postgresql()
-                .get(DatabaseContract.USER_ENTITY_DB_CONTRACT);
-        assertThat(users).hasSize(1);
-        final UserEntity user = users.get(0);
+        final UserEntity user = this.testManager.postgresql()
+                .get(UserEntity.class)
+                .hasSize(1)
+                .singleElement()
+                .assertEntity();
         final Long userId = user.getId();
 
         //when
@@ -55,32 +48,19 @@ class ResendEmailVerificationIT {
                 .assertAndCreate();
 
         //then
-        final List<EmailVerificationTokenEntity> tokens = this.testManager.postgresql()
-                .get(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT);
-        assertThat(tokens).hasSize(2);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(2)
+                .withFetchedRelations()
+                .containsAllWithJsons("emailVerificationTokenResendRevokedExpected.json",
+                        "emailVerificationTokenResendActiveExpected.json");
 
-        final UUID previousTokenId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-        final EmailVerificationTokenEntity revokedToken = tokens.stream()
-                .filter(token -> Objects.equals(token.getId(), previousTokenId))
-                .findFirst()
-                .orElseThrow();
-        assertThat(revokedToken.getStatus().getId()).isEqualTo(3L);
-
-        final List<EmailVerificationTokenEntity> activeTokens = tokens.stream()
-                .filter(token -> Objects.equals(token.getStatus().getId(), 1L))
-                .toList();
-        assertThat(activeTokens).hasSize(1);
-        assertThat(activeTokens.get(0).getId()).isNotEqualTo(previousTokenId);
-
-        final List<OutboxEventEntity> outboxEvents = this.testManager.postgresql()
-                .get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
-        assertThat(outboxEvents).hasSize(1);
-        final OutboxEventEntity outboxEvent = outboxEvents.get(0);
-        assertThat(outboxEvent.getAggregateType().getId()).isEqualTo(1L);
-        assertThat(outboxEvent.getAggregateId()).isEqualTo(userId);
-        assertThat(outboxEvent.getEventType().getId()).isEqualTo(1L);
-        assertThat(outboxEvent.getStatus().getId()).isEqualTo(1L);
-        assertThat(outboxEvent.getRetryCount()).isEqualTo(0);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt")
+                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
     }
 
     @Test
@@ -96,10 +76,11 @@ class ResendEmailVerificationIT {
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenValid.json"))
                 .build();
 
-        final List<UserEntity> users = this.testManager.postgresql()
-                .get(DatabaseContract.USER_ENTITY_DB_CONTRACT);
-        assertThat(users).hasSize(1);
-        final UserEntity user = users.get(0);
+        final UserEntity user = this.testManager.postgresql()
+                .get(UserEntity.class)
+                .hasSize(1)
+                .singleElement()
+                .assertEntity();
         final Long userId = user.getId();
 
         //when
@@ -112,16 +93,15 @@ class ResendEmailVerificationIT {
                 .assertAndCreate();
 
         //then
-        final List<EmailVerificationTokenEntity> tokens = this.testManager.postgresql()
-                .get(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT);
-        assertThat(tokens).hasSize(1);
-        final EmailVerificationTokenEntity token = tokens.get(0);
-        assertThat(token.getId()).isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-        assertThat(token.getStatus().getId()).isEqualTo(1L);
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
+                .hasSize(1)
+                .withFetchedRelations()
+                .containsAllWithJsons("emailVerificationTokenActiveExpected.json");
 
-        final List<OutboxEventEntity> outboxEvents = this.testManager.postgresql()
-                .get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
-        assertThat(outboxEvents).isEmpty();
+        this.testManager.postgresql()
+                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(0);
     }
 
     @Test
