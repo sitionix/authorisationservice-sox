@@ -19,6 +19,11 @@
             <artifactId>domain</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.sitionix.forge</groupId>
+            <artifactId>forgecommon-outbox-core</artifactId>
+            <version>${forge.common.version}</version>
+        </dependency>
         <!-- DEPENDENCY -->
         <dependency>
             <groupId>org.projectlombok</groupId>

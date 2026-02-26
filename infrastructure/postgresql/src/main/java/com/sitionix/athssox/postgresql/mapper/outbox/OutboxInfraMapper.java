@@ -31,7 +31,7 @@ public interface OutboxInfraMapper {
     OutboxEventEntity toEntity(OutboxEvent<?> outboxEvent);
 
 
-    @Mapping(target = "payload", expression = "java(this.outboxEventTypeInfraMapper.asEventType(event.getEventType()).getPayload(event.getPayload()))")
+    @Mapping(target = "payload", source = "payload")
     @Mapping(target = "createdAt", source = "createdAt")
     OutboxEvent<Object> toOutboxEvent(OutboxEventEntity event);
 

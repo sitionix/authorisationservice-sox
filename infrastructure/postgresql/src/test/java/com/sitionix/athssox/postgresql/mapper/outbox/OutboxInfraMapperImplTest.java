@@ -6,7 +6,6 @@ import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
-import com.sitionix.athssox.domain.model.outbox.payload.handler.EventTypeHandler;
 import com.sitionix.athssox.postgresql.entity.outbox.OutboxAggregateTypeEntity;
 import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventTypeEntity;
@@ -25,7 +24,6 @@ import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -50,8 +48,6 @@ class OutboxInfraMapperImplTest {
     @Mock
     private OutboxPayloadJsonMapper outboxPayloadJsonMapper;
 
-    private EventTypeHandler<Object> previousHandler;
-
     @BeforeEach
     void setUp() {
         this.mapper = new OutboxInfraMapperImpl(
@@ -60,12 +56,10 @@ class OutboxInfraMapperImplTest {
                 this.outboxInitiatorTypeInfraMapper,
                 this.outboxStatusInfraMapper,
                 this.outboxPayloadJsonMapper);
-        this.previousHandler = OutboxEventType.EMAIL_VERIFY.getHandler();
     }
 
     @AfterEach
     void tearDown() {
-        OutboxEventType.EMAIL_VERIFY.setHandler(this.previousHandler);
         verifyNoMoreInteractions(this.outboxAggregateTypeInfraMapper,
                 this.outboxEventTypeInfraMapper,
                 this.outboxInitiatorTypeInfraMapper,
@@ -107,7 +101,7 @@ class OutboxInfraMapperImplTest {
         //given
         final LocalDateTime createdAt = this.getCreatedAt();
         final String payloadJson = this.getPayloadJson();
-        final Object payload = mock(Object.class);
+        final Object payload = payloadJson;
 
         final OutboxAggregateTypeEntity aggregateTypeEntity = this.getOutboxAggregateTypeEntity(1L, "USER");
         final OutboxEventTypeEntity eventTypeEntity = this.getOutboxEventTypeEntity(1L, "EMAIL_VERIFY");
@@ -121,9 +115,6 @@ class OutboxInfraMapperImplTest {
                 initiatorTypeEntity,
                 payloadJson);
         final OutboxEvent<Object> expected = this.buildOutboxEvent(createdAt, payload);
-        final EventTypeHandler<Object> handler = mock(EventTypeHandler.class);
-
-        OutboxEventType.EMAIL_VERIFY.setHandler(handler);
 
         when(this.outboxAggregateTypeInfraMapper.asEventType(aggregateTypeEntity))
                 .thenReturn(OutboxAggregateType.USER);
@@ -133,8 +124,6 @@ class OutboxInfraMapperImplTest {
                 .thenReturn(OutboxStatus.PENDING);
         when(this.outboxInitiatorTypeInfraMapper.asInitiatorType(initiatorTypeEntity))
                 .thenReturn(InitiatorType.USER);
-        when(handler.getPayload(payloadJson))
-                .thenReturn(payload);
 
         //when
         final OutboxEvent<Object> actual = this.mapper.toOutboxEvent(given);
@@ -142,10 +131,9 @@ class OutboxInfraMapperImplTest {
         //then
         assertThat(actual).isEqualTo(expected);
         verify(this.outboxAggregateTypeInfraMapper).asEventType(aggregateTypeEntity);
-        verify(this.outboxEventTypeInfraMapper, times(2)).asEventType(eventTypeEntity);
+        verify(this.outboxEventTypeInfraMapper).asEventType(eventTypeEntity);
         verify(this.outboxStatusInfraMapper).asEventType(statusEntity);
         verify(this.outboxInitiatorTypeInfraMapper).asInitiatorType(initiatorTypeEntity);
-        verify(handler).getPayload(payloadJson);
     }
 
     @Test

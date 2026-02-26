@@ -1,12 +1,10 @@
 package com.sitionix.athssox.application.outbox.publisher;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.domain.event.EventHandler;
-import com.sitionix.athssox.domain.exception.OutboxPayloadParseException;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.forge.outbox.core.model.OutboxRecord;
+import com.sitionix.forge.outbox.core.port.OutboxPayloadCodec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +17,6 @@ import java.time.Instant;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -31,19 +28,19 @@ class EmailVerifyForgeOutboxPublisherTest {
     private EmailVerifyForgeOutboxPublisher emailVerifyForgeOutboxPublisher;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private OutboxPayloadCodec outboxPayloadCodec;
 
     @Mock
     private EventHandler<EmailVerifyPayload> eventHandler;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyForgeOutboxPublisher = new EmailVerifyForgeOutboxPublisher(this.objectMapper, this.eventHandler);
+        this.emailVerifyForgeOutboxPublisher = new EmailVerifyForgeOutboxPublisher(this.outboxPayloadCodec, this.eventHandler);
     }
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.objectMapper, this.eventHandler);
+        verifyNoMoreInteractions(this.outboxPayloadCodec, this.eventHandler);
     }
 
     @Test
@@ -53,37 +50,20 @@ class EmailVerifyForgeOutboxPublisherTest {
         final OutboxRecord outboxRecord = this.getOutboxRecord();
         final ArgumentCaptor<Event<EmailVerifyPayload>> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
-        when(this.objectMapper.readValue(outboxRecord.getPayload(), EmailVerifyPayload.class))
+        when(this.outboxPayloadCodec.deserialize(outboxRecord.getPayload(), EmailVerifyPayload.class))
                 .thenReturn(payload);
 
         //when
         this.emailVerifyForgeOutboxPublisher.publish(outboxRecord);
 
         //then
-        verify(this.objectMapper).readValue(outboxRecord.getPayload(), EmailVerifyPayload.class);
+        verify(this.outboxPayloadCodec).deserialize(outboxRecord.getPayload(), EmailVerifyPayload.class);
         verify(this.eventHandler).publish(eventCaptor.capture());
 
         final Event<EmailVerifyPayload> actual = eventCaptor.getValue();
         assertThat(actual.getId()).isEqualTo("10");
         assertThat(actual.getEventType()).isEqualTo("EMAIL_VERIFY");
         assertThat(actual.getPayload()).isEqualTo(payload);
-    }
-
-    @Test
-    void givenInvalidPayload_whenPublish_thenThrowOutboxPayloadParseException() throws Exception {
-        //given
-        final OutboxRecord outboxRecord = this.getOutboxRecord();
-        when(this.objectMapper.readValue(outboxRecord.getPayload(), EmailVerifyPayload.class))
-                .thenThrow(new JsonProcessingException("boom") {
-                });
-
-        //when
-        //then
-        assertThatThrownBy(() -> this.emailVerifyForgeOutboxPublisher.publish(outboxRecord))
-                .isInstanceOf(OutboxPayloadParseException.class)
-                .hasMessageContaining("Payload cannot be parsed into EmailVerifyPayload");
-
-        verify(this.objectMapper).readValue(outboxRecord.getPayload(), EmailVerifyPayload.class);
     }
 
     @Test

@@ -1,17 +1,16 @@
 package com.sitionix.athssox.postgresql.mapper.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sitionix.forge.outbox.core.port.OutboxPayloadCodec;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OutboxPayloadJsonMapper {
 
-    private final ObjectMapper objectMapper;
+    private final OutboxPayloadCodec outboxPayloadCodec;
 
-    public OutboxPayloadJsonMapper(final ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public OutboxPayloadJsonMapper(final OutboxPayloadCodec outboxPayloadCodec) {
+        this.outboxPayloadCodec = outboxPayloadCodec;
     }
 
     @Named("toJson")
@@ -19,10 +18,9 @@ public class OutboxPayloadJsonMapper {
         if (payload == null) {
             return null;
         }
-        try {
-            return this.objectMapper.writeValueAsString(payload);
-        } catch (final JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize outbox payload", exception);
+        if (payload instanceof String rawPayload) {
+            return rawPayload;
         }
+        return this.outboxPayloadCodec.serialize(payload);
     }
 }

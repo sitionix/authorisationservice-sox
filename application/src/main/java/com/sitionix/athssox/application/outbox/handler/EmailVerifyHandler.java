@@ -1,13 +1,12 @@
 package com.sitionix.athssox.application.outbox.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.domain.event.EventHandler;
 import com.sitionix.athssox.domain.exception.OutboxPayloadParseException;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.domain.model.outbox.payload.handler.EventTypeHandler;
+import com.sitionix.forge.outbox.core.port.OutboxPayloadCodec;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EmailVerifyHandler implements EventTypeHandler<EmailVerifyPayload> {
 
-    private final ObjectMapper objectMapper;
+    private final OutboxPayloadCodec outboxPayloadCodec;
 
     private final EventHandler<EmailVerifyPayload> eventHandler;
 
@@ -28,8 +27,8 @@ public class EmailVerifyHandler implements EventTypeHandler<EmailVerifyPayload> 
     @Override
     public EmailVerifyPayload getPayload(final String payload) {
         try {
-            return this.objectMapper.readValue(payload, EmailVerifyPayload.class);
-        } catch (final JsonProcessingException e) {
+            return this.outboxPayloadCodec.deserialize(payload, EmailVerifyPayload.class);
+        } catch (final IllegalStateException e) {
             throw new OutboxPayloadParseException("Payload cannot be parsed into EmailVerifyPayload due to error: " + e);
         }
     }

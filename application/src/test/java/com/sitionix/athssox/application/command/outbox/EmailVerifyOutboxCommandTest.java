@@ -1,7 +1,5 @@
 package com.sitionix.athssox.application.command.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
@@ -22,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -36,17 +33,14 @@ class EmailVerifyOutboxCommandTest {
     @Mock
     private ForgeOutbox forgeOutbox;
 
-    @Mock
-    private ObjectMapper objectMapper;
-
     @BeforeEach
     void setUp() {
-        this.emailVerifyOutboxCommand = new EmailVerifyOutboxCommand(this.forgeOutbox, this.objectMapper);
+        this.emailVerifyOutboxCommand = new EmailVerifyOutboxCommand(this.forgeOutbox);
     }
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.forgeOutbox, this.objectMapper);
+        verifyNoMoreInteractions(this.forgeOutbox);
     }
 
     @Test
@@ -54,46 +48,22 @@ class EmailVerifyOutboxCommandTest {
         //given
         final EmailVerifyPayload payload = this.getEmailVerifyPayload();
         final OutboxEvent<EmailVerifyPayload> outboxEvent = this.getOutboxEvent(payload);
-        final String serializedPayload = "{\"serialized\":true}";
         final ArgumentCaptor<OutboxEnqueueRequest> outboxEnqueueRequestCaptor = ArgumentCaptor.forClass(OutboxEnqueueRequest.class);
-
-        when(this.objectMapper.writeValueAsString(payload))
-                .thenReturn(serializedPayload);
 
         //when
         this.emailVerifyOutboxCommand.execute(outboxEvent);
 
         //then
-        verify(this.objectMapper).writeValueAsString(payload);
         verify(this.forgeOutbox).enqueue(outboxEnqueueRequestCaptor.capture());
 
         final OutboxEnqueueRequest actual = outboxEnqueueRequestCaptor.getValue();
         assertThat(actual.getEventType()).isEqualTo("EMAIL_VERIFY");
-        assertThat(actual.getPayload()).isEqualTo(serializedPayload);
+        assertThat(actual.getPayloadObject()).isEqualTo(payload);
         assertThat(actual.getAggregateType()).isEqualTo("USER");
         assertThat(actual.getAggregateId()).isEqualTo(5L);
         assertThat(actual.getInitiatorType()).isEqualTo("USER");
         assertThat(actual.getInitiatorId()).isEqualTo("5");
         assertThat(actual.getTraceId()).isEqualTo("trace-1");
-    }
-
-    @Test
-    void givenObjectMapperFailure_whenExecute_thenThrowIllegalStateException() throws Exception {
-        //given
-        final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = this.getOutboxEvent(payload);
-
-        when(this.objectMapper.writeValueAsString(payload))
-                .thenThrow(new JsonProcessingException("boom") {
-                });
-
-        //when
-        //then
-        assertThatThrownBy(() -> this.emailVerifyOutboxCommand.execute(outboxEvent))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Failed to serialize outbox payload");
-
-        verify(this.objectMapper).writeValueAsString(payload);
     }
 
     private OutboxEvent<EmailVerifyPayload> getOutboxEvent(final EmailVerifyPayload payload) {

@@ -1,7 +1,5 @@
 package com.sitionix.athssox.application.command.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
@@ -19,13 +17,12 @@ import java.util.Map;
 public class EmailVerifyOutboxCommand implements OutboxCommand<EmailVerifyPayload> {
 
     private final ForgeOutbox forgeOutbox;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void execute(final OutboxEvent<EmailVerifyPayload> outboxEvent) {
         this.forgeOutbox.enqueue(OutboxEnqueueRequest.builder()
                 .eventType(outboxEvent.getEventType().getDescription())
-                .payload(this.serializePayload(outboxEvent.getPayload()))
+                .payloadObject(outboxEvent.getPayload())
                 .headers(Map.of())
                 .metadata(this.metadata(outboxEvent))
                 .traceId(this.traceId(outboxEvent))
@@ -35,14 +32,6 @@ public class EmailVerifyOutboxCommand implements OutboxCommand<EmailVerifyPayloa
                 .initiatorId(outboxEvent.getInitiatorId())
                 .nextAttemptAt(outboxEvent.getNextRetryAt().toInstant(ZoneOffset.UTC))
                 .build());
-    }
-
-    private String serializePayload(final EmailVerifyPayload payload) {
-        try {
-            return this.objectMapper.writeValueAsString(payload);
-        } catch (final JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize outbox payload", exception);
-        }
     }
 
     private String traceId(final OutboxEvent<EmailVerifyPayload> outboxEvent) {

@@ -1,13 +1,12 @@
 package com.sitionix.athssox.application.outbox.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.domain.event.EventHandler;
 import com.sitionix.athssox.domain.exception.OutboxPayloadParseException;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
+import com.sitionix.forge.outbox.core.port.OutboxPayloadCodec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,19 +30,19 @@ class EmailVerifyHandlerTest {
     private EmailVerifyHandler emailVerifyHandler;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private OutboxPayloadCodec outboxPayloadCodec;
 
     @Mock
     private EventHandler<EmailVerifyPayload> eventHandler;
 
     @BeforeEach
     void setUp() {
-        this.emailVerifyHandler = new EmailVerifyHandler(this.objectMapper, this.eventHandler);
+        this.emailVerifyHandler = new EmailVerifyHandler(this.outboxPayloadCodec, this.eventHandler);
     }
 
     @AfterEach
     void tearDown() {
-        verifyNoMoreInteractions(this.objectMapper,
+        verifyNoMoreInteractions(this.outboxPayloadCodec,
                 this.eventHandler);
     }
 
@@ -75,7 +74,7 @@ class EmailVerifyHandlerTest {
         final String payload = this.getPayloadJson();
         final EmailVerifyPayload expected = mock(EmailVerifyPayload.class);
 
-        when(this.objectMapper.readValue(payload, EmailVerifyPayload.class))
+        when(this.outboxPayloadCodec.deserialize(payload, EmailVerifyPayload.class))
                 .thenReturn(expected);
 
         //when
@@ -83,17 +82,16 @@ class EmailVerifyHandlerTest {
 
         //then
         assertThat(actual).isEqualTo(expected);
-        verify(this.objectMapper).readValue(payload, EmailVerifyPayload.class);
+        verify(this.outboxPayloadCodec).deserialize(payload, EmailVerifyPayload.class);
     }
 
     @Test
-    void given_invalid_payload_when_get_payload_then_throw_outbox_payload_parse_exception() throws Exception {
+    void given_invalid_payload_when_get_payload_then_throw_outbox_payload_parse_exception() {
         //given
         final String payload = this.getPayloadJson();
-        final JsonProcessingException exception = new JsonProcessingException("boom") {
-        };
+        final IllegalStateException exception = new IllegalStateException("boom");
 
-        when(this.objectMapper.readValue(payload, EmailVerifyPayload.class))
+        when(this.outboxPayloadCodec.deserialize(payload, EmailVerifyPayload.class))
                 .thenThrow(exception);
 
         //when
@@ -101,7 +99,7 @@ class EmailVerifyHandlerTest {
         assertThatThrownBy(() -> this.emailVerifyHandler.getPayload(payload))
                 .isInstanceOf(OutboxPayloadParseException.class)
                 .hasMessageContaining("Payload cannot be parsed into EmailVerifyPayload due to error: " + exception);
-        verify(this.objectMapper).readValue(payload, EmailVerifyPayload.class);
+        verify(this.outboxPayloadCodec).deserialize(payload, EmailVerifyPayload.class);
     }
 
     private OutboxEvent<EmailVerifyPayload> getOutboxEvent(final EmailVerifyPayload payload,

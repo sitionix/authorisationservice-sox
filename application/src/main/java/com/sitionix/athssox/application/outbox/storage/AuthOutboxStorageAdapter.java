@@ -1,12 +1,11 @@
 package com.sitionix.athssox.application.outbox.storage;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
 import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.athssox.domain.repository.OutboxEventRepository;
+import com.sitionix.forge.outbox.core.port.OutboxPayloadCodec;
 import com.sitionix.forge.outbox.core.model.OutboxRecord;
 import com.sitionix.forge.outbox.core.model.OutboxStatus;
 import com.sitionix.forge.outbox.core.port.OutboxStorage;
@@ -23,12 +22,12 @@ import java.util.Set;
 public class AuthOutboxStorageAdapter implements OutboxStorage {
 
     private final OutboxEventRepository outboxEventRepository;
-    private final ObjectMapper objectMapper;
+    private final OutboxPayloadCodec outboxPayloadCodec;
 
     public AuthOutboxStorageAdapter(final OutboxEventRepository outboxEventRepository,
-                                    final ObjectMapper objectMapper) {
+                                    final OutboxPayloadCodec outboxPayloadCodec) {
         this.outboxEventRepository = outboxEventRepository;
-        this.objectMapper = objectMapper;
+        this.outboxPayloadCodec = outboxPayloadCodec;
     }
 
     @Override
@@ -42,7 +41,7 @@ public class AuthOutboxStorageAdapter implements OutboxStorage {
                 .status(com.sitionix.athssox.domain.model.outbox.OutboxStatus.PENDING)
                 .retryCount(record.getAttempts())
                 .nextRetryAt(LocalDateTime.ofInstant(record.getNextAttemptAt(), ZoneOffset.UTC))
-                .payload(this.parsePayload(record.getPayload()))
+                .payload(record.getPayload())
                 .lastError(record.getLastError())
                 .build();
 
@@ -92,7 +91,7 @@ public class AuthOutboxStorageAdapter implements OutboxStorage {
         return OutboxRecord.builder()
                 .id(String.valueOf(outboxEvent.getId()))
                 .eventType(outboxEvent.getEventType().getDescription())
-                .payload(this.serializePayload(outboxEvent.getPayload()))
+                .payload(this.asRawPayload(outboxEvent.getPayload()))
                 .headers(Map.of())
                 .metadata(Map.of())
                 .traceId(null)
@@ -113,20 +112,14 @@ public class AuthOutboxStorageAdapter implements OutboxStorage {
                 .build();
     }
 
-    private Object parsePayload(final String payload) {
-        try {
-            return this.objectMapper.readValue(payload, Object.class);
-        } catch (final JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to deserialize outbox payload", exception);
+    private String asRawPayload(final Object payload) {
+        if (payload == null) {
+            return null;
         }
-    }
-
-    private String serializePayload(final Object payload) {
-        try {
-            return this.objectMapper.writeValueAsString(payload);
-        } catch (final JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize outbox payload", exception);
+        if (payload instanceof String rawPayload) {
+            return rawPayload;
         }
+        return this.outboxPayloadCodec.serialize(payload);
     }
 
     private OutboxAggregateType asAggregateType(final String description) {
