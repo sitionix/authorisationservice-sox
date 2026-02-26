@@ -2,7 +2,6 @@ package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
 import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
-import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
@@ -15,6 +14,7 @@ import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.RegisterUser;
+import com.sitionix.forge.outbox.core.command.ForgeOutboxCommand;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,7 @@ public class RegisterUserImpl implements RegisterUser {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
-    private final OutboxCommand<EmailVerifyPayload> command;
+    private final ForgeOutboxCommand<EmailVerifyPayload> command;
     private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
     private final Clock clock;
@@ -64,7 +64,7 @@ public class RegisterUserImpl implements RegisterUser {
 
         final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder.build(this.buildContext(createdUser, registerUserDO));
 
-        this.command.execute(outboxEvent);
+        this.command.send(outboxEvent.getPayload());
 
         createdUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
         return createdUser;
@@ -119,7 +119,7 @@ public class RegisterUserImpl implements RegisterUser {
         if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
             final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder
                     .build(this.buildContext(existingUser, registerUserDO));
-            this.command.execute(outboxEvent);
+            this.command.send(outboxEvent.getPayload());
         }
 
         existingUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);

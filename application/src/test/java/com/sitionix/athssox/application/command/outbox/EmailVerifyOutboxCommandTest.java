@@ -1,10 +1,6 @@
 package com.sitionix.athssox.application.command.outbox;
 
-import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.forge.outbox.core.model.OutboxEnqueueRequest;
 import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import org.junit.jupiter.api.AfterEach;
@@ -16,7 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,18 +40,16 @@ class EmailVerifyOutboxCommandTest {
     }
 
     @Test
-    void givenOutboxEvent_whenExecute_thenEnqueueForgeOutboxRequest() throws Exception {
+    void givenPayload_whenSend_thenEnqueueForgeOutboxRequest() {
         //given
         final EmailVerifyPayload payload = this.getEmailVerifyPayload();
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = this.getOutboxEvent(payload);
         final ArgumentCaptor<OutboxEnqueueRequest> outboxEnqueueRequestCaptor = ArgumentCaptor.forClass(OutboxEnqueueRequest.class);
 
         //when
-        this.emailVerifyOutboxCommand.execute(outboxEvent);
+        this.emailVerifyOutboxCommand.send(payload);
 
         //then
         verify(this.forgeOutbox).enqueue(outboxEnqueueRequestCaptor.capture());
-
         final OutboxEnqueueRequest actual = outboxEnqueueRequestCaptor.getValue();
         assertThat(actual.getEventType()).isEqualTo("EMAIL_VERIFY");
         assertThat(actual.getPayloadObject()).isEqualTo(payload);
@@ -64,19 +58,8 @@ class EmailVerifyOutboxCommandTest {
         assertThat(actual.getInitiatorType()).isEqualTo("USER");
         assertThat(actual.getInitiatorId()).isEqualTo("5");
         assertThat(actual.getTraceId()).isEqualTo("trace-1");
-    }
-
-    private OutboxEvent<EmailVerifyPayload> getOutboxEvent(final EmailVerifyPayload payload) {
-        return OutboxEvent.<EmailVerifyPayload>builder()
-                .id(10L)
-                .aggregateType(OutboxAggregateType.USER)
-                .aggregateId(5L)
-                .eventType(OutboxEventType.EMAIL_VERIFY)
-                .initiatorType(InitiatorType.USER)
-                .initiatorId("5")
-                .payload(payload)
-                .nextRetryAt(LocalDateTime.parse("2026-01-01T10:00:00"))
-                .build();
+        assertThat(actual.getNextAttemptAt()).isEqualTo(Instant.parse("2026-01-01T10:00:00Z"));
+        assertThat(actual.getMetadata()).isEqualTo(this.getExpectedMetadata());
     }
 
     private EmailVerifyPayload getEmailVerifyPayload() {
@@ -90,5 +73,12 @@ class EmailVerifyOutboxCommandTest {
         when(payload.getMeta()).thenReturn(meta);
 
         return payload;
+    }
+
+    private Map<String, String> getExpectedMetadata() {
+        return Map.of(
+                "userId", "5",
+                "siteId", "11111111-1111-1111-1111-111111111111",
+                "requestedAt", "2026-01-01T10:00:00Z");
     }
 }

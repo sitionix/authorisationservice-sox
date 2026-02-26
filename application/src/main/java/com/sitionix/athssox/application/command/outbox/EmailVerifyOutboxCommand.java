@@ -1,52 +1,44 @@
 package com.sitionix.athssox.application.command.outbox;
 
-import com.sitionix.athssox.domain.command.OutboxCommand;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
+import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.forge.outbox.core.model.OutboxEnqueueRequest;
+import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
+import com.sitionix.forge.outbox.core.command.AbstractForgeOutboxCommand;
 import com.sitionix.forge.outbox.core.port.ForgeOutbox;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
-public class EmailVerifyOutboxCommand implements OutboxCommand<EmailVerifyPayload> {
+public class EmailVerifyOutboxCommand extends AbstractForgeOutboxCommand<EmailVerifyPayload> {
 
-    private final ForgeOutbox forgeOutbox;
+    public EmailVerifyOutboxCommand(final ForgeOutbox forgeOutbox) {
+        super(forgeOutbox);
+    }
 
     @Override
-    public void execute(final OutboxEvent<EmailVerifyPayload> outboxEvent) {
-        this.forgeOutbox.enqueue(OutboxEnqueueRequest.builder()
-                .eventType(outboxEvent.getEventType().getDescription())
-                .payloadObject(outboxEvent.getPayload())
-                .headers(Map.of())
-                .metadata(this.metadata(outboxEvent))
-                .traceId(this.traceId(outboxEvent))
-                .aggregateType(outboxEvent.getAggregateType().getDescription())
-                .aggregateId(outboxEvent.getAggregateId())
-                .initiatorType(outboxEvent.getInitiatorType().getDescription())
-                .initiatorId(outboxEvent.getInitiatorId())
-                .nextAttemptAt(outboxEvent.getNextRetryAt().toInstant(ZoneOffset.UTC))
-                .build());
+    protected String eventType() {
+        return OutboxEventType.EMAIL_VERIFY.getDescription();
     }
 
-    private String traceId(final OutboxEvent<EmailVerifyPayload> outboxEvent) {
-        if (outboxEvent.getPayload() == null || outboxEvent.getPayload().getMeta() == null) {
+    @Override
+    protected String traceId(final EmailVerifyPayload payload) {
+        if (payload == null || payload.getMeta() == null) {
             return null;
         }
-        return outboxEvent.getPayload().getMeta().getTraceId();
+        return payload.getMeta().getTraceId();
     }
 
-    private Map<String, String> metadata(final OutboxEvent<EmailVerifyPayload> outboxEvent) {
+    @Override
+    protected Map<String, String> metadata(final EmailVerifyPayload payload) {
         final Map<String, String> metadata = new HashMap<>();
-        if (outboxEvent.getPayload() == null || outboxEvent.getPayload().getMeta() == null) {
+        if (payload == null || payload.getMeta() == null) {
             return Map.of();
         }
-        final EmailVerifyPayload.Meta meta = outboxEvent.getPayload().getMeta();
+        final EmailVerifyPayload.Meta meta = payload.getMeta();
         if (meta.getUserId() != null) {
             metadata.put("userId", String.valueOf(meta.getUserId()));
         }
@@ -57,5 +49,40 @@ public class EmailVerifyOutboxCommand implements OutboxCommand<EmailVerifyPayloa
             metadata.put("requestedAt", meta.getRequestedAt().toString());
         }
         return metadata;
+    }
+
+    @Override
+    protected String aggregateType(final EmailVerifyPayload payload) {
+        return OutboxAggregateType.USER.getDescription();
+    }
+
+    @Override
+    protected Long aggregateId(final EmailVerifyPayload payload) {
+        if (payload == null || payload.getMeta() == null) {
+            return null;
+        }
+        return payload.getMeta().getUserId();
+    }
+
+    @Override
+    protected String initiatorType(final EmailVerifyPayload payload) {
+        return InitiatorType.USER.getDescription();
+    }
+
+    @Override
+    protected String initiatorId(final EmailVerifyPayload payload) {
+        final Long userId = this.aggregateId(payload);
+        if (userId == null) {
+            return null;
+        }
+        return String.valueOf(userId);
+    }
+
+    @Override
+    protected Instant nextAttemptAt(final EmailVerifyPayload payload) {
+        if (payload == null || payload.getMeta() == null) {
+            return null;
+        }
+        return payload.getMeta().getRequestedAt();
     }
 }
