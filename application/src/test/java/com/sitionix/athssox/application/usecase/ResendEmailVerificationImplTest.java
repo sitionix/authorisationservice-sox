@@ -1,12 +1,11 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
+import com.sitionix.athssox.domain.builder.EmailVerifyPayloadBuilder;
 import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
@@ -49,7 +48,7 @@ class ResendEmailVerificationImplTest {
     private ForgeOutboxCommand<EmailVerifyPayload> outboxCommand;
 
     @Mock
-    private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
 
     @Mock
     private Clock clock;
@@ -63,7 +62,7 @@ class ResendEmailVerificationImplTest {
                 this.emailVerificationTokenRepository,
                 this.emailVerificationResendPolicy,
                 this.outboxCommand,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.clock,
                 this.forgeUserClient);
     }
@@ -74,7 +73,7 @@ class ResendEmailVerificationImplTest {
                 this.emailVerificationTokenRepository,
                 this.emailVerificationResendPolicy,
                 this.outboxCommand,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.clock,
                 this.forgeUserClient);
     }
@@ -149,7 +148,6 @@ class ResendEmailVerificationImplTest {
         final Long userId = 3L;
         final AuthUser user = this.getAuthUser(userId, UserStatus.PENDING_EMAIL_VERIFY);
         final Instant now = Instant.parse("2024-01-02T10:15:30Z");
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
         final EmailVerifyPayload outboxPayload = mock(EmailVerifyPayload.class);
         final ResendEmailVerificationResponse expected = this.resendEmailVerificationResponse();
 
@@ -161,9 +159,7 @@ class ResendEmailVerificationImplTest {
                 .thenReturn(true);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
-                .thenReturn(outboxEvent);
-        when(outboxEvent.getPayload())
+        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
                 .thenReturn(outboxPayload);
 
         //when
@@ -176,14 +172,12 @@ class ResendEmailVerificationImplTest {
         verify(this.emailVerificationResendPolicy).isResendAllowed(userId);
         verify(this.emailVerificationTokenRepository).revokeActiveByUserId(userId);
 
-        final ArgumentCaptor<OutboxBuildContext> contextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
-        verify(this.outboxEventBuilder).build(contextCaptor.capture());
+        final ArgumentCaptor<EmailVerifyPayloadContext> contextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
+        verify(this.emailVerifyPayloadBuilder).build(contextCaptor.capture());
         verify(this.outboxCommand).send(outboxPayload);
         verify(this.clock).instant();
-        verify(outboxEvent).getPayload();
-        verifyNoMoreInteractions(outboxEvent);
 
-        final OutboxBuildContext expectedContext = this.getOutboxBuildContext(user, now);
+        final EmailVerifyPayloadContext expectedContext = this.getPayloadContext(user, now);
         assertThat(contextCaptor.getValue()).isEqualTo(expectedContext);
     }
 
@@ -202,8 +196,8 @@ class ResendEmailVerificationImplTest {
                 .build();
     }
 
-    private OutboxBuildContext getOutboxBuildContext(final AuthUser user, final Instant now) {
-        return new OutboxBuildContext(
+    private EmailVerifyPayloadContext getPayloadContext(final AuthUser user, final Instant now) {
+        return new EmailVerifyPayloadContext(
                 user.getId(),
                 user.getSiteId(),
                 user.getEmail(),

@@ -1,12 +1,11 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
+import com.sitionix.athssox.domain.builder.EmailVerifyPayloadBuilder;
 import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
@@ -29,7 +28,7 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
     private final ForgeOutboxCommand<EmailVerifyPayload> outboxCommand;
-    private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private final EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
     private final Clock clock;
     private final ForgeUserClient forgeUserClient;
 
@@ -49,14 +48,14 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
 
         this.emailVerificationTokenRepository.revokeActiveByUserId(userId);
 
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder.build(this.buildContext(user));
-        this.outboxCommand.send(outboxEvent.getPayload());
+        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(this.buildContext(user));
+        this.outboxCommand.send(payload);
 
         return this.buildResponse();
     }
 
-    private OutboxBuildContext buildContext(final AuthUser user) {
-        return new OutboxBuildContext(
+    private EmailVerifyPayloadContext buildContext(final AuthUser user) {
+        return new EmailVerifyPayloadContext(
                 user.getId(),
                 user.getSiteId(),
                 user.getEmail(),

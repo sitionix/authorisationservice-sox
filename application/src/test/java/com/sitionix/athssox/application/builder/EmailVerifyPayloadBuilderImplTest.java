@@ -1,13 +1,8 @@
 package com.sitionix.athssox.application.builder;
 
-import com.sitionix.athssox.domain.model.outbox.OutboxAggregateType;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
-import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.InitiatorType;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
@@ -19,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,16 +22,16 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class EmailVerifyOutboxEventBuilderTest {
+class EmailVerifyPayloadBuilderImplTest {
 
-    private EmailVerifyOutboxEventBuilder builder;
+    private EmailVerifyPayloadBuilderImpl builder;
 
     @Mock
     private EmailVerificationTokenService tokenService;
 
     @BeforeEach
     void setUp() {
-        this.builder = new EmailVerifyOutboxEventBuilder(this.tokenService);
+        this.builder = new EmailVerifyPayloadBuilderImpl(this.tokenService);
     }
 
     @AfterEach
@@ -46,24 +40,23 @@ class EmailVerifyOutboxEventBuilderTest {
     }
 
     @Test
-    void given_context_when_build_then_return_email_verify_outbox_event() {
+    void given_context_when_build_then_return_email_verify_payload() {
         //given
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getRequestedAt();
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
-        final OutboxBuildContext given = this.getOutboxBuildContext(siteId,
+        final EmailVerifyPayloadContext given = this.getPayloadContext(siteId,
                 requestedAt);
 
         when(this.tokenService.issue(1L, siteId))
                 .thenReturn(this.getTokenIssue(tokenId, pepperId));
 
         //when
-        final OutboxEvent<EmailVerifyPayload> actual = this.builder.build(given);
+        final EmailVerifyPayload actual = this.builder.build(given);
 
         //then
-        final OutboxEvent<EmailVerifyPayload> expected = this.getOutboxEvent(actual.getNextRetryAt(),
-                this.getEmailVerifyPayload(siteId, requestedAt, tokenId, pepperId));
+        final EmailVerifyPayload expected = this.getEmailVerifyPayload(siteId, requestedAt, tokenId, pepperId);
 
         assertThat(actual).isEqualTo(expected);
 
@@ -71,20 +64,9 @@ class EmailVerifyOutboxEventBuilderTest {
                 .issue(1L, siteId);
     }
 
-    @Test
-    void given_builder_when_event_type_then_return_email_verify() {
-        //given
-
-        //when
-        final OutboxEventType actual = this.builder.eventType();
-
-        //then
-        assertThat(actual).isEqualTo(OutboxEventType.EMAIL_VERIFY);
-    }
-
-    private OutboxBuildContext getOutboxBuildContext(final UUID siteId,
-                                                     final Instant requestedAt) {
-        return new OutboxBuildContext(1L,
+    private EmailVerifyPayloadContext getPayloadContext(final UUID siteId,
+                                                            final Instant requestedAt) {
+        return new EmailVerifyPayloadContext(1L,
                 siteId,
                 "email",
                 "traceId",
@@ -106,22 +88,6 @@ class EmailVerifyOutboxEventBuilderTest {
 
     private UUID getPepperId() {
         return UUID.fromString("2cf629c1-1b58-4aa3-a9fd-5e9be2b1d31d");
-    }
-
-    private OutboxEvent<EmailVerifyPayload> getOutboxEvent(final LocalDateTime nextRetryAt,
-                                                           final EmailVerifyPayload payload) {
-        return OutboxEvent.<EmailVerifyPayload>builder()
-                .aggregateType(OutboxAggregateType.USER)
-                .aggregateId(1L)
-                .initiatorType(InitiatorType.USER)
-                .initiatorId("1")
-                .eventType(OutboxEventType.EMAIL_VERIFY)
-                .status(OutboxStatus.PENDING)
-                .retryCount(0)
-                .nextRetryAt(nextRetryAt)
-                .payload(payload)
-                .lastError(null)
-                .build();
     }
 
     private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,

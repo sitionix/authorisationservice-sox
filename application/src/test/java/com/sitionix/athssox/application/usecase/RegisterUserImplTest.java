@@ -1,14 +1,13 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
+import com.sitionix.athssox.domain.builder.EmailVerifyPayloadBuilder;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
@@ -58,7 +57,7 @@ class RegisterUserImplTest {
     private ForgeOutboxCommand<EmailVerifyPayload> outboxCommand;
 
     @Mock
-    private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
 
     @Mock
     private EmailVerificationResendPolicy emailVerificationResendPolicy;
@@ -72,7 +71,7 @@ class RegisterUserImplTest {
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
                 this.outboxCommand,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.emailVerificationResendPolicy,
                 this.clock);
     }
@@ -83,7 +82,7 @@ class RegisterUserImplTest {
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
                 this.outboxCommand,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.emailVerificationResendPolicy,
                 this.clock);
     }
@@ -107,7 +106,6 @@ class RegisterUserImplTest {
         final ResponseRegisterUser expected = this.getResponseRegisterUser(10L,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "Registration accepted. Please check your email for verification.");
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
         final EmailVerifyPayload outboxPayload = mock(EmailVerifyPayload.class);
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
@@ -118,9 +116,7 @@ class RegisterUserImplTest {
                 .thenReturn(createdUser);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
-                .thenReturn(outboxEvent);
-        when(outboxEvent.getPayload())
+        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
                 .thenReturn(outboxPayload);
 
         //when
@@ -128,7 +124,7 @@ class RegisterUserImplTest {
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
-        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
+        final ArgumentCaptor<EmailVerifyPayloadContext> buildContextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -140,12 +136,10 @@ class RegisterUserImplTest {
                 .createUser(registerUserCaptor.capture());
         verify(this.clock)
                 .instant();
-        verify(this.outboxEventBuilder)
+        verify(this.emailVerifyPayloadBuilder)
                 .build(buildContextCaptor.capture());
         verify(this.outboxCommand)
                 .send(outboxPayload);
-        verify(outboxEvent)
-                .getPayload();
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
@@ -155,7 +149,7 @@ class RegisterUserImplTest {
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
         assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(createdUser.getUserId(),
+        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getPayloadContext(createdUser.getUserId(),
                 siteId,
                 DEFAULT_EMAIL,
                 now));
@@ -177,7 +171,6 @@ class RegisterUserImplTest {
         final ResponseRegisterUser expected = this.getResponseRegisterUser(14L,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "Registration accepted. Please check your email for verification.");
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
         final EmailVerifyPayload outboxPayload = mock(EmailVerifyPayload.class);
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
@@ -186,16 +179,14 @@ class RegisterUserImplTest {
                 .thenReturn(true);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
-                .thenReturn(outboxEvent);
-        when(outboxEvent.getPayload())
+        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
                 .thenReturn(outboxPayload);
 
         //when
         final ResponseRegisterUser actual = this.registerUser.execute(given);
 
         //then
-        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
+        final ArgumentCaptor<EmailVerifyPayloadContext> buildContextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
 
         verify(this.userRepository)
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
@@ -203,16 +194,14 @@ class RegisterUserImplTest {
                 .isResendAllowed(14L);
         verify(this.clock)
                 .instant();
-        verify(this.outboxEventBuilder)
+        verify(this.emailVerifyPayloadBuilder)
                 .build(buildContextCaptor.capture());
         verify(this.outboxCommand)
                 .send(outboxPayload);
-        verify(outboxEvent)
-                .getPayload();
 
         assertThat(actual).isEqualTo(expected);
         assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(existingUser.getUserId(),
+        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getPayloadContext(existingUser.getUserId(),
                 siteId,
                 DEFAULT_EMAIL,
                 now));
@@ -280,7 +269,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.outboxCommand);
     }
 
@@ -312,7 +301,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .findGlobalByEmail(DEFAULT_EMAIL);
         verifyNoInteractions(this.passwordEncoder,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.outboxCommand);
     }
 
@@ -344,7 +333,7 @@ class RegisterUserImplTest {
         verify(this.userRepository)
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.outboxCommand);
     }
 
@@ -367,7 +356,7 @@ class RegisterUserImplTest {
         verifyNoInteractions(this.passwordPolicyValidator,
                 this.passwordEncoder,
                 this.userRepository,
-                this.outboxEventBuilder,
+                this.emailVerifyPayloadBuilder,
                 this.outboxCommand);
     }
 
@@ -390,7 +379,6 @@ class RegisterUserImplTest {
         final ResponseRegisterUser expected = this.getResponseRegisterUser(11L,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 "Registration accepted. Please check your email for verification.");
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
         final EmailVerifyPayload outboxPayload = mock(EmailVerifyPayload.class);
 
         when(this.userRepository.findGlobalByEmail(DEFAULT_EMAIL))
@@ -401,9 +389,7 @@ class RegisterUserImplTest {
                 .thenReturn(createdUser);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
-                .thenReturn(outboxEvent);
-        when(outboxEvent.getPayload())
+        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
                 .thenReturn(outboxPayload);
 
         //when
@@ -411,7 +397,7 @@ class RegisterUserImplTest {
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
-        final ArgumentCaptor<OutboxBuildContext> buildContextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
+        final ArgumentCaptor<EmailVerifyPayloadContext> buildContextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -423,12 +409,10 @@ class RegisterUserImplTest {
                 .createUser(registerUserCaptor.capture());
         verify(this.clock)
                 .instant();
-        verify(this.outboxEventBuilder)
+        verify(this.emailVerifyPayloadBuilder)
                 .build(buildContextCaptor.capture());
         verify(this.outboxCommand)
                 .send(outboxPayload);
-        verify(outboxEvent)
-                .getPayload();
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(null,
                 DEFAULT_EMAIL,
@@ -438,7 +422,7 @@ class RegisterUserImplTest {
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
         assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getOutboxBuildContext(createdUser.getUserId(),
+        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getPayloadContext(createdUser.getUserId(),
                 null,
                 DEFAULT_EMAIL,
                 now));
@@ -468,11 +452,11 @@ class RegisterUserImplTest {
                 .build();
     }
 
-    private OutboxBuildContext getOutboxBuildContext(final Long userId,
-                                                     final UUID siteId,
-                                                     final String email,
-                                                     final Instant requestedAt) {
-        return new OutboxBuildContext(userId,
+    private EmailVerifyPayloadContext getPayloadContext(final Long userId,
+                                                            final UUID siteId,
+                                                            final String email,
+                                                            final Instant requestedAt) {
+        return new EmailVerifyPayloadContext(userId,
                 siteId,
                 email,
                 null,

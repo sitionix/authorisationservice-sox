@@ -27,8 +27,15 @@ public class Event<T> implements DomainEvent<T> {
         this.eventType = eventType;
     }
 
+    public static <T> Event<T> create(final String id,
+                                      final T payload,
+                                      final String eventType,
+                                      final Instant createdAt) {
+        return new Event<>(id, payload, eventType, createdAt);
+    }
+
     public static <T> Event<T> create(final OutboxEvent<T> event) {
-        return new Event<>(event.getId().toString(),
+        return Event.create(event.getId().toString(),
                 event.getPayload(),
                 event.getEventType().getDescription(),
                 event.getCreatedAt());

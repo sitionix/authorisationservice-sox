@@ -1,15 +1,14 @@
 package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
-import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
+import com.sitionix.athssox.domain.builder.EmailVerifyPayloadBuilder;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
@@ -40,7 +39,7 @@ public class RegisterUserImpl implements RegisterUser {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final ForgeOutboxCommand<EmailVerifyPayload> command;
-    private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private final EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
     private final Clock clock;
 
@@ -62,9 +61,8 @@ public class RegisterUserImpl implements RegisterUser {
 
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
 
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder.build(this.buildContext(createdUser, registerUserDO));
-
-        this.command.send(outboxEvent.getPayload());
+        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(this.buildContext(createdUser, registerUserDO));
+        this.command.send(payload);
 
         createdUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
         return createdUser;
@@ -83,8 +81,8 @@ public class RegisterUserImpl implements RegisterUser {
         }
     }
 
-    private OutboxBuildContext buildContext(final ResponseRegisterUser createdUser, final RegisterUserDO registerUserDO) {
-        return new OutboxBuildContext(
+    private EmailVerifyPayloadContext buildContext(final ResponseRegisterUser createdUser, final RegisterUserDO registerUserDO) {
+        return new EmailVerifyPayloadContext(
                 createdUser.getUserId(),
                 registerUserDO.getSiteId(),
                 registerUserDO.getEmail(),
@@ -117,9 +115,9 @@ public class RegisterUserImpl implements RegisterUser {
     private ResponseRegisterUser handlePendingUser(final ResponseRegisterUser existingUser,
                                                    final RegisterUserDO registerUserDO) {
         if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
-            final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder
+            final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder
                     .build(this.buildContext(existingUser, registerUserDO));
-            this.command.send(outboxEvent.getPayload());
+            this.command.send(payload);
         }
 
         existingUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);

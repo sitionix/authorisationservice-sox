@@ -1,7 +1,6 @@
 package com.sitionix.athssox.application.outbox.publisher;
 
 import com.sitionix.athssox.domain.event.EventHandler;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.Event;
@@ -23,13 +22,10 @@ public class EmailVerifyForgeOutboxPublisher extends TypedOutboxPublisher<EmailV
 
     @Override
     protected void publishTyped(final OutboxRecord record, final EmailVerifyPayload payload) {
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = OutboxEvent.<EmailVerifyPayload>builder()
-                .id(Long.valueOf(record.getId()))
-                .eventType(OutboxEventType.EMAIL_VERIFY)
-                .payload(payload)
-                .createdAt(record.getCreatedAt())
-                .build();
-
-        this.eventHandler.publish(Event.create(outboxEvent));
+        this.eventHandler.publish(Event.create(
+                record.getId(),
+                payload,
+                OutboxEventType.EMAIL_VERIFY.getDescription(),
+                record.getCreatedAt()));
     }
 }

@@ -1,10 +1,9 @@
-package com.sitionix.athssox.domain.model.outbox;
-
+package com.sitionix.athssox.domain.model.emailverify;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public record OutboxBuildContext(
+public record EmailVerifyPayloadContext(
         Long userId,
         UUID siteId,
         String email,
