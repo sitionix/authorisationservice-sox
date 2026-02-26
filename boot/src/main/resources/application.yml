@@ -45,6 +45,18 @@ security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
 forge:
+  outbox:
+    enabled: true
+    domain-store: POSTGRES
+    worker:
+      enabled: true
+      fixed-delay: 5s
+      batch-size: 50
+      retry-delay: 60s
+      max-retries: 5
+      lock:
+        enabled: true
+        lease: 30s
   security:
     service-id: sitionixAuth
     dev:
@@ -62,9 +74,3 @@ forge:
       excludes:
         - "/.well-known/jwks.json"
         - "/oauth2/v1/keys"
-outbox:
-  worker:
-    poll-delay-ms: 5000
-    batch-size: 50
-    retry-delay-seconds: 60
-    max-retries: 5

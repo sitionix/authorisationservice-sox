@@ -54,6 +54,11 @@
             <version>${forge.security.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.sitionix.forge</groupId>
+            <artifactId>forgecommon-outbox-boot</artifactId>
+            <version>${forge.common.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>

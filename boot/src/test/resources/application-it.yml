@@ -74,6 +74,18 @@ security:
   email-verification:
     hmac-secret: it-email-token-secret
 forge:
+  outbox:
+    enabled: true
+    domain-store: POSTGRES
+    worker:
+      enabled: true
+      fixed-delay: 5s
+      batch-size: 50
+      retry-delay: 60s
+      max-retries: 5
+      lock:
+        enabled: true
+        lease: 30s
   security:
     service-id: sitionixAuth
     dev:
