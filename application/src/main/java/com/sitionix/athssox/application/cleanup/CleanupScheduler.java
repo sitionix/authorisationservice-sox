@@ -2,8 +2,8 @@ package com.sitionix.athssox.application.cleanup;
 
 import com.sitionix.athssox.application.config.CleanupConfig;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
-import com.sitionix.athssox.domain.repository.OutboxEventRepository;
 import com.sitionix.athssox.domain.repository.RefreshTokenRepository;
+import com.sitionix.forge.outbox.core.port.OutboxStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 @Slf4j
 @Component
@@ -27,7 +25,7 @@ public class CleanupScheduler {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
-    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxStorage outboxStorage;
     private final CleanupConfig cleanupConfig;
     private final Clock clock;
 
@@ -39,12 +37,10 @@ public class CleanupScheduler {
         }
 
         final Instant now = this.clock.instant();
-        final ZoneId zoneId = ZoneId.of(this.cleanupConfig.getZone());
-        final LocalDateTime nowLocal = LocalDateTime.ofInstant(now, zoneId);
 
         final int refreshDeleted = this.deleteRefreshTokens(now);
         final int emailTokensDeleted = this.deleteEmailVerificationTokens(now);
-        final int outboxDeleted = this.deleteOutboxEvents(nowLocal);
+        final int outboxDeleted = this.deleteOutboxEvents(now);
 
         log.info("Cleanup completed refreshTokensDeleted={} emailVerificationTokensDeleted={} outboxEventsDeleted={}",
                 refreshDeleted,
@@ -68,11 +64,11 @@ public class CleanupScheduler {
         return this.emailVerificationTokenRepository.deleteExpiredBefore(cutoff);
     }
 
-    private int deleteOutboxEvents(final LocalDateTime now) {
+    private int deleteOutboxEvents(final Instant now) {
         if (OUTBOX_EVENT_RETENTION_DAYS <= 0) {
             return 0;
         }
-        final LocalDateTime cutoff = now.minusDays(OUTBOX_EVENT_RETENTION_DAYS);
-        return this.outboxEventRepository.deleteSentBefore(cutoff);
+        final Instant cutoff = now.minus(Duration.ofDays(OUTBOX_EVENT_RETENTION_DAYS));
+        return this.outboxStorage.deleteSentBefore(cutoff);
     }
 }

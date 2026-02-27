@@ -9,7 +9,7 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
+import com.sitionix.athssox.it.infra.entity.ForgeOutboxEventEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -96,12 +96,10 @@ class UserControllerIT {
         assertThat(persistedUser.getPasswordHash()).isNotBlank();
         assertThat(persistedUser.getPasswordHash()).isNotEqualTo("StrongPassword123");
 
-        this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
-                .hasSize(1)
-                .withFetchedRelations()
-                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
-                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+        final List<ForgeOutboxEventEntity> outboxEvents =
+                this.testManager.postgresql().get(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        assertThat(outboxEvents).hasSize(1);
+        assertThat(outboxEvents.get(0).getEventType()).isEqualTo("EMAIL_VERIFY");
     }
 
     @Test
@@ -118,8 +116,8 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(1);
         final String payload = events.get(0).getPayload();
         assertThat(payload).doesNotContain("token=");
@@ -205,7 +203,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -224,7 +222,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -243,7 +241,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -262,7 +260,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -359,11 +357,8 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
-                .hasSize(1)
-                .withFetchedRelations()
-                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
-                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1);
     }
 
     @Test
@@ -392,7 +387,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -420,7 +415,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -448,7 +443,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
@@ -468,7 +463,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 }

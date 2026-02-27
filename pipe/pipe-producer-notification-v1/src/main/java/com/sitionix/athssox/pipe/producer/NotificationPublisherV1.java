@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 import static java.util.Objects.isNull;
 
 @Slf4j
@@ -36,13 +38,14 @@ public class NotificationPublisherV1 implements ForgeOutboxEventPublisher<EmailV
                         final ForgeOutboxPublishMetadata metadata) {
         log.info("Publish notification event for type: {}", this.eventType());
         if (isNull(payload) || isNull(metadata)) {
-            return;
+            throw new IllegalArgumentException("Outbox payload and metadata are required");
         }
 
         final NotificationEnvelope envelope = this.mapper.asEnvelope(payload, metadata);
 
-        this.producer.send(metadata.getIdempotencyId().toString(), envelope);
-        log.info("Notification event published: {}", envelope);
+        final String key = Objects.requireNonNull(metadata.getIdempotencyId(), "idempotencyId is required").toString();
+        this.producer.send(key, envelope);
+        log.info("Notification event published type={} idempotencyId={}", this.eventType(), key);
     }
 
 }

@@ -14,8 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -44,16 +44,16 @@ class NotificationPublisherV1Test {
     }
 
     @Test
-    void givenNullPayload_whenPublish_thenSkip() {
+    void givenNullPayload_whenPublish_thenThrowException() {
         //given
         final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
 
         //when
-        this.notificationPublisherV1.publish(null, metadata);
-
         //then
+        assertThatThrownBy(() -> this.notificationPublisherV1.publish(null, metadata))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Outbox payload and metadata are required");
         verifyNoInteractions(metadata);
-        verify(this.mapper, never()).asEnvelope(null, metadata);
     }
 
     @Test

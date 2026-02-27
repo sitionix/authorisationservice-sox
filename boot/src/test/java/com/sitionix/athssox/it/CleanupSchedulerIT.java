@@ -34,13 +34,8 @@ class CleanupSchedulerIT {
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenValid.json"))
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenExpired.json"))
-                .to(DatabaseContract.OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_STATUS_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_STATUS_ENTITY_DB_CONTRACT.getById(3L))
-                .to(DatabaseContract.OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT.getById(2L))
-                .to(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("outboxEventEmailVerifyEntityPending.json"))
-                .to(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("outboxEventEmailVerifyEntitySentOld.json"))
+                .to(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("forgeOutboxEventPending.json"))
+                .to(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("forgeOutboxEventSentOld.json"))
                 .build();
 
         //when
@@ -56,7 +51,7 @@ class CleanupSchedulerIT {
                 .hasSize(1);
 
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(1);
     }
 }

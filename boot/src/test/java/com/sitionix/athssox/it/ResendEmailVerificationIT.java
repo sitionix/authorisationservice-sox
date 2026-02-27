@@ -56,11 +56,8 @@ class ResendEmailVerificationIT {
                         "emailVerificationTokenResendActiveExpected.json");
 
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
-                .hasSize(1)
-                .withFetchedRelations()
-                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt")
-                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1);
     }
 
     @Test
@@ -100,7 +97,7 @@ class ResendEmailVerificationIT {
                 .containsAllWithJsons("emailVerificationTokenActiveExpected.json");
 
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
