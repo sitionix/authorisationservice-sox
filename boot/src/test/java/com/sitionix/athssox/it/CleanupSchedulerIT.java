@@ -18,7 +18,7 @@ class CleanupSchedulerIT {
     private CleanupScheduler cleanupScheduler;
 
     @Test
-    @DisplayName("Should delete expired tokens and sent outbox events while keeping active records")
+    @DisplayName("Should delete expired tokens while keeping active records")
     void given_expired_records_when_cleanup_runs_then_delete_expired_and_keep_active() {
         //given
         this.testManager.postgresql()
@@ -34,8 +34,6 @@ class CleanupSchedulerIT {
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT.getById(1L))
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenValid.json"))
                 .to(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT.withJson("emailVerificationTokenExpired.json"))
-                .to(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("forgeOutboxEventPending.json"))
-                .to(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("forgeOutboxEventSentOld.json"))
                 .build();
 
         //when
@@ -48,10 +46,6 @@ class CleanupSchedulerIT {
 
         this.testManager.postgresql()
                 .assertEntities(DatabaseContract.EMAIL_VERIFICATION_TOKEN_ENTITY_DB_CONTRACT)
-                .hasSize(1);
-
-        this.testManager.postgresql()
-                .assertEntities(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(1);
     }
 }

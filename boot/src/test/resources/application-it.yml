@@ -86,6 +86,10 @@ forge:
       lock:
         enabled: true
         lease: 30s
+    cleanup:
+      enabled: false
+      fixed-delay: 1h
+      retention: 14d
   security:
     service-id: sitionixAuth
     dev:
