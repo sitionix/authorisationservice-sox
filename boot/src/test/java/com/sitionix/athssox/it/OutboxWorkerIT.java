@@ -1,5 +1,6 @@
 package com.sitionix.athssox.it;
 
+import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.OutboxKafkaContracts;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
@@ -14,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
 @IntegrationTest
@@ -50,7 +50,7 @@ class OutboxWorkerIT {
                         .requestedAt(Instant.parse("2025-12-23T18:31:16.740787Z"))
                         .build())
                 .build();
-        this.forgeOutbox.enqueue(EmailVerifyPayload.OUTBOX_EVENT_TYPE, payload, Map.of(), Map.of(), "trace-it");
+        this.forgeOutbox.send(payload);
 
         //when
         this.outboxDispatcher.dispatchPendingEvents();
@@ -62,10 +62,13 @@ class OutboxWorkerIT {
     }
 
     @Test
-    @DisplayName("given non email verify outbox event when worker starts then ignore event")
-    void givenNonEmailVerifyOutboxEvent_whenDispatchPendingEvents_thenIgnoreEvent() {
+    @DisplayName("given sent email verify outbox event when worker starts then ignore event")
+    void givenSentEmailVerifyOutboxEvent_whenDispatchPendingEvents_thenIgnoreEvent() {
         //given
-        this.forgeOutbox.enqueue("PASSWORD_RESET", "{}", Map.of(), Map.of(), "trace-it-2");
+        this.testManager.postgresql()
+                .create()
+                .to(DatabaseContract.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("forgeOutboxEventSentOld.json"))
+                .build();
 
         //when
         this.outboxDispatcher.dispatchPendingEvents();

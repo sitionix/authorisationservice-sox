@@ -1,4 +1,5 @@
 {
+  "id": 1001,
   "eventType": "EMAIL_VERIFY",
   "payload": "{}",
   "status": "SENT",
