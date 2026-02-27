@@ -9,7 +9,7 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
-import com.sitionix.athssox.it.infra.entity.ForgeOutboxEventEntity;
+import com.sitionix.forge.outbox.postgres.entity.ForgeOutboxEventEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

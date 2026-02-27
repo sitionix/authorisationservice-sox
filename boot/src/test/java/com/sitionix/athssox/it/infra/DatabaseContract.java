@@ -3,7 +3,7 @@ package com.sitionix.athssox.it.infra;
 import com.sitionix.athssox.postgresql.entity.user.GlobalRoleEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenStatusEntity;
-import com.sitionix.athssox.it.infra.entity.ForgeOutboxEventEntity;
+import com.sitionix.forge.outbox.postgres.entity.ForgeOutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.session.DeviceSessionEntity;
 import com.sitionix.athssox.postgresql.entity.session.SessionStatusEntity;
 import com.sitionix.athssox.postgresql.entity.token.RefreshTokenEntity;

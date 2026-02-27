@@ -7,7 +7,7 @@ import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.forge.outbox.core.port.ForgeOutbox;
-import com.sitionix.forge.outbox.core.service.OutboxDispatcher;
+import com.sitionix.forge.outbox.core.port.ForgeOutboxWorker;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import java.util.UUID;
 class OutboxWorkerIT {
 
     @Autowired
-    private OutboxDispatcher outboxDispatcher;
+    private ForgeOutboxWorker forgeOutboxWorker;
 
     @Autowired
     private TestManager testManager;
@@ -53,7 +53,7 @@ class OutboxWorkerIT {
         this.forgeOutbox.send(payload);
 
         //when
-        this.outboxDispatcher.dispatchPendingEvents();
+        this.forgeOutboxWorker.dispatchPendingEvents();
 
         //then
         this.testManager.kafka()
@@ -71,7 +71,7 @@ class OutboxWorkerIT {
                 .build();
 
         //when
-        this.outboxDispatcher.dispatchPendingEvents();
+        this.forgeOutboxWorker.dispatchPendingEvents();
 
         //then
         this.testManager.kafka()

@@ -6,7 +6,7 @@ import com.sitionix.athssox.application.service.HmacEmailVerificationTokenSigner
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.it.infra.entity.ForgeOutboxEventEntity;
+import com.sitionix.forge.outbox.postgres.entity.ForgeOutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import com.jayway.jsonpath.JsonPath;
