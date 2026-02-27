@@ -37,32 +37,10 @@ auth:
       cache-seconds: 300
   session:
     last-used-throttle-minutes: 5
-  cleanup:
-    enabled: true
-    cron: "0 0 0 * * *"
-    zone: Europe/Kiev
-    refresh-token-retention: 14d
-    email-verification-token-retention: 2d
 security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
 forge:
-  outbox:
-    enabled: true
-    domain-store: POSTGRES
-    worker:
-      enabled: true
-      fixed-delay: 5s
-      batch-size: 50
-      retry-delay: 60s
-      max-retries: 5
-      lock:
-        enabled: true
-        lease: 30s
-    cleanup:
-      enabled: true
-      fixed-delay: 1h
-      retention: 14d
   security:
     service-id: sitionixAuth
     dev:
