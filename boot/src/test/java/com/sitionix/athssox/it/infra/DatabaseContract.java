@@ -3,7 +3,6 @@ package com.sitionix.athssox.it.infra;
 import com.sitionix.athssox.postgresql.entity.user.GlobalRoleEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenStatusEntity;
-import com.sitionix.forge.outbox.postgres.entity.ForgeOutboxEventEntity;
 import com.sitionix.athssox.postgresql.entity.session.DeviceSessionEntity;
 import com.sitionix.athssox.postgresql.entity.session.SessionStatusEntity;
 import com.sitionix.athssox.postgresql.entity.token.RefreshTokenEntity;
@@ -55,11 +54,6 @@ public class DatabaseContract {
             DbContractsDsl.entity(DeviceSessionEntity.class)
                     .dependsOn(USER_ENTITY_DB_CONTRACT, DeviceSessionEntity::setUser)
                     .dependsOn(SESSION_STATUS_ENTITY_DB_CONTRACT, DeviceSessionEntity::setStatus)
-                    .cleanupPolicy(CleanupPolicy.DELETE_ALL)
-                    .build();
-
-    public static final DbContract<ForgeOutboxEventEntity> FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT =
-            DbContractsDsl.entity(ForgeOutboxEventEntity.class)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 
