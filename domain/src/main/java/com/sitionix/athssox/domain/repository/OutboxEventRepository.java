@@ -1,7 +1,6 @@
 package com.sitionix.athssox.domain.repository;
 
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
-import com.sitionix.athssox.domain.model.outbox.OutboxEventType;
+import com.sitionix.forge.outbox.core.model.OutboxRecord;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -9,12 +8,12 @@ import java.util.List;
 
 public interface OutboxEventRepository {
 
-    void create(final OutboxEvent<?> outboxEvent);
+    void create(OutboxRecord outboxRecord);
 
-    List<OutboxEvent<Object>> claimPendingEvents(List<String> eventStatuses,
-                                                 List<String> eventTypes,
-                                                  int batchSize,
-                                                  LocalDateTime now);
+    List<OutboxRecord> claimPendingEvents(List<String> eventStatuses,
+                                          List<String> eventTypes,
+                                          int batchSize,
+                                          LocalDateTime now);
 
     void markSent(Long outboxEventId);
 

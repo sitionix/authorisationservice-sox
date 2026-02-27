@@ -12,7 +12,7 @@ import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
-import com.sitionix.forge.outbox.core.command.ForgeOutboxCommand;
+import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class RegisterUserImplTest {
     private PasswordPolicyValidator passwordPolicyValidator;
 
     @Mock
-    private ForgeOutboxCommand<EmailVerifyPayload> outboxCommand;
+    private ForgeOutbox forgeOutbox;
 
     @Mock
     private EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
@@ -70,7 +70,7 @@ class RegisterUserImplTest {
         this.registerUser = new RegisterUserImpl(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
-                this.outboxCommand,
+                this.forgeOutbox,
                 this.emailVerifyPayloadBuilder,
                 this.emailVerificationResendPolicy,
                 this.clock);
@@ -81,7 +81,7 @@ class RegisterUserImplTest {
         verifyNoMoreInteractions(this.userRepository,
                 this.passwordEncoder,
                 this.passwordPolicyValidator,
-                this.outboxCommand,
+                this.forgeOutbox,
                 this.emailVerifyPayloadBuilder,
                 this.emailVerificationResendPolicy,
                 this.clock);
@@ -138,7 +138,7 @@ class RegisterUserImplTest {
                 .instant();
         verify(this.emailVerifyPayloadBuilder)
                 .build(buildContextCaptor.capture());
-        verify(this.outboxCommand)
+        verify(this.forgeOutbox)
                 .send(outboxPayload);
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
@@ -196,7 +196,7 @@ class RegisterUserImplTest {
                 .instant();
         verify(this.emailVerifyPayloadBuilder)
                 .build(buildContextCaptor.capture());
-        verify(this.outboxCommand)
+        verify(this.forgeOutbox)
                 .send(outboxPayload);
 
         assertThat(actual).isEqualTo(expected);
@@ -270,7 +270,7 @@ class RegisterUserImplTest {
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
                 this.emailVerifyPayloadBuilder,
-                this.outboxCommand);
+                this.forgeOutbox);
     }
 
     @Test
@@ -302,7 +302,7 @@ class RegisterUserImplTest {
                 .findGlobalByEmail(DEFAULT_EMAIL);
         verifyNoInteractions(this.passwordEncoder,
                 this.emailVerifyPayloadBuilder,
-                this.outboxCommand);
+                this.forgeOutbox);
     }
 
     @Test
@@ -334,7 +334,7 @@ class RegisterUserImplTest {
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
                 this.emailVerifyPayloadBuilder,
-                this.outboxCommand);
+                this.forgeOutbox);
     }
 
     @Test
@@ -357,7 +357,7 @@ class RegisterUserImplTest {
                 this.passwordEncoder,
                 this.userRepository,
                 this.emailVerifyPayloadBuilder,
-                this.outboxCommand);
+                this.forgeOutbox);
     }
 
     @Test
@@ -411,7 +411,7 @@ class RegisterUserImplTest {
                 .instant();
         verify(this.emailVerifyPayloadBuilder)
                 .build(buildContextCaptor.capture());
-        verify(this.outboxCommand)
+        verify(this.forgeOutbox)
                 .send(outboxPayload);
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(null,

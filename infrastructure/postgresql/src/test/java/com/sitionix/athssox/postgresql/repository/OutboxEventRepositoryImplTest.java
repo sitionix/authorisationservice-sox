@@ -1,15 +1,16 @@
 package com.sitionix.athssox.postgresql.repository;
 
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
 import com.sitionix.athssox.domain.model.outbox.OutboxStatus;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxAggregateTypeEntity;
 import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
+import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventTypeEntity;
 import com.sitionix.athssox.postgresql.entity.outbox.OutboxInitiatorTypeEntity;
 import com.sitionix.athssox.postgresql.entity.outbox.OutboxStatusEntity;
 import com.sitionix.athssox.postgresql.jpa.outbox.OutboxEventJpaRepository;
 import com.sitionix.athssox.postgresql.jpa.outbox.OutboxInitiatorTypeJpaRepository;
 import com.sitionix.athssox.postgresql.jpa.outbox.OutboxStatusJpaRepository;
-import com.sitionix.athssox.postgresql.mapper.outbox.OutboxInfraMapper;
 import com.sitionix.athssox.postgresql.repository.outbox.OutboxEventRepositoryImpl;
+import com.sitionix.forge.outbox.core.model.OutboxRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +30,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -47,37 +48,32 @@ class OutboxEventRepositoryImplTest {
     @Mock
     private OutboxInitiatorTypeJpaRepository outboxInitiatorTypeJpaRepository;
 
-    @Mock
-    private OutboxInfraMapper outboxInfraMapper;
-
     @Captor
     private ArgumentCaptor<Pageable> pageableCaptor;
+
+    @Captor
+    private ArgumentCaptor<OutboxEventEntity> outboxEventEntityCaptor;
 
     @BeforeEach
     void setUp() {
         this.repository = new OutboxEventRepositoryImpl(this.outboxEventJpaRepository,
                 this.outboxStatusJpaRepository,
-                this.outboxInitiatorTypeJpaRepository,
-                this.outboxInfraMapper);
+                this.outboxInitiatorTypeJpaRepository);
     }
 
     @AfterEach
     void tearDown() {
         verifyNoMoreInteractions(this.outboxEventJpaRepository,
                 this.outboxStatusJpaRepository,
-                this.outboxInitiatorTypeJpaRepository,
-                this.outboxInfraMapper);
+                this.outboxInitiatorTypeJpaRepository);
     }
 
     @Test
-    void given_outbox_event_without_initiator_when_create_then_set_default_initiator_type() {
+    void givenOutboxRecordWithoutInitiator_whenCreate_thenSetDefaultInitiatorType() {
         //given
-        final OutboxEvent<?> given = mock(OutboxEvent.class);
-        final OutboxEventEntity entity = this.getOutboxEventEntity(null, 0, null);
-        final OutboxInitiatorTypeEntity initiatorType = this.getOutboxInitiatorTypeEntity(2L);
+        final OutboxRecord given = this.getOutboxRecord(null, 0);
+        final OutboxInitiatorTypeEntity initiatorType = this.getOutboxInitiatorTypeEntity(2L, "SYSTEM");
 
-        when(this.outboxInfraMapper.toEntity(given))
-                .thenReturn(entity);
         when(this.outboxInitiatorTypeJpaRepository.getReferenceById(2L))
                 .thenReturn(initiatorType);
 
@@ -85,43 +81,45 @@ class OutboxEventRepositoryImplTest {
         this.repository.create(given);
 
         //then
-        assertThat(entity.getInitiatorType()).isEqualTo(initiatorType);
-        verify(this.outboxInfraMapper)
-                .toEntity(given);
         verify(this.outboxInitiatorTypeJpaRepository)
                 .getReferenceById(2L);
         verify(this.outboxEventJpaRepository)
-                .save(entity);
+                .save(this.outboxEventEntityCaptor.capture());
+
+        final OutboxEventEntity actual = this.outboxEventEntityCaptor.getValue();
+        assertThat(actual.getAggregateType().getDescription()).isEqualTo("USER");
+        assertThat(actual.getAggregateId()).isEqualTo(1L);
+        assertThat(actual.getEventType().getDescription()).isEqualTo("EMAIL_VERIFY");
+        assertThat(actual.getStatus().getDescription()).isEqualTo("PENDING");
+        assertThat(actual.getInitiatorType()).isEqualTo(initiatorType);
+        assertThat(actual.getInitiatorId()).isEqualTo("1");
+        assertThat(actual.getPayload()).isEqualTo("payload");
     }
 
     @Test
-    void given_outbox_event_with_initiator_when_create_then_persist_without_default() {
+    void givenOutboxRecordWithInitiator_whenCreate_thenPersistWithoutDefaultLookup() {
         //given
-        final OutboxEvent<?> given = mock(OutboxEvent.class);
-        final OutboxInitiatorTypeEntity initiatorType = this.getOutboxInitiatorTypeEntity(1L);
-        final OutboxEventEntity entity = this.getOutboxEventEntity(initiatorType, 0, null);
-
-        when(this.outboxInfraMapper.toEntity(given))
-                .thenReturn(entity);
+        final OutboxRecord given = this.getOutboxRecord("USER", 0);
 
         //when
         this.repository.create(given);
 
         //then
-        assertThat(entity.getInitiatorType()).isEqualTo(initiatorType);
-        verify(this.outboxInfraMapper)
-                .toEntity(given);
         verify(this.outboxEventJpaRepository)
-                .save(entity);
+                .save(this.outboxEventEntityCaptor.capture());
+
+        final OutboxEventEntity actual = this.outboxEventEntityCaptor.getValue();
+        assertThat(actual.getInitiatorType().getDescription()).isEqualTo("USER");
+        assertThat(actual.getInitiatorType().getId()).isEqualTo(1L);
     }
 
     @Test
-    void given_empty_event_types_when_claim_pending_events_then_return_empty_list() {
+    void givenEmptyEventTypes_whenClaimPendingEvents_thenReturnEmptyList() {
         //given
         final List<String> eventTypes = List.of();
 
         //when
-        final List<OutboxEvent<Object>> actual = this.repository.claimPendingEvents(List.of("PENDING"),
+        final List<OutboxRecord> actual = this.repository.claimPendingEvents(List.of("PENDING"),
                 eventTypes,
                 5,
                 LocalDateTime.now());
@@ -131,7 +129,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void given_pending_events_when_claim_pending_events_then_return_mapped_and_update_status() {
+    void givenPendingEvents_whenClaimPendingEvents_thenReturnMappedRecordsAndUpdateStatus() {
         //given
         final List<String> statuses = List.of("PENDING", "FAILED");
         final List<String> eventTypes = List.of("EMAIL_VERIFY");
@@ -140,12 +138,8 @@ class OutboxEventRepositoryImplTest {
 
         final OutboxStatusEntity inProgress = this.getOutboxStatusEntity(OutboxStatus.IN_PROGRESS);
         final OutboxEventEntity firstEntity = this.getOutboxEventEntity(null, 0, null);
-        final OutboxEventEntity secondEntity = this.getOutboxEventEntity(null, 1, "error");
+        final OutboxEventEntity secondEntity = this.getOutboxEventEntity(this.getOutboxInitiatorTypeEntity(1L, "USER"), 1, "error");
         final List<OutboxEventEntity> entities = List.of(firstEntity, secondEntity);
-
-        final OutboxEvent<Object> firstEvent = mock(OutboxEvent.class);
-        final OutboxEvent<Object> secondEvent = mock(OutboxEvent.class);
-        final List<OutboxEvent<Object>> expected = List.of(firstEvent, secondEvent);
 
         when(this.outboxEventJpaRepository.findPendingForUpdate(eq(statuses),
                 eq(eventTypes),
@@ -156,19 +150,19 @@ class OutboxEventRepositoryImplTest {
                 .thenReturn(inProgress);
         when(this.outboxEventJpaRepository.saveAll(entities))
                 .thenReturn(entities);
-        when(this.outboxInfraMapper.toOutboxEvent(firstEntity))
-                .thenReturn(firstEvent);
-        when(this.outboxInfraMapper.toOutboxEvent(secondEntity))
-                .thenReturn(secondEvent);
 
         //when
-        final List<OutboxEvent<Object>> actual = this.repository.claimPendingEvents(statuses,
+        final List<OutboxRecord> actual = this.repository.claimPendingEvents(statuses,
                 eventTypes,
                 batchSize,
                 now);
 
         //then
-        assertThat(actual).isEqualTo(expected);
+        assertThat(actual).hasSize(2);
+        assertThat(actual.get(0).getStatus()).isEqualTo(com.sitionix.forge.outbox.core.model.OutboxStatus.IN_PROGRESS);
+        assertThat(actual.get(0).getInitiatorType()).isEqualTo("SYSTEM");
+        assertThat(actual.get(1).getLastError()).isEqualTo("error");
+        assertThat(actual.get(1).getInitiatorType()).isEqualTo("USER");
         assertThat(firstEntity.getStatus()).isEqualTo(inProgress);
         assertThat(secondEntity.getStatus()).isEqualTo(inProgress);
         assertThat(this.pageableCaptor.getValue().getPageSize()).isEqualTo(batchSize);
@@ -182,14 +176,10 @@ class OutboxEventRepositoryImplTest {
                 .getReferenceById(OutboxStatus.IN_PROGRESS.getId());
         verify(this.outboxEventJpaRepository)
                 .saveAll(entities);
-        verify(this.outboxInfraMapper)
-                .toOutboxEvent(firstEntity);
-        verify(this.outboxInfraMapper)
-                .toOutboxEvent(secondEntity);
     }
 
     @Test
-    void given_existing_event_when_mark_sent_then_update_status_and_clear_error() {
+    void givenExistingEvent_whenMarkSent_thenUpdateStatusAndClearError() {
         //given
         final Long eventId = 11L;
         final OutboxStatusEntity sentStatus = this.getOutboxStatusEntity(OutboxStatus.SENT);
@@ -216,7 +206,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void given_retry_below_limit_when_mark_failed_then_set_failed_status_and_increment() {
+    void givenRetryBelowLimit_whenMarkFailed_thenSetFailedStatusAndIncrement() {
         //given
         final Long eventId = 12L;
         final Duration retryDelay = Duration.ofSeconds(10);
@@ -247,7 +237,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void given_retry_at_limit_when_mark_failed_then_set_dead_status_and_increment() {
+    void givenRetryAtLimit_whenMarkFailed_thenSetDeadStatusAndIncrement() {
         //given
         final Long eventId = 13L;
         final Duration retryDelay = Duration.ofSeconds(5);
@@ -278,7 +268,7 @@ class OutboxEventRepositoryImplTest {
     }
 
     @Test
-    void given_cutoff_when_delete_sent_before_then_delegate_to_repository() {
+    void givenCutoff_whenDeleteSentBefore_thenDelegateToRepository() {
         //given
         final LocalDateTime cutoff = LocalDateTime.now();
 
@@ -298,9 +288,25 @@ class OutboxEventRepositoryImplTest {
                                                    final int retryCount,
                                                    final String lastError) {
         return OutboxEventEntity.builder()
+                .id(15L)
+                .aggregateType(OutboxAggregateTypeEntity.builder()
+                        .id(1L)
+                        .description("USER")
+                        .build())
+                .aggregateId(1L)
+                .eventType(OutboxEventTypeEntity.builder()
+                        .id(1L)
+                        .description("EMAIL_VERIFY")
+                        .build())
+                .status(this.getOutboxStatusEntity(OutboxStatus.PENDING))
                 .initiatorType(initiatorType)
+                .initiatorId("1")
                 .retryCount(retryCount)
+                .nextRetryAt(LocalDateTime.of(2024, 1, 1, 10, 0))
+                .payload("payload")
                 .lastError(lastError)
+                .createdAt(LocalDateTime.of(2024, 1, 1, 9, 0))
+                .updatedAt(LocalDateTime.of(2024, 1, 1, 9, 30))
                 .build();
     }
 
@@ -311,10 +317,24 @@ class OutboxEventRepositoryImplTest {
                 .build();
     }
 
-    private OutboxInitiatorTypeEntity getOutboxInitiatorTypeEntity(final Long id) {
+    private OutboxInitiatorTypeEntity getOutboxInitiatorTypeEntity(final Long id, final String description) {
         return OutboxInitiatorTypeEntity.builder()
                 .id(id)
-                .description("SYSTEM")
+                .description(description)
+                .build();
+    }
+
+    private OutboxRecord getOutboxRecord(final String initiatorType, final int attempts) {
+        return OutboxRecord.builder()
+                .eventType("EMAIL_VERIFY")
+                .payload("payload")
+                .aggregateType("USER")
+                .aggregateId(1L)
+                .initiatorType(initiatorType)
+                .initiatorId("1")
+                .status(com.sitionix.forge.outbox.core.model.OutboxStatus.PENDING)
+                .attempts(attempts)
+                .nextAttemptAt(Instant.parse("2024-01-01T10:00:00Z"))
                 .build();
     }
 }

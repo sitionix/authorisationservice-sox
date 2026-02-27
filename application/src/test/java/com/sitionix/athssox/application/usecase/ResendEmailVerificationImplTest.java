@@ -11,7 +11,7 @@ import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
-import com.sitionix.forge.outbox.core.command.ForgeOutboxCommand;
+import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import com.sitionix.forge.security.server.user.ForgeUserClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +45,7 @@ class ResendEmailVerificationImplTest {
     private EmailVerificationResendPolicy emailVerificationResendPolicy;
 
     @Mock
-    private ForgeOutboxCommand<EmailVerifyPayload> outboxCommand;
+    private ForgeOutbox forgeOutbox;
 
     @Mock
     private EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
@@ -61,7 +61,7 @@ class ResendEmailVerificationImplTest {
         this.resendEmailVerification = new ResendEmailVerificationImpl(this.authUserRepository,
                 this.emailVerificationTokenRepository,
                 this.emailVerificationResendPolicy,
-                this.outboxCommand,
+                this.forgeOutbox,
                 this.emailVerifyPayloadBuilder,
                 this.clock,
                 this.forgeUserClient);
@@ -72,7 +72,7 @@ class ResendEmailVerificationImplTest {
         verifyNoMoreInteractions(this.authUserRepository,
                 this.emailVerificationTokenRepository,
                 this.emailVerificationResendPolicy,
-                this.outboxCommand,
+                this.forgeOutbox,
                 this.emailVerifyPayloadBuilder,
                 this.clock,
                 this.forgeUserClient);
@@ -174,7 +174,7 @@ class ResendEmailVerificationImplTest {
 
         final ArgumentCaptor<EmailVerifyPayloadContext> contextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
         verify(this.emailVerifyPayloadBuilder).build(contextCaptor.capture());
-        verify(this.outboxCommand).send(outboxPayload);
+        verify(this.forgeOutbox).send(outboxPayload);
         verify(this.clock).instant();
 
         final EmailVerifyPayloadContext expectedContext = this.getPayloadContext(user, now);

@@ -13,7 +13,7 @@ import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.RegisterUser;
-import com.sitionix.forge.outbox.core.command.ForgeOutboxCommand;
+import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ public class RegisterUserImpl implements RegisterUser {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
-    private final ForgeOutboxCommand<EmailVerifyPayload> command;
+    private final ForgeOutbox forgeOutbox;
     private final EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
     private final Clock clock;
@@ -62,7 +62,7 @@ public class RegisterUserImpl implements RegisterUser {
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
 
         final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(this.buildContext(createdUser, registerUserDO));
-        this.command.send(payload);
+        this.forgeOutbox.send(payload);
 
         createdUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
         return createdUser;
@@ -117,7 +117,7 @@ public class RegisterUserImpl implements RegisterUser {
         if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
             final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder
                     .build(this.buildContext(existingUser, registerUserDO));
-            this.command.send(payload);
+            this.forgeOutbox.send(payload);
         }
 
         existingUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);

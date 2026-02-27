@@ -3,8 +3,8 @@ package com.sitionix.athssox.pipe.producer;
 import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.Event;
 import com.sitionix.athssox.pipe.producer.mapper.NotificationEventMapper;
+import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,9 +12,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.UUID;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -41,36 +44,38 @@ class NotificationPublisherV1Test {
     }
 
     @Test
-    void givenNullEvent_whenPublish_thenSkip() {
+    void givenNullPayload_whenPublish_thenSkip() {
         //given
-        final Event<EmailVerifyPayload> given = null;
+        final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
 
         //when
-        this.notificationPublisherV1.publish(given);
+        this.notificationPublisherV1.publish(null, metadata);
 
         //then
-        verify(this.mapper, never()).asEnvelope(given);
+        verifyNoInteractions(metadata);
+        verify(this.mapper, never()).asEnvelope(null, metadata);
     }
 
     @Test
-    void givenEvent_whenPublish_thenSendEnvelope() {
+    void givenPayloadAndMetadata_whenPublish_thenSendEnvelope() {
         //given
-        final Event<EmailVerifyPayload> given = mock(Event.class);
+        final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
+        final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
         final NotificationEnvelope envelope = mock(NotificationEnvelope.class);
-        final String eventId = "event-1";
+        final UUID idempotencyId = UUID.fromString("70ef4ab8-6728-495d-8922-3b7eeb3af05c");
 
-        when(given.getId())
-                .thenReturn(eventId);
-        when(this.mapper.asEnvelope(given))
+        when(metadata.getIdempotencyId())
+                .thenReturn(idempotencyId);
+        when(this.mapper.asEnvelope(payload, metadata))
                 .thenReturn(envelope);
 
         //when
-        this.notificationPublisherV1.publish(given);
+        this.notificationPublisherV1.publish(payload, metadata);
 
         //then
-        verify(this.mapper).asEnvelope(given);
-        verify(given).getId();
-        verify(this.producer).send(eventId, envelope);
-        verifyNoMoreInteractions(given, envelope);
+        verify(this.mapper).asEnvelope(payload, metadata);
+        verify(metadata).getIdempotencyId();
+        verify(this.producer).send(idempotencyId.toString(), envelope);
+        verifyNoMoreInteractions(payload, metadata, envelope);
     }
 }

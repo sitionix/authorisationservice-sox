@@ -11,7 +11,7 @@ import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
-import com.sitionix.forge.outbox.core.command.ForgeOutboxCommand;
+import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import com.sitionix.forge.security.server.user.ForgeUserClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
     private final AuthUserRepository authUserRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
-    private final ForgeOutboxCommand<EmailVerifyPayload> outboxCommand;
+    private final ForgeOutbox forgeOutbox;
     private final EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
     private final Clock clock;
     private final ForgeUserClient forgeUserClient;
@@ -49,7 +49,7 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
         this.emailVerificationTokenRepository.revokeActiveByUserId(userId);
 
         final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(this.buildContext(user));
-        this.outboxCommand.send(payload);
+        this.forgeOutbox.send(payload);
 
         return this.buildResponse();
     }
