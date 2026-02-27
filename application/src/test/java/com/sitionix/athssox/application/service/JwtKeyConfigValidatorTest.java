@@ -22,7 +22,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_valid_pem_config_when_validate_then_no_exception() {
+    void givenValidPemConfig_whenValidate_thenNoException() {
         //given
         final TokenConfig.PemConfig pemConfig = this.getPemConfig(this.getPrivateKeyValue(),
                 null,
@@ -42,7 +42,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_missing_key_id_when_validate_then_throw_exception() {
+    void givenMissingKeyId_whenValidate_thenThrowException() {
         //given
         final TokenConfig.PemConfig pemConfig = this.getPemConfig(this.getPrivateKeyValue(),
                 null,
@@ -64,7 +64,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_invalid_alg_when_validate_then_throw_exception() {
+    void givenInvalidAlg_whenValidate_thenThrowException() {
         //given
         final TokenConfig.PemConfig pemConfig = this.getPemConfig(this.getPrivateKeyValue(),
                 null,
@@ -86,7 +86,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_none_alg_when_validate_then_throw_exception() {
+    void givenNoneAlg_whenValidate_thenThrowException() {
         //given
         final TokenConfig.PemConfig pemConfig = this.getPemConfig(this.getPrivateKeyValue(),
                 null,
@@ -108,7 +108,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_key_store_and_pem_when_validate_then_throw_exception() {
+    void givenKeyStoreAndPem_whenValidate_thenThrowException() {
         //given
         final TokenConfig.KeyStoreConfig keyStoreConfig = this.getKeyStoreConfig("classpath:keystore.p12",
                 "changeit",
@@ -134,7 +134,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_missing_key_store_details_when_validate_then_throw_exception() {
+    void givenMissingKeyStoreDetails_whenValidate_thenThrowException() {
         //given
         final TokenConfig.KeyStoreConfig keyStoreConfig = this.getKeyStoreConfig("classpath:keystore.p12",
                 null,
@@ -160,7 +160,7 @@ class JwtKeyConfigValidatorTest {
     }
 
     @Test
-    void given_verification_key_missing_material_when_validate_then_throw_exception() {
+    void givenVerificationKeyMissingMaterial_whenValidate_thenThrowException() {
         //given
         final TokenConfig.VerificationKeyConfig verificationKey = this.getVerificationKeyConfig("old-key",
                 null,

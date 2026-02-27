@@ -93,7 +93,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_valid_request_when_execute_then_return_response_and_rotate_token() {
+    void givenValidRequest_whenExecute_thenReturnResponseAndRotateToken() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -207,7 +207,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_session_within_throttle_interval_when_execute_then_skip_session_update() {
+    void givenSessionWithinThrottleInterval_whenExecute_thenSkipSessionUpdate() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -317,7 +317,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_missing_token_when_execute_then_throw_refresh_token_invalid_exception() {
+    void givenMissingToken_whenExecute_thenThrowRefreshTokenInvalidException() {
         //given
         final String refreshTokenValue = "refresh-token";
         final String sessionSourceId = "session-source-id";
@@ -350,7 +350,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_expired_token_when_execute_then_throw_refresh_token_expired_exception() {
+    void givenExpiredToken_whenExecute_thenThrowRefreshTokenExpiredException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -405,7 +405,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_null_expiry_when_execute_then_throw_refresh_token_expired_exception() {
+    void givenNullExpiry_whenExecute_thenThrowRefreshTokenExpiredException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -464,7 +464,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_missing_session_id_when_execute_then_throw_session_not_active_exception() {
+    void givenMissingSessionId_whenExecute_thenThrowSessionNotActiveException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final String refreshTokenValue = "refresh-token";
@@ -523,7 +523,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_session_source_mismatch_when_execute_then_mark_session_suspicious_and_throw_session_mismatch_exception() {
+    void givenSessionSourceMismatch_whenExecute_thenMarkSessionSuspiciousAndThrowSessionMismatchException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -595,7 +595,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_replayed_token_when_execute_then_mark_session_suspicious_and_throw_refresh_token_invalid_exception() {
+    void givenReplayedToken_whenExecute_thenMarkSessionSuspiciousAndThrowRefreshTokenInvalidException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -667,7 +667,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_inactive_session_when_execute_then_throw_session_not_active_exception() {
+    void givenInactiveSession_whenExecute_thenThrowSessionNotActiveException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -724,7 +724,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_inactive_user_when_execute_then_throw_inactive_user_exception() {
+    void givenInactiveUser_whenExecute_thenThrowInactiveUserException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -784,7 +784,7 @@ class RefreshAccessTokenImplTest {
     }
 
     @Test
-    void given_failed_revoke_when_execute_then_mark_session_suspicious_and_throw_refresh_token_invalid_exception() {
+    void givenFailedRevoke_whenExecute_thenMarkSessionSuspiciousAndThrowRefreshTokenInvalidException() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();

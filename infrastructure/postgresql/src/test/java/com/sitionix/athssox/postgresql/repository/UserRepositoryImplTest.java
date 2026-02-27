@@ -51,7 +51,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    void given_register_user_do_when_create_user_then_return_created_user() {
+    void givenRegisterUserDo_whenCreateUser_thenReturnCreatedUser() {
         //given
         final RegisterUserDO given = mock(RegisterUserDO.class);
         final UserEntity mappedUserEntity = mock(UserEntity.class);
@@ -79,7 +79,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    void given_email_and_site_id_when_exists_site_scoped_by_email_and_site_id_then_return_true() {
+    void givenEmailAndSiteId_whenExistsSiteScopedByEmailAndSiteId_thenReturnTrue() {
         //given
         final String email = "email@sitionix.com";
         final UUID siteId = this.getSiteId();
@@ -98,7 +98,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    void given_email_when_exists_global_by_email_then_return_false() {
+    void givenEmail_whenExistsGlobalByEmail_thenReturnFalse() {
         //given
         final String email = "email@sitionix.com";
         final List<Long> roleIds = this.getGlobalRoleIds();
@@ -116,7 +116,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    void given_email_and_site_id_when_find_site_scoped_by_email_and_site_id_then_return_user() {
+    void givenEmailAndSiteId_whenFindSiteScopedByEmailAndSiteId_thenReturnUser() {
         //given
         final String email = "email@sitionix.com";
         final UUID siteId = this.getSiteId();
@@ -142,7 +142,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    void given_email_when_find_global_by_email_then_return_user() {
+    void givenEmail_whenFindGlobalByEmail_thenReturnUser() {
         //given
         final String email = "email@sitionix.com";
         final List<Long> roleIds = this.getGlobalRoleIds();

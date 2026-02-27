@@ -72,7 +72,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_missing_token_record_when_execute_then_return_false() {
+    void givenMissingTokenRecord_whenExecute_thenReturnFalse() {
         //given
         final UUID siteId = this.getSiteId();
         final String token = this.getToken();
@@ -96,7 +96,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_expired_token_when_execute_then_return_false() {
+    void givenExpiredToken_whenExecute_thenReturnFalse() {
         //given
         final UUID siteId = this.getSiteId();
         final String token = this.getToken();
@@ -130,7 +130,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_non_active_token_when_execute_then_return_false() {
+    void givenNonActiveToken_whenExecute_thenReturnFalse() {
         //given
         final UUID siteId = this.getSiteId();
         final String token = this.getToken();
@@ -164,7 +164,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_site_mismatch_when_execute_then_return_false() {
+    void givenSiteMismatch_whenExecute_thenReturnFalse() {
         //given
         final UUID tokenSiteId = this.getSiteId();
         final UUID requestSiteId = this.getOtherSiteId();
@@ -199,7 +199,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_missing_user_when_execute_then_return_false() {
+    void givenMissingUser_whenExecute_thenReturnFalse() {
         //given
         final UUID siteId = this.getSiteId();
         final Long userId = this.getUserId();
@@ -238,7 +238,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_user_not_pending_when_execute_then_return_false() {
+    void givenUserNotPending_whenExecute_thenReturnFalse() {
         //given
         final UUID siteId = this.getSiteId();
         final Long userId = this.getUserId();
@@ -278,7 +278,7 @@ class VerifyEmailImplTest {
     }
 
     @Test
-    void given_pending_user_when_execute_then_activate_user_and_mark_token_used() {
+    void givenPendingUser_whenExecute_thenActivateUserAndMarkTokenUsed() {
         //given
         final UUID siteId = this.getSiteId();
         final Long userId = this.getUserId();

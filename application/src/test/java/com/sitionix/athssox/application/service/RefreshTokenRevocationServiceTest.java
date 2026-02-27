@@ -34,7 +34,7 @@ class RefreshTokenRevocationServiceTest {
     }
 
     @Test
-    void given_null_token_id_when_revoke_if_active_then_return_false() {
+    void givenNullTokenId_whenRevokeIfActive_thenReturnFalse() {
         //given
         final Long tokenId = null;
         final Instant now = this.getNow();
@@ -48,7 +48,7 @@ class RefreshTokenRevocationServiceTest {
     }
 
     @Test
-    void given_active_token_when_revoke_if_active_then_return_true() {
+    void givenActiveToken_whenRevokeIfActive_thenReturnTrue() {
         //given
         final Long tokenId = this.getTokenId();
         final Instant now = this.getNow();
@@ -67,7 +67,7 @@ class RefreshTokenRevocationServiceTest {
     }
 
     @Test
-    void given_inactive_token_when_revoke_if_active_then_return_false() {
+    void givenInactiveToken_whenRevokeIfActive_thenReturnFalse() {
         //given
         final Long tokenId = this.getTokenId();
         final Instant now = this.getNow();

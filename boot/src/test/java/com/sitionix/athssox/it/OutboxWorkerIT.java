@@ -31,7 +31,7 @@ class OutboxWorkerIT {
 
     @Test
     @DisplayName("given one outbox pattern when worker starts then publish verify event")
-    void given_outbox_event_in_db_when_dispatch_pending_events_then_publish_event() {
+    void givenOutboxEventInDb_whenDispatchPendingEvents_thenPublishEvent() {
         //given
         final EmailVerifyPayload payload = EmailVerifyPayload.builder()
                 .delivery(EmailVerifyPayload.Delivery.builder()
@@ -63,7 +63,7 @@ class OutboxWorkerIT {
 
     @Test
     @DisplayName("given non email verify outbox event when worker starts then ignore event")
-    void given_non_email_verify_outbox_event_when_dispatch_pending_events_then_ignore_event() {
+    void givenNonEmailVerifyOutboxEvent_whenDispatchPendingEvents_thenIgnoreEvent() {
         //given
         this.forgeOutbox.enqueue("PASSWORD_RESET", "{}", Map.of(), Map.of(), "trace-it-2");
 

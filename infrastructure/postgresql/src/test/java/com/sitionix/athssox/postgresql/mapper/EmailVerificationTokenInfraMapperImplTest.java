@@ -33,7 +33,7 @@ class EmailVerificationTokenInfraMapperImplTest {
     }
 
     @Test
-    void given_record_when_as_entity_then_return_entity() {
+    void givenRecord_whenAsEntity_thenReturnEntity() {
         //given
         final UUID id = this.getTokenId();
         final Long userId = this.getUserId();
@@ -59,7 +59,7 @@ class EmailVerificationTokenInfraMapperImplTest {
     }
 
     @Test
-    void given_entity_when_as_record_then_return_record() {
+    void givenEntity_whenAsRecord_thenReturnRecord() {
         //given
         final UUID id = this.getTokenId();
         final Long userId = this.getUserId();

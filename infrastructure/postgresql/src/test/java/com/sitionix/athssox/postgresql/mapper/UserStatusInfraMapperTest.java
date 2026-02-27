@@ -22,7 +22,7 @@ class UserStatusInfraMapperTest {
     }
 
     @Test
-    void given_null_status_entity_when_as_status_then_return_null() {
+    void givenNullStatusEntity_whenAsStatus_thenReturnNull() {
         //given
         final UserStatusEntity given = null;
 
@@ -34,7 +34,7 @@ class UserStatusInfraMapperTest {
     }
 
     @Test
-    void given_status_entity_when_as_status_then_return_user_status() {
+    void givenStatusEntity_whenAsStatus_thenReturnUserStatus() {
         //given
         final UserStatusEntity given = this.getUserStatusEntity(1L, "PENDING EMAIL VERIFY");
         final UserStatus expected = UserStatus.PENDING_EMAIL_VERIFY;
@@ -47,7 +47,7 @@ class UserStatusInfraMapperTest {
     }
 
     @Test
-    void given_null_status_when_as_user_status_entity_then_return_null() {
+    void givenNullStatus_whenAsUserStatusEntity_thenReturnNull() {
         //given
         final UserStatus given = null;
 
@@ -59,7 +59,7 @@ class UserStatusInfraMapperTest {
     }
 
     @Test
-    void given_user_status_when_as_user_status_entity_then_return_user_status_entity() {
+    void givenUserStatus_whenAsUserStatusEntity_thenReturnUserStatusEntity() {
         //given
         final UserStatus given = UserStatus.PENDING_EMAIL_VERIFY;
         final UserStatusEntity expected = this.getUserStatusEntity(1L, "PENDING EMAIL VERIFY");

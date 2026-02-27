@@ -40,7 +40,7 @@ class EmailVerifyPayloadBuilderImplTest {
     }
 
     @Test
-    void given_context_when_build_then_return_email_verify_payload() {
+    void givenContext_whenBuild_thenReturnEmailVerifyPayload() {
         //given
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getRequestedAt();

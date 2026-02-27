@@ -45,7 +45,7 @@ class UserControllerTest {
     }
 
     @Test
-    void given_register_user_dto_when_register_user_then_return_response_register_user_dto() {
+    void givenRegisterUserDto_whenRegisterUser_thenReturnResponseRegisterUserDto() {
         //given
         final RegisterUserDTO given = mock(RegisterUserDTO.class);
         final RegisterUserDO registerUserDO = mock(RegisterUserDO.class);

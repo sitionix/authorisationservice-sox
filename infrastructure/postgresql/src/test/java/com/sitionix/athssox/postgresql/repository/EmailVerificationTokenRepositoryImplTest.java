@@ -46,7 +46,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void given_token_record_when_save_then_persist_entity() {
+    void givenTokenRecord_whenSave_thenPersistEntity() {
         //given
         final EmailVerificationTokenRecord given = mock(EmailVerificationTokenRecord.class);
         final EmailVerificationTokenEntity entity = mock(EmailVerificationTokenEntity.class);
@@ -65,7 +65,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void given_hashed_token_when_find_by_hashed_token_then_return_record() {
+    void givenHashedToken_whenFindByHashedToken_thenReturnRecord() {
         //given
         final String hashedToken = this.getHashedToken();
         final EmailVerificationTokenEntity entity = mock(EmailVerificationTokenEntity.class);
@@ -89,7 +89,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void given_hashed_token_when_find_by_hashed_token_empty_then_return_empty() {
+    void givenHashedToken_whenFindByHashedTokenEmpty_thenReturnEmpty() {
         //given
         final String hashedToken = this.getHashedToken();
 
@@ -107,7 +107,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void given_user_id_when_find_latest_created_at_by_user_id_then_return_created_at() {
+    void givenUserId_whenFindLatestCreatedAtByUserId_thenReturnCreatedAt() {
         //given
         final Long userId = 12L;
         final Instant createdAt = this.getCreatedAt();
@@ -131,7 +131,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void given_user_id_and_instant_when_count_by_user_id_and_created_at_after_then_return_count() {
+    void givenUserIdAndInstant_whenCountByUserIdAndCreatedAtAfter_thenReturnCount() {
         //given
         final Long userId = 24L;
         final Instant createdAfter = this.getCreatedAt();
@@ -150,7 +150,7 @@ class EmailVerificationTokenRepositoryImplTest {
     }
 
     @Test
-    void given_cutoff_when_delete_expired_before_then_return_count() {
+    void givenCutoff_whenDeleteExpiredBefore_thenReturnCount() {
         //given
         final Instant cutoff = this.getCreatedAt();
 

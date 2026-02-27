@@ -21,7 +21,7 @@ class RefreshTokenStatusInfraMapperTest {
     }
 
     @Test
-    void given_null_status_entity_when_as_status_then_return_null() {
+    void givenNullStatusEntity_whenAsStatus_thenReturnNull() {
         //given
         final RefreshTokenStatusEntity given = null;
 
@@ -33,7 +33,7 @@ class RefreshTokenStatusInfraMapperTest {
     }
 
     @Test
-    void given_status_entity_when_as_status_then_return_status() {
+    void givenStatusEntity_whenAsStatus_thenReturnStatus() {
         //given
         final RefreshTokenStatusEntity given = this.getStatusEntity(1L, "ACTIVE");
         final RefreshTokenStatus expected = RefreshTokenStatus.ACTIVE;
@@ -46,7 +46,7 @@ class RefreshTokenStatusInfraMapperTest {
     }
 
     @Test
-    void given_null_status_when_as_status_entity_then_return_null() {
+    void givenNullStatus_whenAsStatusEntity_thenReturnNull() {
         //given
         final RefreshTokenStatus given = null;
 
@@ -58,7 +58,7 @@ class RefreshTokenStatusInfraMapperTest {
     }
 
     @Test
-    void given_status_when_as_status_entity_then_return_status_entity() {
+    void givenStatus_whenAsStatusEntity_thenReturnStatusEntity() {
         //given
         final RefreshTokenStatus given = RefreshTokenStatus.ACTIVE;
         final RefreshTokenStatusEntity expected = this.getStatusEntity(1L, "ACTIVE");
