@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -97,10 +98,12 @@ class UserControllerIT {
         assertThat(persistedUser.getPasswordHash()).isNotBlank();
         assertThat(persistedUser.getPasswordHash()).isNotEqualTo("StrongPassword123");
 
-        final List<ForgeOutboxEventEntity> outboxEvents =
-                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
-        assertThat(outboxEvents).hasSize(1);
-        assertThat(outboxEvents.get(0).getEventType()).isEqualTo("EMAIL_VERIFY");
+        this.testManager.postgresql()
+                .get(ForgeOutboxEventEntity.class)
+                .hasSize(1)
+                .singleElement()
+                .andExpected(event -> Objects.equals(event.getEventType(), "EMAIL_VERIFY"))
+                .assertEntity();
     }
 
     @Test
