@@ -27,26 +27,6 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
         return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
-    @Override
-    public Long userId() {
-        return this.meta == null ? null : this.meta.getUserId();
-    }
-
-    @Override
-    public UUID siteId() {
-        return this.meta == null ? null : this.meta.getSiteId();
-    }
-
-    @Override
-    public String traceId() {
-        return this.meta == null ? null : this.meta.getTraceId();
-    }
-
-    @Override
-    public Instant requestedAt() {
-        return this.meta == null ? null : this.meta.getRequestedAt();
-    }
-
     @Data
     @Builder
     @Jacksonized
