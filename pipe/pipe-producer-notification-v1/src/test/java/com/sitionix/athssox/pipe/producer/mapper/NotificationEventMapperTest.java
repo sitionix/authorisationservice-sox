@@ -10,6 +10,7 @@ import com.app_afesox.ntfssox.events.notifications.NotificationTemplateDTO;
 import com.app_afesox.ntfssox.events.notifications.contents.EmailVerificationContentDTO;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
+import com.sitionix.athssox.domain.model.outbox.payload.OutboxEventType;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.forge.outbox.core.model.DefaultForgeOutboxPublishMetadata;
 import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
@@ -127,7 +128,7 @@ class NotificationEventMapperTest {
         final NotificationEvent expectedPayload = this.getNotificationEvent(delivery, template, content, meta);
         final Metadata expectedMetadata = this.getMetadata(idempotencyId,
                 createdAt,
-                EmailVerifyPayload.OUTBOX_EVENT_TYPE);
+                OutboxEventType.EMAIL_VERIFY.getDescription());
         final NotificationEnvelope expected = this.getNotificationEnvelope(expectedMetadata, expectedPayload);
 
         //when
@@ -153,7 +154,7 @@ class NotificationEventMapperTest {
         final ForgeOutboxPublishMetadata given = this.getPublishMetadata(idempotencyId, createdAt);
         final Metadata expected = this.getMetadata(idempotencyId,
                 createdAt,
-                EmailVerifyPayload.OUTBOX_EVENT_TYPE);
+                OutboxEventType.EMAIL_VERIFY.getDescription());
 
         //when
         final Metadata actual = this.notificationEventMapper.asMetadata(given);
@@ -311,7 +312,7 @@ class NotificationEventMapperTest {
         return DefaultForgeOutboxPublishMetadata.builder()
                 .idempotencyId(idempotencyId)
                 .createdAt(createdAt)
-                .eventType(EmailVerifyPayload.OUTBOX_EVENT_TYPE)
+                .eventType(OutboxEventType.EMAIL_VERIFY.getDescription())
                 .traceId("trace-123")
                 .aggregateType("USER")
                 .aggregateId(42L)

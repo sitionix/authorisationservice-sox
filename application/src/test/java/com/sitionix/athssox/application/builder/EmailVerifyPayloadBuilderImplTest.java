@@ -99,6 +99,7 @@ class EmailVerifyPayloadBuilderImplTest {
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(this.getParams(tokenId, pepperId))
                 .meta(this.getMeta(siteId, requestedAt))
+                .outbox(this.getOutbox(siteId, requestedAt))
                 .build();
     }
 
@@ -126,6 +127,25 @@ class EmailVerifyPayloadBuilderImplTest {
                 .siteId(siteId)
                 .traceId("traceId")
                 .requestedAt(instant)
+                .build();
+    }
+
+    private EmailVerifyPayload.Outbox getOutbox(final UUID siteId, final Instant requestedAt) {
+        return EmailVerifyPayload.Outbox.builder()
+                .metadata(this.getOutboxMetadata(siteId, requestedAt))
+                .traceId("traceId")
+                .aggregateType("USER")
+                .aggregateId(1L)
+                .nextAttemptAt(requestedAt)
+                .build();
+    }
+
+    private EmailVerifyPayload.OutboxMetadata getOutboxMetadata(final UUID siteId, final Instant requestedAt) {
+        return EmailVerifyPayload.OutboxMetadata.builder()
+                .userId(1L)
+                .siteId(siteId)
+                .traceId("traceId")
+                .requestedAt(requestedAt)
                 .build();
     }
 }

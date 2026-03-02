@@ -50,6 +50,18 @@ class OutboxWorkerIT {
                         .traceId(null)
                         .requestedAt(Instant.parse("2025-12-23T18:31:16.740787Z"))
                         .build())
+                .outbox(EmailVerifyPayload.Outbox.builder()
+                        .metadata(EmailVerifyPayload.OutboxMetadata.builder()
+                                .userId(1L)
+                                .siteId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                                .traceId(null)
+                                .requestedAt(Instant.parse("2025-12-23T18:31:16.740787Z"))
+                                .build())
+                        .traceId(null)
+                        .aggregateType("USER")
+                        .aggregateId(1L)
+                        .nextAttemptAt(Instant.parse("2025-12-23T18:31:16.740787Z"))
+                        .build())
                 .build();
         this.forgeOutbox.send(payload);
 
