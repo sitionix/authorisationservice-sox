@@ -43,18 +43,6 @@ public final class EmailVerifyPayloadBuilderImpl implements EmailVerifyPayloadBu
                         .traceId(ctx.traceId())
                         .requestedAt(ctx.requestedAt())
                         .build())
-                .outbox(EmailVerifyPayload.Outbox.builder()
-                        .metadata(EmailVerifyPayload.OutboxMetadata.builder()
-                                .userId(ctx.userId())
-                                .siteId(ctx.siteId())
-                                .traceId(ctx.traceId())
-                                .requestedAt(ctx.requestedAt())
-                                .build())
-                        .traceId(ctx.traceId())
-                        .aggregateType("USER")
-                        .aggregateId(ctx.userId())
-                        .nextAttemptAt(ctx.requestedAt())
-                        .build())
                 .build();
     }
 }
