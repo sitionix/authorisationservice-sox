@@ -1,26 +1,5 @@
-CREATE TABLE IF NOT EXISTS forge_outbox_statuses (
-    id          BIGINT PRIMARY KEY,
-    description VARCHAR(32) NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS forge_outbox_aggregate_types (
-    id          BIGINT PRIMARY KEY,
-    description VARCHAR(255) NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS forge_outbox_event_types (
-    id          BIGSERIAL PRIMARY KEY,
-    description VARCHAR(255) NOT NULL UNIQUE
-);
-
-CREATE TABLE IF NOT EXISTS forge_outbox_initiator_types (
-    id          BIGSERIAL PRIMARY KEY,
-    description VARCHAR(255) NOT NULL UNIQUE
-);
-
 CREATE TABLE IF NOT EXISTS forge_outbox_events (
     id                BIGSERIAL PRIMARY KEY,
-    event_type_id     BIGINT       NOT NULL,
     event_type        VARCHAR(255) NOT NULL,
     payload           TEXT         NOT NULL,
     headers           JSONB        NOT NULL DEFAULT '{}'::jsonb,
@@ -40,8 +19,6 @@ CREATE TABLE IF NOT EXISTS forge_outbox_events (
     lock_until        TIMESTAMPTZ,
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_forge_outbox_events_event_type_id
-        FOREIGN KEY (event_type_id) REFERENCES forge_outbox_event_types (id),
     CONSTRAINT fk_forge_outbox_events_aggregate_type_id
         FOREIGN KEY (aggregate_type_id) REFERENCES forge_outbox_aggregate_types (id),
     CONSTRAINT fk_forge_outbox_events_status_id

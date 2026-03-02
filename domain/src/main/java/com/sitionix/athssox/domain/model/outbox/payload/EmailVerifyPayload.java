@@ -1,6 +1,7 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
 import com.sitionix.forge.outbox.core.port.EventMetadataContract;
+import com.sitionix.forge.outbox.core.model.OutboxAggregateType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,8 +43,8 @@ public class EmailVerifyPayload implements EventMetadataContract {
     }
 
     @Override
-    public String getOutboxAggregateType() {
-        return "USER";
+    public OutboxAggregateType outboxAggregateType() {
+        return OutboxAggregateType.USER;
     }
 
     @Override

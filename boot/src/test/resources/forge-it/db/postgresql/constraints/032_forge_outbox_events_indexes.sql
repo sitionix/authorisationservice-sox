@@ -4,8 +4,8 @@ CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_status_id
 CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_aggregate
     ON forge_outbox_events (aggregate_type_id, aggregate_id);
 
-CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_event_type_id
-    ON forge_outbox_events (event_type_id);
+CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_event_type
+    ON forge_outbox_events (event_type);
 
 CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_initiator_type_id
     ON forge_outbox_events (initiator_type_id);

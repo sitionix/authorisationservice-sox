@@ -1,6 +1,5 @@
 {
   "id": 1001,
-  "eventTypeId": 1,
   "eventType": "EMAIL_VERIFY",
   "statusId": 3,
   "payload": "{}",
