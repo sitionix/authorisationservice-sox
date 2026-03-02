@@ -1,5 +1,6 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
+import com.sitionix.forge.outbox.core.port.ForgeOutboxPayload;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @Builder
 @Jacksonized
 @EqualsAndHashCode
-public class EmailVerifyPayload implements OutboxPayloadContract {
+public class EmailVerifyPayload implements ForgeOutboxPayload, EventMetadataContract {
 
     private Delivery delivery;
     private NotificationTemplate template;

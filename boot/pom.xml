@@ -55,11 +55,6 @@
         </dependency>
         <dependency>
             <groupId>com.sitionix.forge</groupId>
-            <artifactId>forgecommon-outbox-boot</artifactId>
-            <version>${forge.common.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sitionix.forge</groupId>
             <artifactId>forgecommon-outbox-postgres</artifactId>
             <version>${forge.common.version}</version>
         </dependency>
