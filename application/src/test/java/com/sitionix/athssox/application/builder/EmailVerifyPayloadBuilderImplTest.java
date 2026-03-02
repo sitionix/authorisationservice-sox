@@ -59,8 +59,8 @@ class EmailVerifyPayloadBuilderImplTest {
         final EmailVerifyPayload expected = this.getEmailVerifyPayload(siteId, requestedAt, tokenId, pepperId);
 
         assertThat(actual).isEqualTo(expected);
-        assertThat(actual.getIdempotencyId()).isEqualTo(tokenId);
-        assertThat(actual.getCreatedAt()).isEqualTo(requestedAt);
+        assertThat(actual.getIdempotencyId()).isNotNull();
+        assertThat(actual.getCreatedAt()).isNotNull();
         assertThat(actual.getEventType()).isEqualTo(NotificationTemplate.EMAIL_VERIFY.getDescription());
 
         verify(this.tokenService)
@@ -92,8 +92,6 @@ class EmailVerifyPayloadBuilderImplTest {
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(this.getParams(tokenId, pepperId))
                 .meta(this.getMeta(siteId, requestedAt))
-                .idempotencyId(tokenId)
-                .createdAt(requestedAt)
                 .build();
     }
 

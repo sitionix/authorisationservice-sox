@@ -17,28 +17,24 @@ import java.util.UUID;
 @EqualsAndHashCode
 public class EmailVerifyPayload implements EventMetadataContract {
 
-    public static final String EVENT_TYPE = NotificationTemplate.EMAIL_VERIFY.getDescription();
-
     private Delivery delivery;
     private NotificationTemplate template;
     private Params params;
     private Meta meta;
-    private UUID idempotencyId;
-    private Instant createdAt;
 
     @Override
     public UUID getIdempotencyId() {
-        return this.idempotencyId;
+        return UUID.randomUUID();
     }
 
     @Override
     public Instant getCreatedAt() {
-        return this.createdAt;
+        return Instant.now();
     }
 
     @Override
     public String getEventType() {
-        return EVENT_TYPE;
+        return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
     @Data

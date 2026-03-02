@@ -106,7 +106,7 @@ class NotificationEventMapperTest {
         final Instant createdAt = this.getInstant("2024-04-22T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("f899ee7f-6e45-4967-ac17-6c13c7ae5e0f");
 
-        final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt, idempotencyId, createdAt);
+        final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt);
         final Event<EmailVerifyPayload> event = this.getEvent(payload, idempotencyId, createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
 
@@ -151,7 +151,7 @@ class NotificationEventMapperTest {
         final Instant createdAt = this.getInstant("2024-04-23T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("2b2077f5-987f-43a2-af1b-463154649ffb");
         final Event<EmailVerifyPayload> given = this.getEvent(
-                this.getEmailVerifyPayload(this.getSiteId(), this.getInstant("2024-04-23T08:15:30Z"), idempotencyId, createdAt),
+                this.getEmailVerifyPayload(this.getSiteId(), this.getInstant("2024-04-23T08:15:30Z")),
                 idempotencyId,
                 createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
@@ -230,23 +230,11 @@ class NotificationEventMapperTest {
 
     private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
                                                      final Instant requestedAt) {
-        return this.getEmailVerifyPayload(siteId,
-                requestedAt,
-                UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                requestedAt);
-    }
-
-    private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
-                                                     final Instant requestedAt,
-                                                     final UUID idempotencyId,
-                                                     final Instant createdAt) {
         return EmailVerifyPayload.builder()
                 .delivery(this.getEmailVerifyPayloadDelivery())
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(this.getEmailVerifyPayloadParams())
                 .meta(this.getEmailVerifyPayloadMeta(siteId, requestedAt))
-                .idempotencyId(idempotencyId)
-                .createdAt(createdAt)
                 .build();
     }
 
