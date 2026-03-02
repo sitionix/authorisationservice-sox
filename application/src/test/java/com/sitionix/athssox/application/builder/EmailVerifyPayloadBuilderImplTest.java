@@ -59,6 +59,13 @@ class EmailVerifyPayloadBuilderImplTest {
         final EmailVerifyPayload expected = this.getEmailVerifyPayload(siteId, requestedAt, tokenId, pepperId);
 
         assertThat(actual).isEqualTo(expected);
+        assertThat(actual.getOutboxEventType()).isEqualTo(NotificationTemplate.EMAIL_VERIFY.getDescription());
+        assertThat(actual.getOutboxTraceId()).isEqualTo("traceId");
+        assertThat(actual.getOutboxAggregateType()).isEqualTo("USER");
+        assertThat(actual.getOutboxAggregateId()).isEqualTo(1L);
+        assertThat(actual.getOutboxInitiatorType()).isEqualTo("USER");
+        assertThat(actual.getOutboxInitiatorId()).isEqualTo("1");
+        assertThat(actual.getOutboxMetadata()).isEqualTo(this.getOutboxMetadata(siteId, requestedAt));
 
         verify(this.tokenService)
                 .issue(1L, siteId);
@@ -127,5 +134,15 @@ class EmailVerifyPayloadBuilderImplTest {
                 .traceId("traceId")
                 .requestedAt(instant)
                 .build();
+    }
+
+    private java.util.Map<String, String> getOutboxMetadata(final UUID siteId,
+                                                            final Instant requestedAt) {
+        return java.util.Map.of(
+                "userId", "1",
+                "siteId", siteId.toString(),
+                "traceId", "traceId",
+                "requestedAt", requestedAt.toString()
+        );
     }
 }

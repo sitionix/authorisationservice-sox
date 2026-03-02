@@ -9,10 +9,9 @@ import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.app_afesox.ntfssox.events.notifications.NotificationTemplateDTO;
 import com.app_afesox.ntfssox.events.notifications.contents.EmailVerificationContentDTO;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.EventMetadataContract;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
-import com.sitionix.forge.outbox.core.model.DefaultForgeOutboxPublishMetadata;
-import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,7 +107,7 @@ class NotificationEventMapperTest {
         final UUID idempotencyId = UUID.fromString("f899ee7f-6e45-4967-ac17-6c13c7ae5e0f");
 
         final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt);
-        final ForgeOutboxPublishMetadata metadata = this.getPublishMetadata(idempotencyId, createdAt);
+        final EventMetadataContract metadata = this.getPublishMetadata(idempotencyId, createdAt);
 
         final EmailVerificationContentDTO content = this.getContent();
         final DeliveryDTO delivery = this.getDelivery();
@@ -150,7 +149,7 @@ class NotificationEventMapperTest {
         //given
         final Instant createdAt = this.getInstant("2024-04-23T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("2b2077f5-987f-43a2-af1b-463154649ffb");
-        final ForgeOutboxPublishMetadata given = this.getPublishMetadata(idempotencyId, createdAt);
+        final EventMetadataContract given = this.getPublishMetadata(idempotencyId, createdAt);
         final Metadata expected = this.getMetadata(idempotencyId,
                 createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
@@ -306,20 +305,24 @@ class NotificationEventMapperTest {
         return Instant.parse(value);
     }
 
-    private ForgeOutboxPublishMetadata getPublishMetadata(final UUID idempotencyId,
-                                                          final Instant createdAt) {
-        return DefaultForgeOutboxPublishMetadata.builder()
-                .idempotencyId(idempotencyId)
-                .createdAt(createdAt)
-                .eventType(NotificationTemplate.EMAIL_VERIFY.getDescription())
-                .traceId("trace-123")
-                .aggregateType("USER")
-                .aggregateId(42L)
-                .initiatorType("SYSTEM")
-                .initiatorId(null)
-                .headers(java.util.Map.of())
-                .metadata(java.util.Map.of())
-                .build();
+    private EventMetadataContract getPublishMetadata(final UUID idempotencyId,
+                                                     final Instant createdAt) {
+        return new EventMetadataContract() {
+            @Override
+            public UUID getIdempotencyId() {
+                return idempotencyId;
+            }
+
+            @Override
+            public Instant getCreatedAt() {
+                return createdAt;
+            }
+
+            @Override
+            public String getEventType() {
+                return NotificationTemplate.EMAIL_VERIFY.getDescription();
+            }
+        };
     }
 
     private Metadata getMetadata(final UUID idempotencyId,
