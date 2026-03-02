@@ -1,16 +1,19 @@
 package com.sitionix.athssox.application.usecase;
 
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
-import com.sitionix.athssox.domain.builder.EmailVerifyPayloadBuilder;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
 import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
+import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
 import com.sitionix.athssox.domain.usecase.RegisterUser;
 import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import jakarta.validation.Valid;
@@ -21,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,7 +42,7 @@ public class RegisterUserImpl implements RegisterUser {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final ForgeOutbox forgeOutbox;
-    private final EmailVerifyPayloadBuilder emailVerifyPayloadBuilder;
+    private final EmailVerificationTokenService emailVerificationTokenService;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
     private final Clock clock;
 
@@ -60,12 +64,15 @@ public class RegisterUserImpl implements RegisterUser {
 
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
 
-        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(
-                createdUser.getUserId(),
+        final Instant now = this.clock.instant();
+        final EmailVerificationTokenIssue tokenIssue =
+                this.emailVerificationTokenService.issue(createdUser.getUserId(), registerUserDO.getSiteId());
+        final EmailVerifyPayload payload = this.buildPayload(createdUser.getUserId(),
                 registerUserDO.getSiteId(),
                 registerUserDO.getEmail(),
                 null,
-                this.clock.instant());
+                now,
+                tokenIssue);
         this.forgeOutbox.send(payload);
 
         createdUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
@@ -108,17 +115,44 @@ public class RegisterUserImpl implements RegisterUser {
     private ResponseRegisterUser handlePendingUser(final ResponseRegisterUser existingUser,
                                                    final RegisterUserDO registerUserDO) {
         if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
-            final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder
-                    .build(
-                            existingUser.getUserId(),
-                            registerUserDO.getSiteId(),
-                            registerUserDO.getEmail(),
-                            null,
-                            this.clock.instant());
+            final Instant now = this.clock.instant();
+            final EmailVerificationTokenIssue tokenIssue =
+                    this.emailVerificationTokenService.issue(existingUser.getUserId(), registerUserDO.getSiteId());
+            final EmailVerifyPayload payload = this.buildPayload(existingUser.getUserId(),
+                    registerUserDO.getSiteId(),
+                    registerUserDO.getEmail(),
+                    null,
+                    now,
+                    tokenIssue);
             this.forgeOutbox.send(payload);
         }
 
         existingUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
         return existingUser;
+    }
+
+    private EmailVerifyPayload buildPayload(final Long userId,
+                                            final UUID siteId,
+                                            final String email,
+                                            final String traceId,
+                                            final Instant requestedAt,
+                                            final EmailVerificationTokenIssue tokenIssue) {
+        return EmailVerifyPayload.builder()
+                .delivery(EmailVerifyPayload.Delivery.builder()
+                        .channel(VerifyChannel.EMAIL)
+                        .to(email)
+                        .build())
+                .template(NotificationTemplate.EMAIL_VERIFY)
+                .params(EmailVerifyPayload.Params.builder()
+                        .emailVerificationTokenId(tokenIssue.tokenId())
+                        .pepperId(tokenIssue.pepperId())
+                        .build())
+                .meta(EmailVerifyPayload.Meta.builder()
+                        .userId(userId)
+                        .siteId(siteId)
+                        .traceId(traceId)
+                        .requestedAt(requestedAt)
+                        .build())
+                .build();
     }
 }
