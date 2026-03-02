@@ -8,11 +8,9 @@ import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
-import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 @Data
@@ -33,20 +31,7 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
 
     @Override
     public Map<String, String> getOutboxMetadata() {
-        if (this.meta == null) {
-            return Map.of();
-        }
-        final String userId = this.meta.getUserId() == null ? null : String.valueOf(this.meta.getUserId());
-        final String siteId = this.meta.getSiteId() == null ? null : this.meta.getSiteId().toString();
-        final String traceId = this.meta.getTraceId();
-        final String requestedAt = this.meta.getRequestedAt() == null ? null : this.meta.getRequestedAt().toString();
-        return Stream.of(
-                        new AbstractMap.SimpleEntry<>("userId", userId),
-                        new AbstractMap.SimpleEntry<>("siteId", siteId),
-                        new AbstractMap.SimpleEntry<>("traceId", traceId),
-                        new AbstractMap.SimpleEntry<>("requestedAt", requestedAt))
-                .filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        return this.buildMetadata();
     }
 
     @Override
@@ -67,6 +52,58 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
     @Override
     public Instant getOutboxNextAttemptAt() {
         return this.meta == null ? null : this.meta.getRequestedAt();
+    }
+
+    private String metadataUserId() {
+        if (this.meta == null || this.meta.getUserId() == null) {
+            return null;
+        }
+        return String.valueOf(this.meta.getUserId());
+    }
+
+    private String metadataSiteId() {
+        if (this.meta == null || this.meta.getSiteId() == null) {
+            return null;
+        }
+        return this.meta.getSiteId().toString();
+    }
+
+    private String metadataTraceId() {
+        if (this.meta == null) {
+            return null;
+        }
+        return this.meta.getTraceId();
+    }
+
+    private String metadataRequestedAt() {
+        if (this.meta == null || this.meta.getRequestedAt() == null) {
+            return null;
+        }
+        return this.meta.getRequestedAt().toString();
+    }
+
+    private Map<String, String> buildMetadata() {
+        final String userId = this.metadataUserId();
+        final String siteId = this.metadataSiteId();
+        final String traceId = this.metadataTraceId();
+        final String requestedAt = this.metadataRequestedAt();
+        if (userId == null && siteId == null && traceId == null && requestedAt == null) {
+            return Map.of();
+        }
+        final Map<String, String> metadata = new HashMap<>();
+        if (userId != null) {
+            metadata.put("userId", userId);
+        }
+        if (siteId != null) {
+            metadata.put("siteId", siteId);
+        }
+        if (traceId != null) {
+            metadata.put("traceId", traceId);
+        }
+        if (requestedAt != null) {
+            metadata.put("requestedAt", requestedAt);
+        }
+        return Map.copyOf(metadata);
     }
 
     @Data
