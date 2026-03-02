@@ -1,6 +1,5 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
-import com.sitionix.forge.outbox.core.port.ForgeOutboxPayload;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,7 +14,7 @@ import java.util.UUID;
 @Builder
 @Jacksonized
 @EqualsAndHashCode
-public class EmailVerifyPayload implements ForgeOutboxPayload, EventMetadataContract {
+public class EmailVerifyPayload implements OutboxPayloadContract {
 
     private Delivery delivery;
     private NotificationTemplate template;
@@ -23,11 +22,6 @@ public class EmailVerifyPayload implements ForgeOutboxPayload, EventMetadataCont
     private Meta meta;
     private UUID idempotencyId;
     private Instant createdAt;
-
-    @Override
-    public String eventType() {
-        return NotificationTemplate.EMAIL_VERIFY.getDescription();
-    }
 
     @Override
     public UUID getIdempotencyId() {
@@ -41,7 +35,7 @@ public class EmailVerifyPayload implements ForgeOutboxPayload, EventMetadataCont
 
     @Override
     public String getEventType() {
-        return this.eventType();
+        return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
     @Data
