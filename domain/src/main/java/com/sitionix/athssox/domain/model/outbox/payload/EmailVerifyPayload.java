@@ -8,9 +8,11 @@ import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Data
@@ -34,27 +36,37 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
         if (this.meta == null) {
             return Map.of();
         }
-        return this.meta.getOutboxMetadata();
+        final String userId = this.meta.getUserId() == null ? null : String.valueOf(this.meta.getUserId());
+        final String siteId = this.meta.getSiteId() == null ? null : this.meta.getSiteId().toString();
+        final String traceId = this.meta.getTraceId();
+        final String requestedAt = this.meta.getRequestedAt() == null ? null : this.meta.getRequestedAt().toString();
+        return Stream.of(
+                        new AbstractMap.SimpleEntry<>("userId", userId),
+                        new AbstractMap.SimpleEntry<>("siteId", siteId),
+                        new AbstractMap.SimpleEntry<>("traceId", traceId),
+                        new AbstractMap.SimpleEntry<>("requestedAt", requestedAt))
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public String getOutboxTraceId() {
-        return this.meta == null ? null : this.meta.getOutboxTraceId();
+        return this.meta == null ? null : this.meta.getTraceId();
     }
 
     @Override
     public String getOutboxAggregateType() {
-        return this.meta == null ? null : this.meta.getOutboxAggregateType();
+        return this.meta == null ? null : "USER";
     }
 
     @Override
     public Long getOutboxAggregateId() {
-        return this.meta == null ? null : this.meta.getOutboxAggregateId();
+        return this.meta == null ? null : this.meta.getUserId();
     }
 
     @Override
     public Instant getOutboxNextAttemptAt() {
-        return this.meta == null ? null : this.meta.getOutboxNextAttemptAt();
+        return this.meta == null ? null : this.meta.getRequestedAt();
     }
 
     @Data
@@ -86,57 +98,5 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
         private UUID siteId;
         private String traceId;
         private Instant requestedAt;
-
-        public Map<String, String> getOutboxMetadata() {
-            final Map<String, String> metadata = new LinkedHashMap<>();
-            this.putIfPresent(metadata, OutboxMetadataKey.USER_ID, this.userId == null ? null : String.valueOf(this.userId));
-            this.putIfPresent(metadata, OutboxMetadataKey.SITE_ID, this.siteId == null ? null : this.siteId.toString());
-            this.putIfPresent(metadata, OutboxMetadataKey.TRACE_ID, this.traceId);
-            this.putIfPresent(metadata,
-                    OutboxMetadataKey.REQUESTED_AT,
-                    this.requestedAt == null ? null : this.requestedAt.toString());
-            return metadata.isEmpty() ? Map.of() : Map.copyOf(metadata);
-        }
-
-        public String getOutboxTraceId() {
-            return this.traceId;
-        }
-
-        public String getOutboxAggregateType() {
-            return "USER";
-        }
-
-        public Long getOutboxAggregateId() {
-            return this.userId;
-        }
-
-        public Instant getOutboxNextAttemptAt() {
-            return this.requestedAt;
-        }
-
-        private void putIfPresent(final Map<String, String> metadata,
-                                  final OutboxMetadataKey key,
-                                  final String value) {
-            if (value != null) {
-                metadata.put(key.getKey(), value);
-            }
-        }
-    }
-
-    private enum OutboxMetadataKey {
-        USER_ID("userId"),
-        SITE_ID("siteId"),
-        TRACE_ID("traceId"),
-        REQUESTED_AT("requestedAt");
-
-        private final String key;
-
-        OutboxMetadataKey(final String key) {
-            this.key = key;
-        }
-
-        public String getKey() {
-            return this.key;
-        }
     }
 }
