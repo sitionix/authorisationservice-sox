@@ -3,7 +3,7 @@ package com.sitionix.athssox.pipe.producer;
 import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.OutboxEventType;
+import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.pipe.producer.mapper.NotificationEventMapper;
 import com.sitionix.forge.outbox.core.port.ForgeOutboxEventPublisher;
 import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
@@ -31,7 +31,7 @@ public class NotificationPublisherV1 implements ForgeOutboxEventPublisher<EmailV
 
     @Override
     public String eventType() {
-        return OutboxEventType.EMAIL_VERIFY.getDescription();
+        return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
     @Override

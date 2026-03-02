@@ -26,7 +26,7 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
 
     @Override
     public String getOutboxEventType() {
-        return OutboxEventType.EMAIL_VERIFY.getDescription();
+        return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
     @Override
