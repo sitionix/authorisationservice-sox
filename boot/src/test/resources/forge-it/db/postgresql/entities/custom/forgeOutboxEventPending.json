@@ -1,7 +1,9 @@
 {
   "id": 1002,
+  "eventTypeId": 1,
   "eventType": "EMAIL_VERIFY",
   "payload": "{}",
+  "statusId": 1,
   "status": "PENDING",
   "retryCount": 0,
   "nextRetryAt": "2026-01-01T00:00:00Z",

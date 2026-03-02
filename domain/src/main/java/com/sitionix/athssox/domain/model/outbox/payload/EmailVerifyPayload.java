@@ -1,9 +1,11 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
 import com.sitionix.forge.outbox.core.port.EventMetadataContract;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
@@ -14,6 +16,8 @@ import java.util.UUID;
 @Data
 @Builder
 @Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode
 public class EmailVerifyPayload implements EventMetadataContract {
 
@@ -35,6 +39,19 @@ public class EmailVerifyPayload implements EventMetadataContract {
     @Override
     public String getEventType() {
         return NotificationTemplate.EMAIL_VERIFY.getDescription();
+    }
+
+    @Override
+    public String getOutboxAggregateType() {
+        return "USER";
+    }
+
+    @Override
+    public Long getOutboxAggregateId() {
+        if (this.meta == null) {
+            return null;
+        }
+        return this.meta.getUserId();
     }
 
     @Data
