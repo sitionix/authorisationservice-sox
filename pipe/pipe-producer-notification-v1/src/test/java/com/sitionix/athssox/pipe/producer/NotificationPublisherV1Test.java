@@ -68,24 +68,23 @@ class NotificationPublisherV1Test {
         final Instant createdAt = Instant.parse("2026-03-02T09:00:00Z");
         final String eventType = "EMAIL_VERIFY";
 
-        when(payload.getIdempotencyId())
+        when(metadata.getIdempotencyId())
                 .thenReturn(idempotencyId);
-        when(payload.getCreatedAt())
+        when(metadata.getCreatedAt())
                 .thenReturn(createdAt);
-        when(payload.getEventType())
+        when(metadata.getEventType())
                 .thenReturn(eventType);
-        when(this.mapper.asEnvelope(payload, payload))
+        when(this.mapper.asEnvelope(payload, metadata))
                 .thenReturn(envelope);
 
         //when
         this.notificationPublisherV1.publish(payload, metadata);
 
         //then
-        verify(this.mapper).asEnvelope(payload, payload);
-        verify(payload, times(2)).getIdempotencyId();
-        verify(payload).getCreatedAt();
-        verify(payload).getEventType();
-        verifyNoInteractions(metadata);
+        verify(this.mapper).asEnvelope(payload, metadata);
+        verify(metadata).getIdempotencyId();
+        verify(metadata).getCreatedAt();
+        verify(metadata).getEventType();
         verify(this.producer).send(idempotencyId.toString(), envelope);
         verifyNoMoreInteractions(payload, metadata, envelope);
     }

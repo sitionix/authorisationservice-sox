@@ -8,7 +8,6 @@ import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
-import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
@@ -61,7 +60,12 @@ public class RegisterUserImpl implements RegisterUser {
 
         final ResponseRegisterUser createdUser = this.userRepository.createUser(registerUserDO);
 
-        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(this.buildContext(createdUser, registerUserDO));
+        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(
+                createdUser.getUserId(),
+                registerUserDO.getSiteId(),
+                registerUserDO.getEmail(),
+                null,
+                this.clock.instant());
         this.forgeOutbox.send(payload);
 
         createdUser.setMessage(REGISTRATION_ACCEPTED_MESSAGE);
@@ -79,17 +83,6 @@ public class RegisterUserImpl implements RegisterUser {
         if (role.isGlobalScoped()) {
             registerUserDO.setSiteId(null);
         }
-    }
-
-    private EmailVerifyPayloadContext buildContext(final ResponseRegisterUser createdUser, final RegisterUserDO registerUserDO) {
-        return new EmailVerifyPayloadContext(
-                createdUser.getUserId(),
-                registerUserDO.getSiteId(),
-                registerUserDO.getEmail(),
-                null,
-                null,
-                this.clock.instant()
-        );
     }
 
     private Optional<ResponseRegisterUser> findExistingUser(final RegisterUserDO registerUserDO) {
@@ -116,7 +109,12 @@ public class RegisterUserImpl implements RegisterUser {
                                                    final RegisterUserDO registerUserDO) {
         if (this.emailVerificationResendPolicy.isResendAllowed(existingUser.getUserId())) {
             final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder
-                    .build(this.buildContext(existingUser, registerUserDO));
+                    .build(
+                            existingUser.getUserId(),
+                            registerUserDO.getSiteId(),
+                            registerUserDO.getEmail(),
+                            null,
+                            this.clock.instant());
             this.forgeOutbox.send(payload);
         }
 

@@ -5,7 +5,6 @@ import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedEx
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -159,7 +157,7 @@ class ResendEmailVerificationImplTest {
                 .thenReturn(true);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
+        when(this.emailVerifyPayloadBuilder.build(any(), any(), any(), any(), any()))
                 .thenReturn(outboxPayload);
 
         //when
@@ -172,13 +170,9 @@ class ResendEmailVerificationImplTest {
         verify(this.emailVerificationResendPolicy).isResendAllowed(userId);
         verify(this.emailVerificationTokenRepository).revokeActiveByUserId(userId);
 
-        final ArgumentCaptor<EmailVerifyPayloadContext> contextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
-        verify(this.emailVerifyPayloadBuilder).build(contextCaptor.capture());
+        verify(this.emailVerifyPayloadBuilder).build(userId, user.getSiteId(), user.getEmail(), null, now);
         verify(this.forgeOutbox).send(outboxPayload);
         verify(this.clock).instant();
-
-        final EmailVerifyPayloadContext expectedContext = this.getPayloadContext(user, now);
-        assertThat(contextCaptor.getValue()).isEqualTo(expectedContext);
     }
 
     private ResendEmailVerificationResponse resendEmailVerificationResponse() {
@@ -194,17 +188,6 @@ class ResendEmailVerificationImplTest {
                 .email("user@sitionix.com")
                 .siteId(UUID.fromString("2f6a6c3c-8b0f-4f58-9c18-2a7d9c889a4f"))
                 .build();
-    }
-
-    private EmailVerifyPayloadContext getPayloadContext(final AuthUser user, final Instant now) {
-        return new EmailVerifyPayloadContext(
-                user.getId(),
-                user.getSiteId(),
-                user.getEmail(),
-                null,
-                null,
-                now
-        );
     }
 
 }

@@ -4,12 +4,12 @@ import com.sitionix.athssox.domain.builder.EmailVerifyPayloadBuilder;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
-import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -19,18 +19,26 @@ public final class EmailVerifyPayloadBuilderImpl implements EmailVerifyPayloadBu
     private final EmailVerificationTokenService tokenService;
 
     @Override
-    public EmailVerifyPayload build(final EmailVerifyPayloadContext ctx) {
-        final EmailVerificationTokenIssue tokenIssue = this.tokenService.issue(ctx.userId(), ctx.siteId());
-        return this.buildPayload(ctx, tokenIssue.tokenId(), tokenIssue.pepperId());
+    public EmailVerifyPayload build(final Long userId,
+                                    final UUID siteId,
+                                    final String email,
+                                    final String traceId,
+                                    final Instant requestedAt) {
+        final EmailVerificationTokenIssue tokenIssue = this.tokenService.issue(userId, siteId);
+        return this.buildPayload(userId, siteId, email, traceId, requestedAt, tokenIssue.tokenId(), tokenIssue.pepperId());
     }
 
-    private EmailVerifyPayload buildPayload(final EmailVerifyPayloadContext ctx,
+    private EmailVerifyPayload buildPayload(final Long userId,
+                                            final UUID siteId,
+                                            final String email,
+                                            final String traceId,
+                                            final Instant requestedAt,
                                             final UUID verificationTokenId,
                                             final UUID pepperId) {
         return EmailVerifyPayload.builder()
                 .delivery(EmailVerifyPayload.Delivery.builder()
                         .channel(VerifyChannel.EMAIL)
-                        .to(ctx.email())
+                        .to(email)
                         .build())
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(EmailVerifyPayload.Params.builder()
@@ -38,13 +46,13 @@ public final class EmailVerifyPayloadBuilderImpl implements EmailVerifyPayloadBu
                         .pepperId(pepperId)
                         .build())
                 .meta(EmailVerifyPayload.Meta.builder()
-                        .userId(ctx.userId())
-                        .siteId(ctx.siteId())
-                        .traceId(ctx.traceId())
-                        .requestedAt(ctx.requestedAt())
+                        .userId(userId)
+                        .siteId(siteId)
+                        .traceId(traceId)
+                        .requestedAt(requestedAt)
                         .build())
                 .idempotencyId(verificationTokenId)
-                .createdAt(ctx.requestedAt())
+                .createdAt(requestedAt)
                 .build();
     }
 }

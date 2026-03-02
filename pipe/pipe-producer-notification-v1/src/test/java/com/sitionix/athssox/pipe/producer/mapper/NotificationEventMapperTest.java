@@ -11,6 +11,7 @@ import com.app_afesox.ntfssox.events.notifications.contents.EmailVerificationCon
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
+import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -106,6 +108,8 @@ class NotificationEventMapperTest {
         final UUID idempotencyId = UUID.fromString("f899ee7f-6e45-4967-ac17-6c13c7ae5e0f");
 
         final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt, idempotencyId, createdAt);
+        final ForgeOutboxPublishMetadata metadata = this.getMetadataContract(idempotencyId, createdAt,
+                NotificationTemplate.EMAIL_VERIFY.getDescription());
 
         final EmailVerificationContentDTO content = this.getContent();
         final DeliveryDTO delivery = this.getDelivery();
@@ -128,7 +132,7 @@ class NotificationEventMapperTest {
         final NotificationEnvelope expected = this.getNotificationEnvelope(expectedMetadata, expectedPayload);
 
         //when
-        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(payload, payload);
+        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(payload, metadata);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -147,10 +151,9 @@ class NotificationEventMapperTest {
         //given
         final Instant createdAt = this.getInstant("2024-04-23T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("2b2077f5-987f-43a2-af1b-463154649ffb");
-        final EmailVerifyPayload given = this.getEmailVerifyPayload(this.getSiteId(),
-                this.getInstant("2024-04-23T08:15:30Z"),
-                idempotencyId,
-                createdAt);
+        final ForgeOutboxPublishMetadata given = this.getMetadataContract(idempotencyId,
+                createdAt,
+                NotificationTemplate.EMAIL_VERIFY.getDescription());
         final Metadata expected = this.getMetadata(idempotencyId,
                 createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
@@ -334,5 +337,15 @@ class NotificationEventMapperTest {
                 .setMetadata(metadata)
                 .setPayload(payload)
                 .build();
+    }
+
+    private ForgeOutboxPublishMetadata getMetadataContract(final UUID idempotencyId,
+                                                           final Instant createdAt,
+                                                           final String eventType) {
+        final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
+        when(metadata.getIdempotencyId()).thenReturn(idempotencyId);
+        when(metadata.getCreatedAt()).thenReturn(createdAt);
+        when(metadata.getEventType()).thenReturn(eventType);
+        return metadata;
     }
 }

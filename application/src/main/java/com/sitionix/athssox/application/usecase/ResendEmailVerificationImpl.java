@@ -5,7 +5,6 @@ import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedEx
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
@@ -48,21 +47,15 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
 
         this.emailVerificationTokenRepository.revokeActiveByUserId(userId);
 
-        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(this.buildContext(user));
-        this.forgeOutbox.send(payload);
-
-        return this.buildResponse();
-    }
-
-    private EmailVerifyPayloadContext buildContext(final AuthUser user) {
-        return new EmailVerifyPayloadContext(
+        final EmailVerifyPayload payload = this.emailVerifyPayloadBuilder.build(
                 user.getId(),
                 user.getSiteId(),
                 user.getEmail(),
                 null,
-                null,
-                this.clock.instant()
-        );
+                this.clock.instant());
+        this.forgeOutbox.send(payload);
+
+        return this.buildResponse();
     }
 
     private ResendEmailVerificationResponse buildResponse() {

@@ -7,7 +7,6 @@ import com.sitionix.athssox.domain.model.UserRole;
 import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
-import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
@@ -116,7 +115,7 @@ class RegisterUserImplTest {
                 .thenReturn(createdUser);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
+        when(this.emailVerifyPayloadBuilder.build(any(), any(), any(), any(), any()))
                 .thenReturn(outboxPayload);
 
         //when
@@ -124,7 +123,6 @@ class RegisterUserImplTest {
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
-        final ArgumentCaptor<EmailVerifyPayloadContext> buildContextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -137,7 +135,7 @@ class RegisterUserImplTest {
         verify(this.clock)
                 .instant();
         verify(this.emailVerifyPayloadBuilder)
-                .build(buildContextCaptor.capture());
+                .build(createdUser.getUserId(), siteId, DEFAULT_EMAIL, null, now);
         verify(this.forgeOutbox)
                 .send(outboxPayload);
 
@@ -148,11 +146,6 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getPayloadContext(createdUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                now));
     }
 
     @Test
@@ -179,15 +172,13 @@ class RegisterUserImplTest {
                 .thenReturn(true);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
+        when(this.emailVerifyPayloadBuilder.build(any(), any(), any(), any(), any()))
                 .thenReturn(outboxPayload);
 
         //when
         final ResponseRegisterUser actual = this.registerUser.execute(given);
 
         //then
-        final ArgumentCaptor<EmailVerifyPayloadContext> buildContextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
-
         verify(this.userRepository)
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verify(this.emailVerificationResendPolicy)
@@ -195,16 +186,11 @@ class RegisterUserImplTest {
         verify(this.clock)
                 .instant();
         verify(this.emailVerifyPayloadBuilder)
-                .build(buildContextCaptor.capture());
+                .build(existingUser.getUserId(), siteId, DEFAULT_EMAIL, null, now);
         verify(this.forgeOutbox)
                 .send(outboxPayload);
 
         assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getPayloadContext(existingUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                now));
     }
 
     @Test
@@ -389,7 +375,7 @@ class RegisterUserImplTest {
                 .thenReturn(createdUser);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.emailVerifyPayloadBuilder.build(any(EmailVerifyPayloadContext.class)))
+        when(this.emailVerifyPayloadBuilder.build(any(), any(), any(), any(), any()))
                 .thenReturn(outboxPayload);
 
         //when
@@ -397,7 +383,6 @@ class RegisterUserImplTest {
 
         //then
         final ArgumentCaptor<RegisterUserDO> registerUserCaptor = ArgumentCaptor.forClass(RegisterUserDO.class);
-        final ArgumentCaptor<EmailVerifyPayloadContext> buildContextCaptor = ArgumentCaptor.forClass(EmailVerifyPayloadContext.class);
 
         verify(this.passwordPolicyValidator)
                 .validate(rawPassword);
@@ -410,7 +395,7 @@ class RegisterUserImplTest {
         verify(this.clock)
                 .instant();
         verify(this.emailVerifyPayloadBuilder)
-                .build(buildContextCaptor.capture());
+                .build(createdUser.getUserId(), null, DEFAULT_EMAIL, null, now);
         verify(this.forgeOutbox)
                 .send(outboxPayload);
 
@@ -421,11 +406,6 @@ class RegisterUserImplTest {
                 encodedPassword);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
         assertThat(actual).isEqualTo(expected);
-        assertThat(buildContextCaptor.getValue().requestedAt()).isEqualTo(now);
-        assertThat(buildContextCaptor.getValue()).isEqualTo(this.getPayloadContext(createdUser.getUserId(),
-                null,
-                DEFAULT_EMAIL,
-                now));
     }
 
     private RegisterUserDO getRegisterUserDO(final UUID siteId,
@@ -450,18 +430,6 @@ class RegisterUserImplTest {
                 .status(status)
                 .message(message)
                 .build();
-    }
-
-    private EmailVerifyPayloadContext getPayloadContext(final Long userId,
-                                                            final UUID siteId,
-                                                            final String email,
-                                                            final Instant requestedAt) {
-        return new EmailVerifyPayloadContext(userId,
-                siteId,
-                email,
-                null,
-                null,
-                requestedAt);
     }
 
     private RuntimeException getRuntimeException(final String message) {

@@ -17,6 +17,8 @@ import java.util.UUID;
 @EqualsAndHashCode
 public class EmailVerifyPayload implements EventMetadataContract {
 
+    public static final String EVENT_TYPE = NotificationTemplate.EMAIL_VERIFY.getDescription();
+
     private Delivery delivery;
     private NotificationTemplate template;
     private Params params;
@@ -36,7 +38,7 @@ public class EmailVerifyPayload implements EventMetadataContract {
 
     @Override
     public String getEventType() {
-        return NotificationTemplate.EMAIL_VERIFY.getDescription();
+        return EVENT_TYPE;
     }
 
     @Data

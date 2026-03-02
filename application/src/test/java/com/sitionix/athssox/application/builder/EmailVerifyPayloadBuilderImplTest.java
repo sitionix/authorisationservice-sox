@@ -1,7 +1,6 @@
 package com.sitionix.athssox.application.builder;
 
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
-import com.sitionix.athssox.domain.model.emailverify.EmailVerifyPayloadContext;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
@@ -40,20 +39,21 @@ class EmailVerifyPayloadBuilderImplTest {
     }
 
     @Test
-    void givenContext_whenBuild_thenReturnEmailVerifyPayload() {
+    void givenValues_whenBuild_thenReturnEmailVerifyPayload() {
         //given
+        final Long userId = 1L;
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getRequestedAt();
         final UUID tokenId = this.getTokenId();
         final UUID pepperId = this.getPepperId();
-        final EmailVerifyPayloadContext given = this.getPayloadContext(siteId,
-                requestedAt);
+        final String email = "email";
+        final String traceId = "traceId";
 
-        when(this.tokenService.issue(1L, siteId))
+        when(this.tokenService.issue(userId, siteId))
                 .thenReturn(this.getTokenIssue(tokenId, pepperId));
 
         //when
-        final EmailVerifyPayload actual = this.builder.build(given);
+        final EmailVerifyPayload actual = this.builder.build(userId, siteId, email, traceId, requestedAt);
 
         //then
         final EmailVerifyPayload expected = this.getEmailVerifyPayload(siteId, requestedAt, tokenId, pepperId);
@@ -64,17 +64,7 @@ class EmailVerifyPayloadBuilderImplTest {
         assertThat(actual.getEventType()).isEqualTo(NotificationTemplate.EMAIL_VERIFY.getDescription());
 
         verify(this.tokenService)
-                .issue(1L, siteId);
-    }
-
-    private EmailVerifyPayloadContext getPayloadContext(final UUID siteId,
-                                                            final Instant requestedAt) {
-        return new EmailVerifyPayloadContext(1L,
-                siteId,
-                "email",
-                "traceId",
-                null,
-                requestedAt);
+                .issue(userId, siteId);
     }
 
     private UUID getSiteId() {
