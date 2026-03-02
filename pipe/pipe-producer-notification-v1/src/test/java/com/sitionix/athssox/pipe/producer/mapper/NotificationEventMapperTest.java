@@ -11,7 +11,7 @@ import com.app_afesox.ntfssox.events.notifications.contents.EmailVerificationCon
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
-import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
+import com.sitionix.forge.outbox.core.model.Event;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -100,7 +99,7 @@ class NotificationEventMapperTest {
     }
 
     @Test
-    void givenPayloadAndMetadata_whenAsEnvelope_thenReturnNotificationEventEnvelope() {
+    void givenEvent_whenAsEnvelope_thenReturnNotificationEventEnvelope() {
         //given
         final UUID siteId = this.getSiteId();
         final Instant requestedAt = this.getInstant("2024-04-22T08:15:30Z");
@@ -108,7 +107,7 @@ class NotificationEventMapperTest {
         final UUID idempotencyId = UUID.fromString("f899ee7f-6e45-4967-ac17-6c13c7ae5e0f");
 
         final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt, idempotencyId, createdAt);
-        final ForgeOutboxPublishMetadata metadata = this.getMetadataContract(idempotencyId, createdAt,
+        final Event<EmailVerifyPayload> event = this.getEvent(payload, idempotencyId, createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
 
         final EmailVerificationContentDTO content = this.getContent();
@@ -132,7 +131,7 @@ class NotificationEventMapperTest {
         final NotificationEnvelope expected = this.getNotificationEnvelope(expectedMetadata, expectedPayload);
 
         //when
-        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(payload, metadata);
+        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(event);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -147,11 +146,13 @@ class NotificationEventMapperTest {
     }
 
     @Test
-    void givenPublishMetadata_whenAsMetadata_thenReturnMetadata() {
+    void givenEvent_whenAsMetadata_thenReturnMetadata() {
         //given
         final Instant createdAt = this.getInstant("2024-04-23T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("2b2077f5-987f-43a2-af1b-463154649ffb");
-        final ForgeOutboxPublishMetadata given = this.getMetadataContract(idempotencyId,
+        final Event<EmailVerifyPayload> given = this.getEvent(
+                this.getEmailVerifyPayload(this.getSiteId(), this.getInstant("2024-04-23T08:15:30Z"), idempotencyId, createdAt),
+                idempotencyId,
                 createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
         final Metadata expected = this.getMetadata(idempotencyId,
@@ -339,13 +340,15 @@ class NotificationEventMapperTest {
                 .build();
     }
 
-    private ForgeOutboxPublishMetadata getMetadataContract(final UUID idempotencyId,
-                                                           final Instant createdAt,
-                                                           final String eventType) {
-        final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
-        when(metadata.getIdempotencyId()).thenReturn(idempotencyId);
-        when(metadata.getCreatedAt()).thenReturn(createdAt);
-        when(metadata.getEventType()).thenReturn(eventType);
-        return metadata;
+    private Event<EmailVerifyPayload> getEvent(final EmailVerifyPayload payload,
+                                               final UUID idempotencyId,
+                                               final Instant createdAt,
+                                               final String eventType) {
+        return Event.<EmailVerifyPayload>builder()
+                .payload(payload)
+                .idempotencyId(idempotencyId)
+                .createdAt(createdAt)
+                .eventType(eventType)
+                .build();
     }
 }

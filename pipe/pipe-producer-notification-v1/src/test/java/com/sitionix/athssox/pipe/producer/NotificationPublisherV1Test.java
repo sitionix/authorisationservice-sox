@@ -4,7 +4,7 @@ import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.app_afesox.ntfssox.events.notifications.kafka.NotificationsV1Producer;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
 import com.sitionix.athssox.pipe.producer.mapper.NotificationEventMapper;
-import com.sitionix.forge.outbox.core.port.ForgeOutboxPublishMetadata;
+import com.sitionix.forge.outbox.core.model.Event;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -48,44 +47,47 @@ class NotificationPublisherV1Test {
     @Test
     void givenNullPayload_whenPublish_thenThrowException() {
         //given
-        final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
+        final Event<EmailVerifyPayload> event = mock(Event.class);
 
         //when
         //then
-        assertThatThrownBy(() -> this.notificationPublisherV1.publish(null, metadata))
+        assertThatThrownBy(() -> this.notificationPublisherV1.publish(null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Outbox payload and metadata are required");
-        verifyNoInteractions(metadata);
+                .hasMessage("Outbox event and payload are required");
+        verifyNoInteractions(event);
     }
 
     @Test
-    void givenPayloadAndMetadata_whenPublish_thenSendEnvelope() {
+    void givenEvent_whenPublish_thenSendEnvelope() {
         //given
         final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
-        final ForgeOutboxPublishMetadata metadata = mock(ForgeOutboxPublishMetadata.class);
+        final Event<EmailVerifyPayload> event = mock(Event.class);
         final NotificationEnvelope envelope = mock(NotificationEnvelope.class);
         final UUID idempotencyId = UUID.fromString("70ef4ab8-6728-495d-8922-3b7eeb3af05c");
         final Instant createdAt = Instant.parse("2026-03-02T09:00:00Z");
         final String eventType = "EMAIL_VERIFY";
 
-        when(metadata.getIdempotencyId())
+        when(event.getPayload())
+                .thenReturn(payload);
+        when(event.getIdempotencyId())
                 .thenReturn(idempotencyId);
-        when(metadata.getCreatedAt())
+        when(event.getCreatedAt())
                 .thenReturn(createdAt);
-        when(metadata.getEventType())
+        when(event.getEventType())
                 .thenReturn(eventType);
-        when(this.mapper.asEnvelope(payload, metadata))
+        when(this.mapper.asEnvelope(event))
                 .thenReturn(envelope);
 
         //when
-        this.notificationPublisherV1.publish(payload, metadata);
+        this.notificationPublisherV1.publish(event);
 
         //then
-        verify(this.mapper).asEnvelope(payload, metadata);
-        verify(metadata).getIdempotencyId();
-        verify(metadata).getCreatedAt();
-        verify(metadata).getEventType();
+        verify(this.mapper).asEnvelope(event);
+        verify(event).getPayload();
+        verify(event).getIdempotencyId();
+        verify(event).getCreatedAt();
+        verify(event).getEventType();
         verify(this.producer).send(idempotencyId.toString(), envelope);
-        verifyNoMoreInteractions(payload, metadata, envelope);
+        verifyNoMoreInteractions(payload, event, envelope);
     }
 }
