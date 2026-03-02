@@ -8,8 +8,6 @@ import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 
 
@@ -17,14 +15,14 @@ import java.util.UUID;
 @Builder
 @Jacksonized
 @EqualsAndHashCode
-public class EmailVerifyPayload implements ForgeOutboxPayload {
-
-    private static final String USER_AGGREGATE = "USER";
+public class EmailVerifyPayload implements ForgeOutboxPayload, EventMetadataContract {
 
     private Delivery delivery;
     private NotificationTemplate template;
     private Params params;
     private Meta meta;
+    private UUID idempotencyId;
+    private Instant createdAt;
 
     @Override
     public String eventType() {
@@ -32,39 +30,18 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
     }
 
     @Override
-    public Map<String, String> getOutboxMetadata() {
-        if (this.meta == null) {
-            return Map.of();
-        }
-        return this.meta.getOutboxMetadata();
+    public UUID getIdempotencyId() {
+        return this.idempotencyId;
     }
 
     @Override
-    public String getOutboxTraceId() {
-        return this.meta == null ? null : this.meta.getTraceId();
+    public Instant getCreatedAt() {
+        return this.createdAt;
     }
 
     @Override
-    public String getOutboxAggregateType() {
-        return this.meta == null || this.meta.getUserId() == null ? null : USER_AGGREGATE;
-    }
-
-    @Override
-    public Long getOutboxAggregateId() {
-        return this.meta == null ? null : this.meta.getUserId();
-    }
-
-    @Override
-    public String getOutboxInitiatorType() {
-        return this.meta == null || this.meta.getUserId() == null ? null : USER_AGGREGATE;
-    }
-
-    @Override
-    public String getOutboxInitiatorId() {
-        if (this.meta == null || this.meta.getUserId() == null) {
-            return null;
-        }
-        return String.valueOf(this.meta.getUserId());
+    public String getEventType() {
+        return this.eventType();
     }
 
     @Data
@@ -96,41 +73,5 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
         private UUID siteId;
         private String traceId;
         private Instant requestedAt;
-
-        public Map<String, String> getOutboxMetadata() {
-            final Map<String, String> metadata = new LinkedHashMap<>();
-            this.putIfPresent(metadata, OutboxMetadataKey.USER_ID, this.userId == null ? null : String.valueOf(this.userId));
-            this.putIfPresent(metadata, OutboxMetadataKey.SITE_ID, this.siteId == null ? null : this.siteId.toString());
-            this.putIfPresent(metadata, OutboxMetadataKey.TRACE_ID, this.traceId);
-            this.putIfPresent(metadata,
-                    OutboxMetadataKey.REQUESTED_AT,
-                    this.requestedAt == null ? null : this.requestedAt.toString());
-            return metadata.isEmpty() ? Map.of() : Map.copyOf(metadata);
-        }
-
-        private void putIfPresent(final Map<String, String> metadata,
-                                  final OutboxMetadataKey key,
-                                  final String value) {
-            if (value != null) {
-                metadata.put(key.getKey(), value);
-            }
-        }
-    }
-
-    private enum OutboxMetadataKey {
-        USER_ID("userId"),
-        SITE_ID("siteId"),
-        TRACE_ID("traceId"),
-        REQUESTED_AT("requestedAt");
-
-        private final String key;
-
-        OutboxMetadataKey(final String key) {
-            this.key = key;
-        }
-
-        public String getKey() {
-            return this.key;
-        }
     }
 }

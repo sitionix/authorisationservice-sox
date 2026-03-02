@@ -9,7 +9,6 @@ import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.app_afesox.ntfssox.events.notifications.NotificationTemplateDTO;
 import com.app_afesox.ntfssox.events.notifications.contents.EmailVerificationContentDTO;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.EventMetadataContract;
 import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
 import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import org.junit.jupiter.api.AfterEach;
@@ -106,8 +105,7 @@ class NotificationEventMapperTest {
         final Instant createdAt = this.getInstant("2024-04-22T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("f899ee7f-6e45-4967-ac17-6c13c7ae5e0f");
 
-        final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt);
-        final EventMetadataContract metadata = this.getPublishMetadata(idempotencyId, createdAt);
+        final EmailVerifyPayload payload = this.getEmailVerifyPayload(siteId, requestedAt, idempotencyId, createdAt);
 
         final EmailVerificationContentDTO content = this.getContent();
         final DeliveryDTO delivery = this.getDelivery();
@@ -130,7 +128,7 @@ class NotificationEventMapperTest {
         final NotificationEnvelope expected = this.getNotificationEnvelope(expectedMetadata, expectedPayload);
 
         //when
-        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(payload, metadata);
+        final NotificationEnvelope actual = this.notificationEventMapper.asEnvelope(payload, payload);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -149,7 +147,10 @@ class NotificationEventMapperTest {
         //given
         final Instant createdAt = this.getInstant("2024-04-23T08:16:30Z");
         final UUID idempotencyId = UUID.fromString("2b2077f5-987f-43a2-af1b-463154649ffb");
-        final EventMetadataContract given = this.getPublishMetadata(idempotencyId, createdAt);
+        final EmailVerifyPayload given = this.getEmailVerifyPayload(this.getSiteId(),
+                this.getInstant("2024-04-23T08:15:30Z"),
+                idempotencyId,
+                createdAt);
         final Metadata expected = this.getMetadata(idempotencyId,
                 createdAt,
                 NotificationTemplate.EMAIL_VERIFY.getDescription());
@@ -225,11 +226,23 @@ class NotificationEventMapperTest {
 
     private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
                                                      final Instant requestedAt) {
+        return this.getEmailVerifyPayload(siteId,
+                requestedAt,
+                UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                requestedAt);
+    }
+
+    private EmailVerifyPayload getEmailVerifyPayload(final UUID siteId,
+                                                     final Instant requestedAt,
+                                                     final UUID idempotencyId,
+                                                     final Instant createdAt) {
         return EmailVerifyPayload.builder()
                 .delivery(this.getEmailVerifyPayloadDelivery())
                 .template(NotificationTemplate.EMAIL_VERIFY)
                 .params(this.getEmailVerifyPayloadParams())
                 .meta(this.getEmailVerifyPayloadMeta(siteId, requestedAt))
+                .idempotencyId(idempotencyId)
+                .createdAt(createdAt)
                 .build();
     }
 
@@ -303,26 +316,6 @@ class NotificationEventMapperTest {
 
     private Instant getInstant(final String value) {
         return Instant.parse(value);
-    }
-
-    private EventMetadataContract getPublishMetadata(final UUID idempotencyId,
-                                                     final Instant createdAt) {
-        return new EventMetadataContract() {
-            @Override
-            public UUID getIdempotencyId() {
-                return idempotencyId;
-            }
-
-            @Override
-            public Instant getCreatedAt() {
-                return createdAt;
-            }
-
-            @Override
-            public String getEventType() {
-                return NotificationTemplate.EMAIL_VERIFY.getDescription();
-            }
-        };
     }
 
     private Metadata getMetadata(final UUID idempotencyId,

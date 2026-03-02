@@ -43,6 +43,8 @@ public final class EmailVerifyPayloadBuilderImpl implements EmailVerifyPayloadBu
                         .traceId(ctx.traceId())
                         .requestedAt(ctx.requestedAt())
                         .build())
+                .idempotencyId(verificationTokenId)
+                .createdAt(ctx.requestedAt())
                 .build();
     }
 }
