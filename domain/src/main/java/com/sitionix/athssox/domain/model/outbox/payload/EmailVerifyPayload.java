@@ -1,5 +1,6 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
+import com.sitionix.forge.outbox.core.port.EventMetadataContract;
 import com.sitionix.forge.outbox.core.port.ForgeOutboxPayload;
 import lombok.Builder;
 import lombok.Data;

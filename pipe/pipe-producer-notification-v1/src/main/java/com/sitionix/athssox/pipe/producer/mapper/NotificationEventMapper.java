@@ -5,7 +5,7 @@ import com.app_afesox.ntfssox.events.notifications.NotificationEvent;
 import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.EventMetadataContract;
+import com.sitionix.forge.outbox.core.port.EventMetadataContract;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
