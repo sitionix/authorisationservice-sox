@@ -10,10 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-
-import static java.util.Objects.isNull;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,21 +22,10 @@ public class NotificationPublisherV1 implements ForgeOutboxEventPublisher<EmailV
     @Override
     public void publish(final Event<EmailVerifyPayload> event) {
         log.info("Publish notification event");
-        if (isNull(event) || isNull(event.getPayload())) {
-            throw new IllegalArgumentException("Outbox event and payload are required");
-        }
-
-        final String eventType = Objects.requireNonNull(event.getEventType(), "eventType is required");
-        if (eventType.isBlank()) {
-            throw new IllegalArgumentException("eventType is required");
-        }
-        final String key = Objects.requireNonNull(event.getIdempotencyId(), "idempotencyId is required").toString();
-        Objects.requireNonNull(event.getCreatedAt(), "createdAt is required");
-
+        final String key = event.getIdempotencyId().toString();
         final NotificationEnvelope envelope = this.mapper.asEnvelope(event);
-
         this.producer.send(key, envelope);
-        log.info("Notification event published type={} idempotencyId={}", eventType, key);
+        log.info("Notification event published type={} idempotencyId={}", event.getEventType(), key);
     }
 
 }

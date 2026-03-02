@@ -12,13 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -45,34 +42,15 @@ class NotificationPublisherV1Test {
     }
 
     @Test
-    void givenNullPayload_whenPublish_thenThrowException() {
-        //given
-        final Event<EmailVerifyPayload> event = mock(Event.class);
-
-        //when
-        //then
-        assertThatThrownBy(() -> this.notificationPublisherV1.publish(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Outbox event and payload are required");
-        verifyNoInteractions(event);
-    }
-
-    @Test
     void givenEvent_whenPublish_thenSendEnvelope() {
         //given
-        final EmailVerifyPayload payload = mock(EmailVerifyPayload.class);
         final Event<EmailVerifyPayload> event = mock(Event.class);
         final NotificationEnvelope envelope = mock(NotificationEnvelope.class);
         final UUID idempotencyId = UUID.fromString("70ef4ab8-6728-495d-8922-3b7eeb3af05c");
-        final Instant createdAt = Instant.parse("2026-03-02T09:00:00Z");
         final String eventType = "EMAIL_VERIFY";
 
-        when(event.getPayload())
-                .thenReturn(payload);
         when(event.getIdempotencyId())
                 .thenReturn(idempotencyId);
-        when(event.getCreatedAt())
-                .thenReturn(createdAt);
         when(event.getEventType())
                 .thenReturn(eventType);
         when(this.mapper.asEnvelope(event))
@@ -83,11 +61,9 @@ class NotificationPublisherV1Test {
 
         //then
         verify(this.mapper).asEnvelope(event);
-        verify(event).getPayload();
         verify(event).getIdempotencyId();
-        verify(event).getCreatedAt();
         verify(event).getEventType();
         verify(this.producer).send(idempotencyId.toString(), envelope);
-        verifyNoMoreInteractions(payload, event, envelope);
+        verifyNoMoreInteractions(event, envelope);
     }
 }
