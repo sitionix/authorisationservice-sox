@@ -23,7 +23,7 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
     private Meta meta;
 
     @Override
-    public String getOutboxEventType() {
+    public String eventType() {
         return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
