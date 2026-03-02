@@ -28,35 +28,23 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
     }
 
     @Override
-    public Long metadataUserId() {
-        if (this.meta == null || this.meta.getUserId() == null) {
-            return null;
-        }
-        return this.meta.getUserId();
+    public Long userId() {
+        return this.meta == null ? null : this.meta.getUserId();
     }
 
     @Override
-    public UUID metadataSiteId() {
-        if (this.meta == null || this.meta.getSiteId() == null) {
-            return null;
-        }
-        return this.meta.getSiteId();
+    public UUID siteId() {
+        return this.meta == null ? null : this.meta.getSiteId();
     }
 
     @Override
-    public String metadataTraceId() {
-        if (this.meta == null) {
-            return null;
-        }
-        return this.meta.getTraceId();
+    public String traceId() {
+        return this.meta == null ? null : this.meta.getTraceId();
     }
 
     @Override
-    public Instant metadataRequestedAt() {
-        if (this.meta == null || this.meta.getRequestedAt() == null) {
-            return null;
-        }
-        return this.meta.getRequestedAt();
+    public Instant requestedAt() {
+        return this.meta == null ? null : this.meta.getRequestedAt();
     }
 
     @Data
