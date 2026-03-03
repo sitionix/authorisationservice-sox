@@ -43,12 +43,12 @@ public class EmailVerifyPayload implements EventMetadataContract {
     }
 
     @Override
-    public OutboxAggregateType outboxAggregateType() {
+    public OutboxAggregateType getAgregateType() {
         return OutboxAggregateType.USER;
     }
 
     @Override
-    public Long getOutboxAggregateId() {
+    public Long getAgregateId() {
         if (this.meta == null) {
             return null;
         }

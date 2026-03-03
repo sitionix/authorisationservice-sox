@@ -7,15 +7,6 @@ CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_aggregate
 CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_event_type
     ON forge_outbox_events (event_type);
 
-CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_initiator_type_id
-    ON forge_outbox_events (initiator_type_id);
-
-CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_initiator_id
-    ON forge_outbox_events (initiator_id);
-
-CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_initiator
-    ON forge_outbox_events (initiator_type_id, initiator_id);
-
 CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_polling
     ON forge_outbox_events (status_id, next_retry_at, created_at);
 

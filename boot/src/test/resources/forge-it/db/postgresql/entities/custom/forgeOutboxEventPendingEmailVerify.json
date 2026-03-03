@@ -3,7 +3,6 @@
   "eventType": "EMAIL_VERIFY",
   "payload": "{\"delivery\":{\"channel\":\"EMAIL\",\"to\":\"email@sitionix.com\"},\"template\":\"EMAIL_VERIFY\",\"params\":{\"emailVerificationTokenId\":\"11111111-1111-1111-1111-111111111111\",\"pepperId\":\"22222222-2222-2222-2222-222222222222\"},\"meta\":{\"userId\":1,\"siteId\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"traceId\":null,\"requestedAt\":\"2025-12-23T18:31:16.740787Z\"}}",
   "statusId": 1,
-  "status": "PENDING",
   "retryCount": 0,
   "nextRetryAt": "2026-01-01T00:00:00Z",
   "createdAt": "2026-01-01T00:00:00Z",
