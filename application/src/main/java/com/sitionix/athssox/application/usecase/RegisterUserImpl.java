@@ -1,6 +1,5 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.application.outbox.payload.EmailVerifyPayloadFactory;
 import com.sitionix.athssox.application.validator.PasswordPolicyValidator;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
@@ -10,6 +9,8 @@ import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
+import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
@@ -43,7 +44,6 @@ public class RegisterUserImpl implements RegisterUser {
     private final ForgeOutbox forgeOutbox;
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
-    private final EmailVerifyPayloadFactory emailVerifyPayloadFactory;
     private final Clock clock;
 
     @Override
@@ -67,7 +67,7 @@ public class RegisterUserImpl implements RegisterUser {
         final Instant now = this.clock.instant();
         final EmailVerificationTokenIssue tokenIssue =
                 this.emailVerificationTokenService.issue(createdUser.getUserId(), registerUserDO.getSiteId());
-        final EmailVerifyPayload payload = this.emailVerifyPayloadFactory.create(createdUser.getUserId(),
+        final EmailVerifyPayload payload = this.buildPayload(createdUser.getUserId(),
                 registerUserDO.getSiteId(),
                 registerUserDO.getEmail(),
                 null,
@@ -118,7 +118,7 @@ public class RegisterUserImpl implements RegisterUser {
             final Instant now = this.clock.instant();
             final EmailVerificationTokenIssue tokenIssue =
                     this.emailVerificationTokenService.issue(existingUser.getUserId(), registerUserDO.getSiteId());
-            final EmailVerifyPayload payload = this.emailVerifyPayloadFactory.create(existingUser.getUserId(),
+            final EmailVerifyPayload payload = this.buildPayload(existingUser.getUserId(),
                     registerUserDO.getSiteId(),
                     registerUserDO.getEmail(),
                     null,
@@ -131,4 +131,28 @@ public class RegisterUserImpl implements RegisterUser {
         return existingUser;
     }
 
+    private EmailVerifyPayload buildPayload(final Long userId,
+                                            final UUID siteId,
+                                            final String email,
+                                            final String traceId,
+                                            final Instant requestedAt,
+                                            final EmailVerificationTokenIssue tokenIssue) {
+        return EmailVerifyPayload.builder()
+                .delivery(EmailVerifyPayload.Delivery.builder()
+                        .channel(VerifyChannel.EMAIL)
+                        .to(email)
+                        .build())
+                .template(NotificationTemplate.EMAIL_VERIFY)
+                .params(EmailVerifyPayload.Params.builder()
+                        .emailVerificationTokenId(tokenIssue.tokenId())
+                        .pepperId(tokenIssue.pepperId())
+                        .build())
+                .meta(EmailVerifyPayload.Meta.builder()
+                        .userId(userId)
+                        .siteId(siteId)
+                        .traceId(traceId)
+                        .requestedAt(requestedAt)
+                        .build())
+                .build();
+    }
 }

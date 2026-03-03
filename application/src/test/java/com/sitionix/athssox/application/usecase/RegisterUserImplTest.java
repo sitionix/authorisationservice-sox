@@ -1,6 +1,5 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.application.outbox.payload.EmailVerifyPayloadFactory;
 import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.RegisterUserDO;
 import com.sitionix.athssox.domain.model.ResponseRegisterUser;
@@ -9,8 +8,6 @@ import com.sitionix.athssox.domain.model.UserStatus;
 import com.sitionix.athssox.domain.exception.EmailAlreadyRegisteredException;
 import com.sitionix.athssox.domain.exception.MissingSiteIdException;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
-import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.repository.UserRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
 import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
@@ -64,9 +61,6 @@ class RegisterUserImplTest {
     private EmailVerificationResendPolicy emailVerificationResendPolicy;
 
     @Mock
-    private EmailVerifyPayloadFactory emailVerifyPayloadFactory;
-
-    @Mock
     private Clock clock;
 
     @BeforeEach
@@ -77,7 +71,6 @@ class RegisterUserImplTest {
                 this.forgeOutbox,
                 this.emailVerificationTokenService,
                 this.emailVerificationResendPolicy,
-                this.emailVerifyPayloadFactory,
                 this.clock);
     }
 
@@ -89,7 +82,6 @@ class RegisterUserImplTest {
                 this.forgeOutbox,
                 this.emailVerificationTokenService,
                 this.emailVerificationResendPolicy,
-                this.emailVerifyPayloadFactory,
                 this.clock);
     }
 
@@ -114,12 +106,6 @@ class RegisterUserImplTest {
                 "Registration accepted. Please check your email for verification.");
         final UUID tokenId = UUID.fromString("c9b1f3f4-12c7-11ec-82a8-0242ac130003");
         final UUID pepperId = UUID.fromString("2cf629c1-1b58-4aa3-a9fd-5e9be2b1d31d");
-        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(createdUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                now,
-                tokenId,
-                pepperId);
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
                 .thenReturn(Optional.empty());
@@ -131,13 +117,6 @@ class RegisterUserImplTest {
                 .thenReturn(now);
         when(this.emailVerificationTokenService.issue(createdUser.getUserId(), siteId))
                 .thenReturn(new EmailVerificationTokenIssue(tokenId, pepperId));
-        when(this.emailVerifyPayloadFactory.create(createdUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                null,
-                now,
-                new EmailVerificationTokenIssue(tokenId, pepperId)))
-                .thenReturn(expectedPayload);
 
         //when
         final ResponseRegisterUser actual = this.registerUser.execute(given);
@@ -157,22 +136,23 @@ class RegisterUserImplTest {
                 .instant();
         verify(this.emailVerificationTokenService)
                 .issue(createdUser.getUserId(), siteId);
-        verify(this.emailVerifyPayloadFactory)
-                .create(createdUser.getUserId(),
-                        siteId,
-                        DEFAULT_EMAIL,
-                        null,
-                        now,
-                        new EmailVerificationTokenIssue(tokenId, pepperId));
+        final ArgumentCaptor<EmailVerifyPayload> payloadCaptor = ArgumentCaptor.forClass(EmailVerifyPayload.class);
         verify(this.forgeOutbox)
-                .send(expectedPayload);
+                .send(payloadCaptor.capture());
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(siteId,
                 DEFAULT_EMAIL,
                 UserRole.SITE_USER,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 encodedPassword);
+        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(createdUser.getUserId(),
+                siteId,
+                DEFAULT_EMAIL,
+                now,
+                tokenId,
+                pepperId);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
+        assertThat(payloadCaptor.getValue()).isEqualTo(expectedPayload);
         assertThat(actual).isEqualTo(expected);
     }
 
@@ -194,12 +174,6 @@ class RegisterUserImplTest {
                 "Registration accepted. Please check your email for verification.");
         final UUID tokenId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         final UUID pepperId = UUID.fromString("22222222-2222-2222-2222-222222222222");
-        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(existingUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                now,
-                tokenId,
-                pepperId);
 
         when(this.userRepository.findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId))
                 .thenReturn(Optional.of(existingUser));
@@ -209,13 +183,6 @@ class RegisterUserImplTest {
                 .thenReturn(now);
         when(this.emailVerificationTokenService.issue(existingUser.getUserId(), siteId))
                 .thenReturn(new EmailVerificationTokenIssue(tokenId, pepperId));
-        when(this.emailVerifyPayloadFactory.create(existingUser.getUserId(),
-                siteId,
-                DEFAULT_EMAIL,
-                null,
-                now,
-                new EmailVerificationTokenIssue(tokenId, pepperId)))
-                .thenReturn(expectedPayload);
 
         //when
         final ResponseRegisterUser actual = this.registerUser.execute(given);
@@ -229,15 +196,17 @@ class RegisterUserImplTest {
                 .instant();
         verify(this.emailVerificationTokenService)
                 .issue(existingUser.getUserId(), siteId);
-        verify(this.emailVerifyPayloadFactory)
-                .create(existingUser.getUserId(),
-                        siteId,
-                        DEFAULT_EMAIL,
-                        null,
-                        now,
-                        new EmailVerificationTokenIssue(tokenId, pepperId));
+        final ArgumentCaptor<EmailVerifyPayload> payloadCaptor = ArgumentCaptor.forClass(EmailVerifyPayload.class);
         verify(this.forgeOutbox)
-                .send(expectedPayload);
+                .send(payloadCaptor.capture());
+
+        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(existingUser.getUserId(),
+                siteId,
+                DEFAULT_EMAIL,
+                now,
+                tokenId,
+                pepperId);
+        assertThat(payloadCaptor.getValue()).isEqualTo(expectedPayload);
         assertThat(actual).isEqualTo(expected);
     }
 
@@ -304,8 +273,7 @@ class RegisterUserImplTest {
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
                 this.emailVerificationTokenService,
-                this.forgeOutbox,
-                this.emailVerifyPayloadFactory);
+                this.forgeOutbox);
     }
 
     @Test
@@ -337,8 +305,7 @@ class RegisterUserImplTest {
                 .findGlobalByEmail(DEFAULT_EMAIL);
         verifyNoInteractions(this.passwordEncoder,
                 this.emailVerificationTokenService,
-                this.forgeOutbox,
-                this.emailVerifyPayloadFactory);
+                this.forgeOutbox);
     }
 
     @Test
@@ -370,8 +337,7 @@ class RegisterUserImplTest {
                 .findSiteScopedByEmailAndSiteId(DEFAULT_EMAIL, siteId);
         verifyNoInteractions(this.passwordEncoder,
                 this.emailVerificationTokenService,
-                this.forgeOutbox,
-                this.emailVerifyPayloadFactory);
+                this.forgeOutbox);
     }
 
     @Test
@@ -394,8 +360,7 @@ class RegisterUserImplTest {
                 this.passwordEncoder,
                 this.userRepository,
                 this.emailVerificationTokenService,
-                this.forgeOutbox,
-                this.emailVerifyPayloadFactory);
+                this.forgeOutbox);
     }
 
     @Test
@@ -419,12 +384,6 @@ class RegisterUserImplTest {
                 "Registration accepted. Please check your email for verification.");
         final UUID tokenId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         final UUID pepperId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(createdUser.getUserId(),
-                null,
-                DEFAULT_EMAIL,
-                now,
-                tokenId,
-                pepperId);
 
         when(this.userRepository.findGlobalByEmail(DEFAULT_EMAIL))
                 .thenReturn(Optional.empty());
@@ -436,13 +395,6 @@ class RegisterUserImplTest {
                 .thenReturn(now);
         when(this.emailVerificationTokenService.issue(createdUser.getUserId(), null))
                 .thenReturn(new EmailVerificationTokenIssue(tokenId, pepperId));
-        when(this.emailVerifyPayloadFactory.create(createdUser.getUserId(),
-                null,
-                DEFAULT_EMAIL,
-                null,
-                now,
-                new EmailVerificationTokenIssue(tokenId, pepperId)))
-                .thenReturn(expectedPayload);
 
         //when
         final ResponseRegisterUser actual = this.registerUser.execute(given);
@@ -462,22 +414,23 @@ class RegisterUserImplTest {
                 .instant();
         verify(this.emailVerificationTokenService)
                 .issue(createdUser.getUserId(), null);
-        verify(this.emailVerifyPayloadFactory)
-                .create(createdUser.getUserId(),
-                        null,
-                        DEFAULT_EMAIL,
-                        null,
-                        now,
-                        new EmailVerificationTokenIssue(tokenId, pepperId));
+        final ArgumentCaptor<EmailVerifyPayload> payloadCaptor = ArgumentCaptor.forClass(EmailVerifyPayload.class);
         verify(this.forgeOutbox)
-                .send(expectedPayload);
+                .send(payloadCaptor.capture());
 
         final RegisterUserDO expectedRegisterUserDO = this.getRegisterUserDO(null,
                 DEFAULT_EMAIL,
                 UserRole.SUPER_ADMIN,
                 UserStatus.PENDING_EMAIL_VERIFY,
                 encodedPassword);
+        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(createdUser.getUserId(),
+                null,
+                DEFAULT_EMAIL,
+                now,
+                tokenId,
+                pepperId);
         assertThat(registerUserCaptor.getValue()).isEqualTo(expectedRegisterUserDO);
+        assertThat(payloadCaptor.getValue()).isEqualTo(expectedPayload);
         assertThat(actual).isEqualTo(expected);
     }
 
@@ -489,10 +442,10 @@ class RegisterUserImplTest {
                                                      final UUID pepperId) {
         return EmailVerifyPayload.builder()
                 .delivery(EmailVerifyPayload.Delivery.builder()
-                        .channel(VerifyChannel.EMAIL)
+                        .channel(com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel.EMAIL)
                         .to(email)
                         .build())
-                .template(NotificationTemplate.EMAIL_VERIFY)
+                .template(com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate.EMAIL_VERIFY)
                 .params(EmailVerifyPayload.Params.builder()
                         .emailVerificationTokenId(tokenId)
                         .pepperId(pepperId)

@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -30,40 +29,17 @@ public class EmailVerifyPayload implements EventMetadataContract {
 
     @Override
     public UUID getIdempotencyId() {
-        if (this.params != null && this.params.getEmailVerificationTokenId() != null) {
-            return this.params.getEmailVerificationTokenId();
-        }
-        final String seed = String.join("|",
-                this.getEventType(),
-                this.meta == null || this.meta.getUserId() == null ? "" : String.valueOf(this.meta.getUserId()),
-                this.meta == null || this.meta.getSiteId() == null ? "" : this.meta.getSiteId().toString(),
-                this.meta == null || this.meta.getRequestedAt() == null ? "" : this.meta.getRequestedAt().toString(),
-                this.delivery == null || this.delivery.getTo() == null ? "" : this.delivery.getTo());
-        return UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8));
+        return UUID.randomUUID();
     }
 
     @Override
     public Instant getCreatedAt() {
-        if (this.meta != null && this.meta.getRequestedAt() != null) {
-            return this.meta.getRequestedAt();
-        }
         return Instant.now();
     }
 
     @Override
     public String getEventType() {
-        if (this.template != null) {
-            return this.template.getDescription();
-        }
         return NotificationTemplate.EMAIL_VERIFY.getDescription();
-    }
-
-    @Override
-    public String getOutboxTraceId() {
-        if (this.meta == null) {
-            return null;
-        }
-        return this.meta.getTraceId();
     }
 
     @Override

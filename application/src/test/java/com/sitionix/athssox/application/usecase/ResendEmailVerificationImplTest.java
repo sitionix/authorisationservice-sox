@@ -1,6 +1,5 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.application.outbox.payload.EmailVerifyPayloadFactory;
 import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -55,9 +55,6 @@ class ResendEmailVerificationImplTest {
     private EmailVerificationTokenService emailVerificationTokenService;
 
     @Mock
-    private EmailVerifyPayloadFactory emailVerifyPayloadFactory;
-
-    @Mock
     private Clock clock;
 
     @Mock
@@ -70,7 +67,6 @@ class ResendEmailVerificationImplTest {
                 this.emailVerificationResendPolicy,
                 this.forgeOutbox,
                 this.emailVerificationTokenService,
-                this.emailVerifyPayloadFactory,
                 this.clock,
                 this.forgeUserClient);
     }
@@ -82,7 +78,6 @@ class ResendEmailVerificationImplTest {
                 this.emailVerificationResendPolicy,
                 this.forgeOutbox,
                 this.emailVerificationTokenService,
-                this.emailVerifyPayloadFactory,
                 this.clock,
                 this.forgeUserClient);
     }
@@ -161,12 +156,6 @@ class ResendEmailVerificationImplTest {
         final UUID tokenId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         final UUID pepperId = UUID.fromString("22222222-2222-2222-2222-222222222222");
         final EmailVerificationTokenIssue tokenIssue = new EmailVerificationTokenIssue(tokenId, pepperId);
-        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(userId,
-                user.getSiteId(),
-                user.getEmail(),
-                now,
-                tokenId,
-                pepperId);
 
         when(this.forgeUserClient.getUserId())
                 .thenReturn(userId);
@@ -178,13 +167,6 @@ class ResendEmailVerificationImplTest {
                 .thenReturn(now);
         when(this.emailVerificationTokenService.issue(userId, user.getSiteId()))
                 .thenReturn(tokenIssue);
-        when(this.emailVerifyPayloadFactory.create(userId,
-                user.getSiteId(),
-                user.getEmail(),
-                null,
-                now,
-                tokenIssue))
-                .thenReturn(expectedPayload);
 
         //when
         final ResendEmailVerificationResponse actual = this.resendEmailVerification.execute();
@@ -197,13 +179,17 @@ class ResendEmailVerificationImplTest {
         verify(this.emailVerificationTokenRepository).revokeActiveByUserId(userId);
         verify(this.clock).instant();
         verify(this.emailVerificationTokenService).issue(userId, user.getSiteId());
-        verify(this.emailVerifyPayloadFactory).create(userId,
+
+        final ArgumentCaptor<EmailVerifyPayload> payloadCaptor = ArgumentCaptor.forClass(EmailVerifyPayload.class);
+        verify(this.forgeOutbox).send(payloadCaptor.capture());
+
+        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(userId,
                 user.getSiteId(),
                 user.getEmail(),
-                null,
                 now,
-                tokenIssue);
-        verify(this.forgeOutbox).send(expectedPayload);
+                tokenId,
+                pepperId);
+        assertThat(payloadCaptor.getValue()).isEqualTo(expectedPayload);
     }
 
     private ResendEmailVerificationResponse resendEmailVerificationResponse() {
