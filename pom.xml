@@ -49,7 +49,7 @@
         <spring.version>3.3.4</spring.version>
         <forgeit.version>0.0.35</forgeit.version>
         <forge.security.version>0.0.4</forge.security.version>
-        <forge.common.version>0.0.1-SNAPSHOT</forge.common.version>
+        <forge.common.version>0.0.1</forge.common.version>
     </properties>
     <dependencyManagement>
         <dependencies>
