@@ -1,7 +1,7 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
-import com.sitionix.forge.outbox.core.port.EventMetadataContract;
 import com.sitionix.forge.outbox.core.model.OutboxAggregateType;
+import com.sitionix.forge.outbox.core.port.ForgeOutboxPayload;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
-public class EmailVerifyPayload implements EventMetadataContract {
+public class EmailVerifyPayload implements ForgeOutboxPayload {
 
     private Delivery delivery;
     private NotificationTemplate template;
@@ -28,31 +28,29 @@ public class EmailVerifyPayload implements EventMetadataContract {
     private Meta meta;
 
     @Override
-    public UUID getIdempotencyId() {
-        return UUID.randomUUID();
-    }
-
-    @Override
-    public Instant getCreatedAt() {
-        return Instant.now();
-    }
-
-    @Override
-    public String getEventType() {
+    public String eventType() {
         return NotificationTemplate.EMAIL_VERIFY.getDescription();
     }
 
     @Override
-    public OutboxAggregateType getAgregateType() {
+    public OutboxAggregateType aggregateType() {
         return OutboxAggregateType.USER;
     }
 
     @Override
-    public Long getAgregateId() {
+    public Long aggregateId() {
         if (this.meta == null) {
             return null;
         }
         return this.meta.getUserId();
+    }
+
+    @Override
+    public String traceId() {
+        if (this.meta == null) {
+            return null;
+        }
+        return this.meta.getTraceId();
     }
 
     @Data
