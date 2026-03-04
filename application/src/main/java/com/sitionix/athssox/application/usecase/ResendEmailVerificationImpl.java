@@ -1,25 +1,28 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
-import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
+import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
 import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
+import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import com.sitionix.forge.security.server.user.ForgeUserClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +31,8 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
     private final AuthUserRepository authUserRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final EmailVerificationResendPolicy emailVerificationResendPolicy;
-    private final OutboxCommand<EmailVerifyPayload> outboxCommand;
-    private final OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private final ForgeOutbox forgeOutbox;
+    private final EmailVerificationTokenService emailVerificationTokenService;
     private final Clock clock;
     private final ForgeUserClient forgeUserClient;
 
@@ -49,21 +52,43 @@ public class ResendEmailVerificationImpl implements ResendEmailVerification {
 
         this.emailVerificationTokenRepository.revokeActiveByUserId(userId);
 
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = this.outboxEventBuilder.build(this.buildContext(user));
-        this.outboxCommand.execute(outboxEvent);
-
-        return this.buildResponse();
-    }
-
-    private OutboxBuildContext buildContext(final AuthUser user) {
-        return new OutboxBuildContext(
+        final Instant now = this.clock.instant();
+        final EmailVerificationTokenIssue tokenIssue = this.emailVerificationTokenService.issue(user.getId(), user.getSiteId());
+        final EmailVerifyPayload payload = this.buildPayload(
                 user.getId(),
                 user.getSiteId(),
                 user.getEmail(),
                 null,
-                null,
-                this.clock.instant()
-        );
+                now,
+                tokenIssue);
+        this.forgeOutbox.send(payload);
+
+        return this.buildResponse();
+    }
+
+    private EmailVerifyPayload buildPayload(final Long userId,
+                                            final UUID siteId,
+                                            final String email,
+                                            final String traceId,
+                                            final Instant requestedAt,
+                                            final EmailVerificationTokenIssue tokenIssue) {
+        return EmailVerifyPayload.builder()
+                .delivery(EmailVerifyPayload.Delivery.builder()
+                        .channel(VerifyChannel.EMAIL)
+                        .to(email)
+                        .build())
+                .template(NotificationTemplate.EMAIL_VERIFY)
+                .params(EmailVerifyPayload.Params.builder()
+                        .emailVerificationTokenId(tokenIssue.tokenId())
+                        .pepperId(tokenIssue.pepperId())
+                        .build())
+                .meta(EmailVerifyPayload.Meta.builder()
+                        .userId(userId)
+                        .siteId(siteId)
+                        .traceId(traceId)
+                        .requestedAt(requestedAt)
+                        .build())
+                .build();
     }
 
     private ResendEmailVerificationResponse buildResponse() {

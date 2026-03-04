@@ -14,19 +14,19 @@ class PasswordPolicyValidatorTest {
     private final PasswordPolicyValidator passwordPolicyValidator = new PasswordPolicyValidator();
 
     @Test
-    void given_valid_password_when_validate_then_no_exception() {
+    void givenValidPassword_whenValidate_thenNoException() {
         assertThatNoException().isThrownBy(() -> this.passwordPolicyValidator.validate("StrongPassword123"));
     }
 
     @Test
-    void given_password_without_digit_when_validate_then_throw() {
+    void givenPasswordWithoutDigit_whenValidate_thenThrow() {
         assertThatThrownBy(() -> this.passwordPolicyValidator.validate("StrongPassword"))
                 .isInstanceOf(InvalidPasswordException.class)
                 .hasMessage(PasswordPolicyValidator.DEFAULT_ERROR_MESSAGE);
     }
 
     @Test
-    void given_too_short_password_when_validate_then_throw() {
+    void givenTooShortPassword_whenValidate_thenThrow() {
         assertThatThrownBy(() -> this.passwordPolicyValidator.validate("A1b"))
                 .isInstanceOf(InvalidPasswordException.class)
                 .hasMessage(PasswordPolicyValidator.DEFAULT_ERROR_MESSAGE);

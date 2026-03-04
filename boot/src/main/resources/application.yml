@@ -37,10 +37,6 @@ auth:
       cache-seconds: 300
   session:
     last-used-throttle-minutes: 5
-  cleanup:
-    enabled: true
-    cron: "0 0 0 * * *"
-    zone: Europe/Kiev
 security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
@@ -62,9 +58,3 @@ forge:
       excludes:
         - "/.well-known/jwks.json"
         - "/oauth2/v1/keys"
-outbox:
-  worker:
-    poll-delay-ms: 5000
-    batch-size: 50
-    retry-delay-seconds: 60
-    max-retries: 5

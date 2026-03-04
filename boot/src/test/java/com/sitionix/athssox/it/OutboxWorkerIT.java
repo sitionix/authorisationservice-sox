@@ -3,7 +3,8 @@ package com.sitionix.athssox.it;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.OutboxKafkaContracts;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.application.outbox.OutboxWorker;
+import com.sitionix.forge.outbox.core.port.ForgeOutboxWorker;
+import com.sitionix.forge.outbox.testkit.postgres.contract.ForgeOutboxPostgresDbContracts;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,26 +16,23 @@ import java.time.Duration;
 class OutboxWorkerIT {
 
     @Autowired
-    private OutboxWorker worker;
+    private ForgeOutboxWorker forgeOutboxWorker;
 
     @Autowired
     private TestManager testManager;
 
     @Test
     @DisplayName("given one outbox pattern when worker starts then publish verify event")
-    void given_outbox_event_in_db_when_dispatch_pending_events_then_publish_event() {
+    void givenOutboxEventInDb_whenDispatchPendingEvents_thenPublishEvent() {
         //given
         this.testManager.postgresql()
                 .create()
-                .to(DatabaseContract.OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_STATUS_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT.getById(2L))
-                .to(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("outboxEventEmailVerifyEntityPending.json"))
+                .to(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT
+                        .withJson("forgeOutboxEventPendingEmailVerify.json"))
                 .build();
 
         //when
-        this.worker.dispatchPendingEvents();
+        this.forgeOutboxWorker.dispatchPendingEvents();
 
         //then
         this.testManager.kafka()
@@ -43,20 +41,16 @@ class OutboxWorkerIT {
     }
 
     @Test
-    @DisplayName("given non email verify outbox event when worker starts then ignore event")
-    void given_non_email_verify_outbox_event_when_dispatch_pending_events_then_ignore_event() {
+    @DisplayName("given sent email verify outbox event when worker starts then ignore event")
+    void givenSentEmailVerifyOutboxEvent_whenDispatchPendingEvents_thenIgnoreEvent() {
         //given
         this.testManager.postgresql()
                 .create()
-                .to(DatabaseContract.OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT.getById(2L))
-                .to(DatabaseContract.OUTBOX_STATUS_ENTITY_DB_CONTRACT.getById(1L))
-                .to(DatabaseContract.OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT.getById(2L))
-                .to(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("outboxEventPasswordResetEntityPending.json"))
+                .to(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT.withJson("forgeOutboxEventSentOld.json"))
                 .build();
 
         //when
-        this.worker.dispatchPendingEvents();
+        this.forgeOutboxWorker.dispatchPendingEvents();
 
         //then
         this.testManager.kafka()

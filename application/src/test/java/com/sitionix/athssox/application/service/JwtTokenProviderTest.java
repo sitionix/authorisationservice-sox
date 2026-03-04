@@ -63,7 +63,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void given_auth_user_when_generate_access_token_then_return_access_token() {
+    void givenAuthUser_whenGenerateAccessToken_thenReturnAccessToken() {
         //given
         final AuthUser given = this.getAuthUser(42L, UUID.fromString("2d259c34-2e92-4e20-95b2-8321b2d1cb9b"));
         final Instant expiresAt = NOW.plusSeconds(3600L);
@@ -101,7 +101,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void given_access_token_when_verify_with_wrong_issuer_then_throw_exception() {
+    void givenAccessToken_whenVerifyWithWrongIssuer_thenThrowException() {
         //given
         final AuthUser given = this.getAuthUser(7L, UUID.randomUUID());
         final KeyPair keyPair = this.getRsaKeyPair();
@@ -143,7 +143,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void given_access_token_when_verify_with_wrong_audience_then_throw_exception() {
+    void givenAccessToken_whenVerifyWithWrongAudience_thenThrowException() {
         //given
         final AuthUser given = this.getAuthUser(7L, UUID.randomUUID());
         final KeyPair keyPair = this.getRsaKeyPair();
@@ -186,7 +186,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void given_none_algorithm_token_when_verify_with_rsa_algorithm_then_throw_exception() {
+    void givenNoneAlgorithmToken_whenVerifyWithRsaAlgorithm_thenThrowException() {
         //given
         final AuthUser given = this.getAuthUser(7L, UUID.randomUUID());
         final KeyPair keyPair = this.getRsaKeyPair();
@@ -205,7 +205,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void given_auth_user_when_generate_refresh_token_then_return_refresh_token() {
+    void givenAuthUser_whenGenerateRefreshToken_thenReturnRefreshToken() {
         //given
         final AuthUser given = this.getAuthUser(7L, null);
         final Instant expiresAt = NOW.plusSeconds(7200L);

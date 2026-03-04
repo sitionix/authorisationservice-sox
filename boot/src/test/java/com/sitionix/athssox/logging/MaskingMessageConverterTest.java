@@ -32,7 +32,7 @@ class MaskingMessageConverterTest {
     }
 
     @Test
-    void given_message_with_email_when_convert_then_mask_email() {
+    void givenMessageWithEmail_whenConvert_thenMaskEmail() {
         //given
         final String given = this.getMessageWithTo();
         final String expected = this.getMessageWithMaskedTo();
@@ -49,7 +49,7 @@ class MaskingMessageConverterTest {
     }
 
     @Test
-    void given_message_without_email_when_convert_then_return_original() {
+    void givenMessageWithoutEmail_whenConvert_thenReturnOriginal() {
         //given
         final String given = this.getMessageWithoutTo();
 

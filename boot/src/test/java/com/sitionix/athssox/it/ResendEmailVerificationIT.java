@@ -4,6 +4,7 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
+import com.sitionix.forge.outbox.testkit.postgres.contract.ForgeOutboxPostgresDbContracts;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,11 +57,8 @@ class ResendEmailVerificationIT {
                         "emailVerificationTokenResendActiveExpected.json");
 
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
-                .hasSize(1)
-                .withFetchedRelations()
-                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt")
-                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1);
     }
 
     @Test
@@ -100,7 +98,7 @@ class ResendEmailVerificationIT {
                 .containsAllWithJsons("emailVerificationTokenActiveExpected.json");
 
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 

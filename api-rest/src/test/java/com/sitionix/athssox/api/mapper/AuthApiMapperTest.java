@@ -24,7 +24,7 @@ class AuthApiMapperTest {
     }
 
     @Test
-    void given_login_request_dto_when_as_login_request_then_return_login_request() {
+    void givenLoginRequestDto_whenAsLoginRequest_thenReturnLoginRequest() {
         //given
         final UUID siteId = UUID.randomUUID();
         final LoginRequestDTO given = this.getLoginRequestDTO(siteId);
@@ -38,7 +38,7 @@ class AuthApiMapperTest {
     }
 
     @Test
-    void given_login_response_when_as_login_response_dto_then_return_login_response_dto() {
+    void givenLoginResponse_whenAsLoginResponseDto_thenReturnLoginResponseDto() {
         //given
         final LoginResponse given = this.getLoginResponse();
         final LoginResponseDTO expected = this.getLoginResponseDTO();

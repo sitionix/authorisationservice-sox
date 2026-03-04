@@ -6,7 +6,8 @@ import com.sitionix.athssox.application.service.HmacEmailVerificationTokenSigner
 import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
+import com.sitionix.forge.outbox.postgres.entity.ForgeOutboxEventEntity;
+import com.sitionix.forge.outbox.testkit.postgres.contract.ForgeOutboxPostgresDbContracts;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import com.jayway.jsonpath.JsonPath;
@@ -87,8 +88,8 @@ class RegistrationEmailVerificationTokenIT {
         assertThat(token.getUsedAt()).isNull();
         assertThat(token.getExpiresAt()).isEqualTo(FIXED_NOW.plusSeconds(EMAIL_VERIFICATION_TTL_SECONDS));
 
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(1);
         final String payload = events.get(0).getPayload();
         final String payloadTokenId = JsonPath.read(payload, "$.params.emailVerificationTokenId");
@@ -114,8 +115,8 @@ class RegistrationEmailVerificationTokenIT {
                 .assertAndCreate();
 
         //then
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(1);
         final String payload = events.get(0).getPayload();
         final String payloadPepperId = JsonPath.read(payload, "$.params.pepperId");
@@ -140,8 +141,8 @@ class RegistrationEmailVerificationTokenIT {
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
 
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(1);
         final String payload = events.get(0).getPayload();
         final UUID tokenId = UUID.fromString(JsonPath.read(payload, "$.params.emailVerificationTokenId"));
@@ -171,8 +172,8 @@ class RegistrationEmailVerificationTokenIT {
                 .expectStatus(HttpStatus.CREATED)
                 .assertAndCreate();
 
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(1);
         final String payload = events.get(0).getPayload();
         final UUID tokenId = UUID.fromString(JsonPath.read(payload, "$.params.emailVerificationTokenId"));
@@ -209,8 +210,8 @@ class RegistrationEmailVerificationTokenIT {
                 .assertAndCreate();
 
         //then
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(2);
         final String firstPayload = events.get(0).getPayload();
         final String secondPayload = events.get(1).getPayload();

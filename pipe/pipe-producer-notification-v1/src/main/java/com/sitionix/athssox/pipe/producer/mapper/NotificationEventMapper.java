@@ -5,7 +5,7 @@ import com.app_afesox.ntfssox.events.notifications.NotificationEvent;
 import com.app_afesox.ntfssox.events.notifications.NotificationEnvelope;
 import com.sitionix.athssox.domain.config.MapstructComponent;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
-import com.sitionix.athssox.domain.model.outbox.payload.Event;
+import com.sitionix.forge.outbox.core.model.Event;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -27,7 +27,8 @@ public interface NotificationEventMapper {
     @Mapping(target = "content", source = "params")
     NotificationEvent asEvent(EmailVerifyPayload payload);
 
-    @Mapping(target = "metadata", source = "event")
+    @Mapping(target = "payload", source = "payload")
+    @Mapping(target = "metadata", source = ".")
     NotificationEnvelope asEnvelope(Event<EmailVerifyPayload> event);
 
     @Mapping(target = "idempotencyId", source = "idempotencyId", qualifiedByName = "uuidToString")

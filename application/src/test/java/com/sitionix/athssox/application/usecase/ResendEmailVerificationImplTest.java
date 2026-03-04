@@ -1,18 +1,19 @@
 package com.sitionix.athssox.application.usecase;
 
-import com.sitionix.athssox.domain.builder.OutboxEventBuilder;
-import com.sitionix.athssox.domain.command.OutboxCommand;
 import com.sitionix.athssox.domain.exception.EmailVerificationResendNotAllowedException;
 import com.sitionix.athssox.domain.model.AuthUser;
 import com.sitionix.athssox.domain.model.ResendEmailVerificationResponse;
 import com.sitionix.athssox.domain.model.UserStatus;
-import com.sitionix.athssox.domain.model.outbox.OutboxBuildContext;
-import com.sitionix.athssox.domain.model.outbox.OutboxEvent;
+import com.sitionix.athssox.domain.model.emailverify.EmailVerificationTokenIssue;
 import com.sitionix.athssox.domain.model.outbox.payload.EmailVerifyPayload;
+import com.sitionix.athssox.domain.model.outbox.payload.NotificationTemplate;
+import com.sitionix.athssox.domain.model.outbox.payload.VerifyChannel;
 import com.sitionix.athssox.domain.repository.AuthUserRepository;
 import com.sitionix.athssox.domain.repository.EmailVerificationTokenRepository;
 import com.sitionix.athssox.domain.service.EmailVerificationResendPolicy;
+import com.sitionix.athssox.domain.service.EmailVerificationTokenService;
 import com.sitionix.athssox.domain.usecase.ResendEmailVerification;
+import com.sitionix.forge.outbox.core.port.ForgeOutbox;
 import com.sitionix.forge.security.server.user.ForgeUserClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ResendEmailVerificationImplTest {
@@ -46,10 +49,10 @@ class ResendEmailVerificationImplTest {
     private EmailVerificationResendPolicy emailVerificationResendPolicy;
 
     @Mock
-    private OutboxCommand<EmailVerifyPayload> outboxCommand;
+    private ForgeOutbox forgeOutbox;
 
     @Mock
-    private OutboxEventBuilder<EmailVerifyPayload> outboxEventBuilder;
+    private EmailVerificationTokenService emailVerificationTokenService;
 
     @Mock
     private Clock clock;
@@ -62,8 +65,8 @@ class ResendEmailVerificationImplTest {
         this.resendEmailVerification = new ResendEmailVerificationImpl(this.authUserRepository,
                 this.emailVerificationTokenRepository,
                 this.emailVerificationResendPolicy,
-                this.outboxCommand,
-                this.outboxEventBuilder,
+                this.forgeOutbox,
+                this.emailVerificationTokenService,
                 this.clock,
                 this.forgeUserClient);
     }
@@ -73,8 +76,8 @@ class ResendEmailVerificationImplTest {
         verifyNoMoreInteractions(this.authUserRepository,
                 this.emailVerificationTokenRepository,
                 this.emailVerificationResendPolicy,
-                this.outboxCommand,
-                this.outboxEventBuilder,
+                this.forgeOutbox,
+                this.emailVerificationTokenService,
                 this.clock,
                 this.forgeUserClient);
     }
@@ -149,8 +152,10 @@ class ResendEmailVerificationImplTest {
         final Long userId = 3L;
         final AuthUser user = this.getAuthUser(userId, UserStatus.PENDING_EMAIL_VERIFY);
         final Instant now = Instant.parse("2024-01-02T10:15:30Z");
-        final OutboxEvent<EmailVerifyPayload> outboxEvent = mock(OutboxEvent.class);
         final ResendEmailVerificationResponse expected = this.resendEmailVerificationResponse();
+        final UUID tokenId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        final UUID pepperId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        final EmailVerificationTokenIssue tokenIssue = new EmailVerificationTokenIssue(tokenId, pepperId);
 
         when(this.forgeUserClient.getUserId())
                 .thenReturn(userId);
@@ -160,8 +165,8 @@ class ResendEmailVerificationImplTest {
                 .thenReturn(true);
         when(this.clock.instant())
                 .thenReturn(now);
-        when(this.outboxEventBuilder.build(any(OutboxBuildContext.class)))
-                .thenReturn(outboxEvent);
+        when(this.emailVerificationTokenService.issue(userId, user.getSiteId()))
+                .thenReturn(tokenIssue);
 
         //when
         final ResendEmailVerificationResponse actual = this.resendEmailVerification.execute();
@@ -172,15 +177,19 @@ class ResendEmailVerificationImplTest {
         verify(this.authUserRepository).findById(userId);
         verify(this.emailVerificationResendPolicy).isResendAllowed(userId);
         verify(this.emailVerificationTokenRepository).revokeActiveByUserId(userId);
-
-        final ArgumentCaptor<OutboxBuildContext> contextCaptor = ArgumentCaptor.forClass(OutboxBuildContext.class);
-        verify(this.outboxEventBuilder).build(contextCaptor.capture());
-        verify(this.outboxCommand).execute(outboxEvent);
         verify(this.clock).instant();
-        verifyNoMoreInteractions(outboxEvent);
+        verify(this.emailVerificationTokenService).issue(userId, user.getSiteId());
 
-        final OutboxBuildContext expectedContext = this.getOutboxBuildContext(user, now);
-        assertThat(contextCaptor.getValue()).isEqualTo(expectedContext);
+        final ArgumentCaptor<EmailVerifyPayload> payloadCaptor = ArgumentCaptor.forClass(EmailVerifyPayload.class);
+        verify(this.forgeOutbox).send(payloadCaptor.capture());
+
+        final EmailVerifyPayload expectedPayload = this.getEmailVerifyPayload(userId,
+                user.getSiteId(),
+                user.getEmail(),
+                now,
+                tokenId,
+                pepperId);
+        assertThat(payloadCaptor.getValue()).isEqualTo(expectedPayload);
     }
 
     private ResendEmailVerificationResponse resendEmailVerificationResponse() {
@@ -198,15 +207,29 @@ class ResendEmailVerificationImplTest {
                 .build();
     }
 
-    private OutboxBuildContext getOutboxBuildContext(final AuthUser user, final Instant now) {
-        return new OutboxBuildContext(
-                user.getId(),
-                user.getSiteId(),
-                user.getEmail(),
-                null,
-                null,
-                now
-        );
+    private EmailVerifyPayload getEmailVerifyPayload(final Long userId,
+                                                     final UUID siteId,
+                                                     final String email,
+                                                     final Instant requestedAt,
+                                                     final UUID tokenId,
+                                                     final UUID pepperId) {
+        return EmailVerifyPayload.builder()
+                .delivery(EmailVerifyPayload.Delivery.builder()
+                        .channel(VerifyChannel.EMAIL)
+                        .to(email)
+                        .build())
+                .template(NotificationTemplate.EMAIL_VERIFY)
+                .params(EmailVerifyPayload.Params.builder()
+                        .emailVerificationTokenId(tokenId)
+                        .pepperId(pepperId)
+                        .build())
+                .meta(EmailVerifyPayload.Meta.builder()
+                        .userId(userId)
+                        .siteId(siteId)
+                        .traceId(null)
+                        .requestedAt(requestedAt)
+                        .build())
+                .build();
     }
 
 }

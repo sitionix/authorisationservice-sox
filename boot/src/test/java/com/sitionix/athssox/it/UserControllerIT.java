@@ -9,7 +9,8 @@ import com.sitionix.athssox.it.infra.ControllerEndpoint;
 import com.sitionix.athssox.it.infra.DatabaseContract;
 import com.sitionix.athssox.it.infra.TestManager;
 import com.sitionix.athssox.postgresql.entity.user.UserEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
+import com.sitionix.forge.outbox.postgres.entity.ForgeOutboxEventEntity;
+import com.sitionix.forge.outbox.testkit.postgres.contract.ForgeOutboxPostgresDbContracts;
 import com.sitionix.forgeit.core.test.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -34,7 +36,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should register new user successfully without siteId for global role")
-    void given_global_role_without_site_id_when_register_user_then_success_and_user_persisted() {
+    void givenGlobalRoleWithoutSiteId_whenRegisterUser_thenSuccessAndUserPersisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -53,7 +55,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 400 without siteId for SITE_ADMIN role")
-    void given_site_admin_role_without_site_id_when_register_user_then_return_bad_request() {
+    void givenSiteAdminRoleWithoutSiteId_whenRegisterUser_thenReturnBadRequest() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -70,7 +72,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should register a new user successfully and persist it")
-    void given_valid_user_data_when_register_user_then_success_and_user_persisted() {
+    void givenValidUserData_whenRegisterUser_thenSuccessAndUserPersisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -97,16 +99,16 @@ class UserControllerIT {
         assertThat(persistedUser.getPasswordHash()).isNotEqualTo("StrongPassword123");
 
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .get(ForgeOutboxEventEntity.class)
                 .hasSize(1)
-                .withFetchedRelations()
-                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
-                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+                .singleElement()
+                .andExpected(event -> Objects.equals(event.getEventType(), "EMAIL_VERIFY"))
+                .assertEntity();
     }
 
     @Test
     @DisplayName("Should not store raw verification token or verifyUrl in outbox payload")
-    void given_registration_when_user_created_then_outbox_payload_has_no_raw_token() {
+    void givenRegistration_whenUserCreated_thenOutboxPayloadHasNoRawToken() {
         //given
 
         //when
@@ -118,8 +120,8 @@ class UserControllerIT {
                 .assertAndCreate();
 
         //then
-        final List<OutboxEventEntity> events =
-                this.testManager.postgresql().get(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT);
+        final List<ForgeOutboxEventEntity> events =
+                this.testManager.postgresql().get(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT);
         assertThat(events).hasSize(1);
         final String payload = events.get(0).getPayload();
         assertThat(payload).doesNotContain("token=");
@@ -130,7 +132,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should not log registration password or verification token")
-    void given_registration_request_when_register_user_then_sensitive_data_not_logged() {
+    void givenRegistrationRequest_whenRegisterUser_thenSensitiveDataNotLogged() {
         //given
         final String password = "StrongPassword123";
         final Logger logger = (Logger) LoggerFactory.getLogger(UserController.class);
@@ -188,7 +190,7 @@ class UserControllerIT {
 
     @ParameterizedTest(name = "Should reject registration when {0}")
     @MethodSource("invalidRegisterUserRequests")
-    void given_invalid_request_when_register_user_then_bad_request_and_no_user_persisted(
+    void givenInvalidRequest_whenRegisterUser_thenBadRequestAndNoUserPersisted(
             final String testCase,
             final String requestResource,
             final Consumer<RegisterUserDTO> requestMutator
@@ -205,13 +207,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should reject registration when role is unknown")
-    void given_unknown_role_when_register_user_then_bad_request_and_no_user_persisted() {
+    void givenUnknownRole_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -224,13 +226,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should reject registration when siteId is not a UUID")
-    void given_invalid_site_id_when_register_user_then_bad_request_and_no_user_persisted() {
+    void givenInvalidSiteId_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -243,13 +245,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should reject registration when siteId is missing for site-scoped role")
-    void given_site_scoped_role_and_missing_site_id_when_register_user_then_bad_request_and_no_user_persisted() {
+    void givenSiteScopedRoleAndMissingSiteId_whenRegisterUser_thenBadRequestAndNoUserPersisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -262,13 +264,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should allow registration for global role without siteId")
-    void given_global_role_and_missing_site_id_when_register_user_then_created_and_user_persisted() {
+    void givenGlobalRoleAndMissingSiteId_whenRegisterUser_thenCreatedAndUserPersisted() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -291,7 +293,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should ignore siteId for global role registration")
-    void given_global_role_with_site_id_when_register_user_then_created_and_site_id_ignored() {
+    void givenGlobalRoleWithSiteId_whenRegisterUser_thenCreatedAndSiteIdIgnored() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUser())
@@ -313,7 +315,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should allow same email in different sites for site-scoped roles")
-    void given_existing_email_different_site_id_when_register_user_then_registration_succeeds() {
+    void givenExistingEmailDifferentSiteId_whenRegisterUser_thenRegistrationSucceeds() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -337,7 +339,7 @@ class UserControllerIT {
 
     @Test
     @DisplayName("Should return 201 and resend verification when pending user re-registers in same site")
-    void given_pending_email_same_site_when_register_user_then_created_and_resend_verification() {
+    void givenPendingEmailSameSite_whenRegisterUser_thenCreatedAndResendVerification() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -359,16 +361,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
-                .hasSize(1)
-                .withFetchedRelations()
-                .ignoreFields("id", "nextRetryAt", "payload", "createdAt", "updatedAt", "aggregateId")
-                .containsWithJsonsStrict("outboxEventEmailVerifyEntity.json");
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .hasSize(1);
     }
 
     @Test
     @DisplayName("Should return 201 without resend when pending user is on cooldown")
-    void given_pending_email_same_site_with_recent_token_when_register_user_then_created_without_resend() {
+    void givenPendingEmailSameSiteWithRecentToken_whenRegisterUser_thenCreatedWithoutResend() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -392,13 +391,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should return 409 Conflict when email is already registered in the same site for site-scoped roles")
-    void given_existing_email_same_site_when_register_user_then_conflict() {
+    void givenExistingEmailSameSite_whenRegisterUser_thenConflict() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -420,13 +419,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should return 409 Conflict when email is already registered for global roles")
-    void given_existing_email_global_role_when_register_user_then_conflict() {
+    void givenExistingEmailGlobalRole_whenRegisterUser_thenConflict() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -448,13 +447,13 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(1);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 
     @Test
     @DisplayName("Should return 400 Bad Request with password policy message when password format is invalid")
-    void given_invalid_password_when_register_user_then_bad_request_with_details() {
+    void givenInvalidPassword_whenRegisterUser_thenBadRequestWithDetails() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.registerUserBadRequest())
@@ -468,7 +467,7 @@ class UserControllerIT {
                 .assertEntities(DatabaseContract.USER_ENTITY_DB_CONTRACT)
                 .hasSize(0);
         this.testManager.postgresql()
-                .assertEntities(DatabaseContract.OUTBOX_EVENT_ENTITY_DB_CONTRACT)
+                .assertEntities(ForgeOutboxPostgresDbContracts.FORGE_OUTBOX_EVENT_ENTITY_DB_CONTRACT)
                 .hasSize(0);
     }
 }

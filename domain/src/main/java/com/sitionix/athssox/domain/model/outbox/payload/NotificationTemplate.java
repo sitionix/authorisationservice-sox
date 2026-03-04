@@ -1,6 +1,12 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
-public enum NotificationTemplate {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-    EMAIL_VERIFY
+@Getter
+@RequiredArgsConstructor
+public enum NotificationTemplate {
+    EMAIL_VERIFY("EMAIL_VERIFY");
+
+    private final String description;
 }

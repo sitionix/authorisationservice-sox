@@ -93,7 +93,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_valid_login_when_execute_then_return_tokens_and_persist_refresh_token() {
+    void givenValidLogin_whenExecute_thenReturnTokensAndPersistRefreshToken() {
         //given
         final UUID siteId = UUID.randomUUID();
         final LoginRequest given = this.getLoginRequest(siteId);
@@ -175,7 +175,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_existing_session_within_throttle_interval_when_execute_then_skip_session_update() {
+    void givenExistingSessionWithinThrottleInterval_whenExecute_thenSkipSessionUpdate() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -251,7 +251,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_existing_session_with_null_last_used_at_when_execute_then_update_session() {
+    void givenExistingSessionWithNullLastUsedAt_whenExecute_thenUpdateSession() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -341,7 +341,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_throttle_interval_zero_when_execute_then_update_session() {
+    void givenThrottleIntervalZero_whenExecute_thenUpdateSession() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -433,7 +433,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_existing_session_beyond_throttle_interval_when_execute_then_update_session() {
+    void givenExistingSessionBeyondThrottleInterval_whenExecute_thenUpdateSession() {
         //given
         final UUID siteId = UUID.randomUUID();
         final UUID sessionId = UUID.randomUUID();
@@ -523,7 +523,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_invalid_credentials_when_execute_then_throw_invalid_credentials() {
+    void givenInvalidCredentials_whenExecute_thenThrowInvalidCredentials() {
         //given
         final UUID siteId = UUID.randomUUID();
         final LoginRequest given = this.getLoginRequest(siteId);
@@ -544,7 +544,7 @@ class LoginUserImplTest {
     }
 
     @Test
-    void given_inactive_user_when_execute_then_throw_invalid_credentials() {
+    void givenInactiveUser_whenExecute_thenThrowInvalidCredentials() {
         //given
         final LoginRequest given = this.getLoginRequest(null);
         final ArgumentCaptor<LoginAuthenticationToken> tokenCaptor =

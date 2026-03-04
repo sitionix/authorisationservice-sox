@@ -42,7 +42,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should login successfully and persist refresh token")
-    void given_active_user_when_login_then_ok_and_refresh_token_saved() {
+    void givenActiveUser_whenLogin_thenOkAndRefreshTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -83,7 +83,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login with invalid credentials")
-    void given_invalid_credentials_when_login_then_unauthorized() {
+    void givenInvalidCredentials_whenLogin_thenUnauthorized() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -108,7 +108,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should revoke old refresh token on login and keep a single active token")
-    void given_same_session_when_login_twice_then_old_refresh_token_rejected_and_single_active_token() {
+    void givenSameSession_whenLoginTwice_thenOldRefreshTokenRejectedAndSingleActiveToken() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -162,7 +162,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should not log login password values")
-    void given_login_request_when_login_then_password_not_logged() {
+    void givenLoginRequest_whenLogin_thenPasswordNotLogged() {
         //given
         final String password = "plain-password";
         final Logger logger = (Logger) LoggerFactory.getLogger(AuthController.class);
@@ -194,7 +194,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reuse active device session when logging in again")
-    void given_active_session_when_login_again_then_reuse_session_and_issue_new_refresh_token() {
+    void givenActiveSession_whenLoginAgain_thenReuseSessionAndIssueNewRefreshToken() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -236,7 +236,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should create second session when logging in from new device")
-    void given_active_user_and_new_device_when_login_then_create_second_session_and_refresh_token() {
+    void givenActiveUserAndNewDevice_whenLogin_thenCreateSecondSessionAndRefreshToken() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -278,7 +278,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reactivate session when logging in with inactive session")
-    void given_inactive_session_when_login_then_reactivate_session_and_issue_refresh_token() {
+    void givenInactiveSession_whenLogin_thenReactivateSessionAndIssueRefreshToken() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -315,7 +315,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is inactive")
-    void given_inactive_user_when_login_then_unauthorized() {
+    void givenInactiveUser_whenLogin_thenUnauthorized() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -340,7 +340,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is pending email verification")
-    void given_pending_user_when_login_then_unauthorized_and_no_refresh_token_saved() {
+    void givenPendingUser_whenLogin_thenUnauthorizedAndNoRefreshTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -365,7 +365,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is banned")
-    void given_banned_user_when_login_then_unauthorized_and_no_refresh_token_saved() {
+    void givenBannedUser_whenLogin_thenUnauthorizedAndNoRefreshTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -390,7 +390,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when user is not found")
-    void given_unknown_user_when_login_then_unauthorized() {
+    void givenUnknownUser_whenLogin_thenUnauthorized() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginUnauthorized())
@@ -407,7 +407,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should prefer site-scoped user when both site and global users share email")
-    void given_site_and_global_users_same_email_when_login_with_site_id_then_use_site_user() {
+    void givenSiteAndGlobalUsersSameEmail_whenLoginWithSiteId_thenUseSiteUser() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -449,7 +449,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when email is invalid")
-    void given_invalid_email_when_login_then_bad_request() {
+    void givenInvalidEmail_whenLogin_thenBadRequest() {
         //when
         this.testManager.mockMvc()
                 .ping(ControllerEndpoint.loginBadRequest())
@@ -465,7 +465,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject login when siteId is missing for site-scoped user")
-    void given_site_scoped_user_and_missing_site_id_when_login_then_bad_request() {
+    void givenSiteScopedUserAndMissingSiteId_whenLogin_thenBadRequest() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -489,7 +489,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should allow login for global user without siteId")
-    void given_global_user_and_missing_site_id_when_login_then_ok_and_refresh_token_saved() {
+    void givenGlobalUserAndMissingSiteId_whenLogin_thenOkAndRefreshTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -517,7 +517,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should issue access token with expected headers and claims on login")
-    void given_active_user_when_login_then_access_token_has_expected_headers_and_claims() throws Exception {
+    void givenActiveUser_whenLogin_thenAccessTokenHasExpectedHeadersAndClaims() throws Exception {
         //given
         this.testManager.postgresql()
                 .create()
@@ -561,7 +561,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reactivate suspicious session on login")
-    void given_suspicious_session_when_login_then_session_becomes_active_and_token_saved() {
+    void givenSuspiciousSession_whenLogin_thenSessionBecomesActiveAndTokenSaved() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -598,7 +598,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should avoid duplicate session when concurrent logins use same sessionSourceId")
-    void given_concurrent_logins_with_same_session_source_id_when_login_then_single_session_persisted() throws InterruptedException {
+    void givenConcurrentLoginsWithSameSessionSourceId_whenLogin_thenSingleSessionPersisted() throws InterruptedException {
         //given
         this.testManager.postgresql()
                 .create()
@@ -659,7 +659,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should return only token fields and no cookies on login")
-    void given_valid_login_when_login_then_response_contains_only_tokens_and_no_cookies() {
+    void givenValidLogin_whenLogin_thenResponseContainsOnlyTokensAndNoCookies() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -686,7 +686,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should verify email successfully and activate user")
-    void given_pending_user_and_valid_token_when_verify_email_then_ok_and_user_activated_and_token_used() {
+    void givenPendingUserAndValidToken_whenVerifyEmail_thenOkAndUserActivatedAndTokenUsed() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -723,7 +723,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should accept verification when siteId is missing for site-scoped token")
-    void given_pending_user_and_missing_site_id_when_verify_email_then_accepted_and_no_changes() {
+    void givenPendingUserAndMissingSiteId_whenVerifyEmail_thenAcceptedAndNoChanges() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -763,7 +763,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should verify email for global token without siteId")
-    void given_pending_global_user_and_global_token_when_verify_email_then_ok_and_user_activated_and_token_used() {
+    void givenPendingGlobalUserAndGlobalToken_whenVerifyEmail_thenOkAndUserActivatedAndTokenUsed() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -803,7 +803,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should accept repeated verification attempt for active user")
-    void given_active_user_and_used_token_when_verify_email_then_accepted_and_no_changes() {
+    void givenActiveUserAndUsedToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -840,7 +840,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should accept verification attempt with expired token")
-    void given_pending_user_and_expired_token_when_verify_email_then_accepted_and_no_changes() {
+    void givenPendingUserAndExpiredToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -877,7 +877,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should accept verification attempt with unknown token")
-    void given_pending_user_and_unknown_token_when_verify_email_then_accepted_and_no_changes() {
+    void givenPendingUserAndUnknownToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -908,7 +908,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should accept verification attempt when token belongs to different site")
-    void given_pending_user_and_mismatched_site_when_verify_email_then_accepted_and_no_changes() {
+    void givenPendingUserAndMismatchedSite_whenVerifyEmail_thenAcceptedAndNoChanges() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -945,7 +945,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should accept verification attempt with revoked token")
-    void given_pending_user_and_revoked_token_when_verify_email_then_accepted_and_no_changes() {
+    void givenPendingUserAndRevokedToken_whenVerifyEmail_thenAcceptedAndNoChanges() {
         //given
         this.testManager.postgresql()
                 .create()
@@ -982,7 +982,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject verification when token is missing")
-    void given_missing_token_when_verify_email_then_bad_request() {
+    void givenMissingToken_whenVerifyEmail_thenBadRequest() {
         //given
 
         //when
@@ -997,7 +997,7 @@ class AuthControllerIT {
 
     @Test
     @DisplayName("Should reject verification when siteId is missing")
-    void given_missing_site_id_when_verify_email_then_bad_request() {
+    void givenMissingSiteId_whenVerifyEmail_thenBadRequest() {
         //given
 
         //when

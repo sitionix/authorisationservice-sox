@@ -56,7 +56,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_pem_config_with_private_and_public_when_load_active_key_then_return_key_pair() {
+    void givenPemConfigWithPrivateAndPublic_whenLoadActiveKey_thenReturnKeyPair() {
         //given
         final KeyPair keyPair = this.getKeyPair();
         final String privatePem = this.getPrivateKeyPem(keyPair);
@@ -82,7 +82,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_pem_config_with_private_only_when_load_active_key_then_derive_public_key() {
+    void givenPemConfigWithPrivateOnly_whenLoadActiveKey_thenDerivePublicKey() {
         //given
         final KeyPair keyPair = this.getKeyPair();
         final String privatePem = this.getPrivateKeyPem(keyPair);
@@ -107,7 +107,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_inline_verification_keys_when_load_verification_keys_then_return_keys() {
+    void givenInlineVerificationKeys_whenLoadVerificationKeys_thenReturnKeys() {
         //given
         final KeyPair keyPair = this.getKeyPair();
         final String publicPem = this.getPublicKeyPem(keyPair);
@@ -134,7 +134,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_verification_key_path_when_load_verification_keys_then_load_from_resource() throws Exception {
+    void givenVerificationKeyPath_whenLoadVerificationKeys_thenLoadFromResource() throws Exception {
         //given
         final KeyPair keyPair = this.getKeyPair();
         final String publicPem = this.getPublicKeyPem(keyPair);
@@ -175,7 +175,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_rsa_private_key_pem_when_load_active_key_then_throw_exception() {
+    void givenRsaPrivateKeyPem_whenLoadActiveKey_thenThrowException() {
         //given
         final String privatePem = this.getRsaPrivateKeyPem();
         final TokenConfig.PemConfig pemConfig = this.getPemConfig(privatePem, null, null, null);
@@ -194,7 +194,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_missing_private_key_resource_when_load_active_key_then_throw_exception() {
+    void givenMissingPrivateKeyResource_whenLoadActiveKey_thenThrowException() {
         //given
         final String privateKeyPath = this.getMissingResourcePath();
         final TokenConfig.PemConfig pemConfig = this.getPemConfig(null, privateKeyPath, null, null);
@@ -222,7 +222,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_key_store_config_when_load_active_key_then_return_key_pair() throws Exception {
+    void givenKeyStoreConfig_whenLoadActiveKey_thenReturnKeyPair() throws Exception {
         //given
         final String keyStorePath = this.getKeyStorePath();
         final String keyStorePassword = this.getKeyStorePassword();
@@ -269,7 +269,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_missing_alias_in_key_store_when_load_active_key_then_throw_exception() throws Exception {
+    void givenMissingAliasInKeyStore_whenLoadActiveKey_thenThrowException() throws Exception {
         //given
         final String keyStorePath = this.getKeyStorePath();
         final String keyStorePassword = this.getKeyStorePassword();
@@ -311,7 +311,7 @@ class JwtKeyMaterialLoaderTest {
     }
 
     @Test
-    void given_null_verification_keys_when_load_verification_keys_then_return_empty_list() {
+    void givenNullVerificationKeys_whenLoadVerificationKeys_thenReturnEmptyList() {
         //given
         final KeyPair signingKeyPair = this.getKeyPair();
         final String signingPrivatePem = this.getPrivateKeyPem(signingKeyPair);

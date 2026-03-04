@@ -20,7 +20,7 @@ class SessionStatusInfraMapperTest {
     }
 
     @Test
-    void given_session_status_entity_when_as_session_status_then_return_session_status() {
+    void givenSessionStatusEntity_whenAsSessionStatus_thenReturnSessionStatus() {
         // Given
         final SessionStatusEntity given = this.givenSessionStatusEntity();
         final SessionStatus expected = SessionStatus.ACTIVE;
@@ -33,7 +33,7 @@ class SessionStatusInfraMapperTest {
     }
 
     @Test
-    void given_session_status_when_as_session_status_entity_then_return_session_status_entity() {
+    void givenSessionStatus_whenAsSessionStatusEntity_thenReturnSessionStatusEntity() {
         // Given
         final SessionStatus given = SessionStatus.ACTIVE;
         final SessionStatusEntity expected = this.givenSessionStatusEntity();

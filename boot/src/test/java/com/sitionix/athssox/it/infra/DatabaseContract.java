@@ -3,11 +3,6 @@ package com.sitionix.athssox.it.infra;
 import com.sitionix.athssox.postgresql.entity.user.GlobalRoleEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenEntity;
 import com.sitionix.athssox.postgresql.entity.token.EmailVerificationTokenStatusEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxAggregateTypeEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxEventTypeEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxInitiatorTypeEntity;
-import com.sitionix.athssox.postgresql.entity.outbox.OutboxStatusEntity;
 import com.sitionix.athssox.postgresql.entity.session.DeviceSessionEntity;
 import com.sitionix.athssox.postgresql.entity.session.SessionStatusEntity;
 import com.sitionix.athssox.postgresql.entity.token.RefreshTokenEntity;
@@ -21,26 +16,6 @@ import com.sitionix.forgeit.domain.contract.clean.CleanupPolicy;
 
 @ForgeDbContracts
 public class DatabaseContract {
-
-    public static final DbContract<OutboxAggregateTypeEntity> OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT =
-            DbContractsDsl.entity(OutboxAggregateTypeEntity.class)
-                    .cleanupPolicy(CleanupPolicy.NONE)
-                    .build();
-
-    public static final DbContract<OutboxEventTypeEntity> OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT =
-            DbContractsDsl.entity(OutboxEventTypeEntity.class)
-                    .cleanupPolicy(CleanupPolicy.NONE)
-                    .build();
-
-    public static final DbContract<OutboxStatusEntity> OUTBOX_STATUS_ENTITY_DB_CONTRACT =
-            DbContractsDsl.entity(OutboxStatusEntity.class)
-                    .cleanupPolicy(CleanupPolicy.NONE)
-                    .build();
-
-    public static final DbContract<OutboxInitiatorTypeEntity> OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT =
-            DbContractsDsl.entity(OutboxInitiatorTypeEntity.class)
-                    .cleanupPolicy(CleanupPolicy.NONE)
-                    .build();
 
     public static final DbContract<EmailVerificationTokenStatusEntity> EMAIL_VERIFICATION_TOKEN_STATUS_ENTITY_DB_CONTRACT =
             DbContractsDsl.entity(EmailVerificationTokenStatusEntity.class)
@@ -79,15 +54,6 @@ public class DatabaseContract {
             DbContractsDsl.entity(DeviceSessionEntity.class)
                     .dependsOn(USER_ENTITY_DB_CONTRACT, DeviceSessionEntity::setUser)
                     .dependsOn(SESSION_STATUS_ENTITY_DB_CONTRACT, DeviceSessionEntity::setStatus)
-                    .cleanupPolicy(CleanupPolicy.DELETE_ALL)
-                    .build();
-
-    public static final DbContract<OutboxEventEntity> OUTBOX_EVENT_ENTITY_DB_CONTRACT =
-            DbContractsDsl.entity(OutboxEventEntity.class)
-                    .dependsOn(OUTBOX_AGGREGATE_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setAggregateType)
-                    .dependsOn(OUTBOX_EVENT_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setEventType)
-                    .dependsOn(OUTBOX_STATUS_ENTITY_DB_CONTRACT, OutboxEventEntity::setStatus)
-                    .dependsOn(OUTBOX_INITIATOR_TYPE_ENTITY_DB_CONTRACT, OutboxEventEntity::setInitiatorType)
                     .cleanupPolicy(CleanupPolicy.DELETE_ALL)
                     .build();
 
