@@ -55,6 +55,16 @@ jobs:
                 <username>${{ github.actor }}</username>
                 <password>${AUTH_TOKEN}</password>
               </server>
+              <server>
+                <id>github-forge-security</id>
+                <username>${{ github.actor }}</username>
+                <password>${AUTH_TOKEN}</password>
+              </server>
+              <server>
+                <id>github-forge-common</id>
+                <username>${{ github.actor }}</username>
+                <password>${AUTH_TOKEN}</password>
+              </server>
             </servers>
           </settings>" > ~/.m2/settings.xml
 
