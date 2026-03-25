@@ -20,11 +20,6 @@ public class NotificationPublisherV1 implements ForgeOutboxEventPublisher<EmailV
     private final NotificationEventMapper mapper;
 
     @Override
-    public Class<EmailVerifyPayload> payloadClass() {
-        return EmailVerifyPayload.class;
-    }
-
-    @Override
     public void publish(final Event<EmailVerifyPayload> event) {
         log.info("Publish notification event");
         final String key = event.getIdempotencyId().toString();
