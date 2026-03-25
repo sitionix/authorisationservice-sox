@@ -1,5 +1,6 @@
 package com.sitionix.athssox.domain.model.outbox.payload;
 
+import com.sitionix.athssox.domain.model.outbox.NotificationOutboxEventType;
 import com.sitionix.forge.outbox.core.model.OutboxAggregateType;
 import com.sitionix.forge.outbox.core.port.ForgeOutboxPayload;
 import lombok.AllArgsConstructor;
@@ -29,7 +30,7 @@ public class EmailVerifyPayload implements ForgeOutboxPayload {
 
     @Override
     public String eventType() {
-        return NotificationTemplate.EMAIL_VERIFY.getDescription();
+        return NotificationOutboxEventType.EMAIL_VERIFY.getDescription();
     }
 
     @Override

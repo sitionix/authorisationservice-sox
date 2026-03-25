@@ -3,6 +3,7 @@
   "eventType": "EMAIL_VERIFY",
   "statusId": 3,
   "payload": "{}",
+  "idempotencyId": "33333333-aaaa-bbbb-cccc-333333333333",
   "retryCount": 0,
   "nextRetryAt": "2020-01-01T00:00:00Z",
   "createdAt": "2020-01-01T00:00:00Z",

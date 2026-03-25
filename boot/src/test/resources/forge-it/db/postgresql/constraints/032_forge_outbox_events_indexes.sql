@@ -12,3 +12,6 @@ CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_polling
 
 CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_lock_until
     ON forge_outbox_events (lock_until);
+
+CREATE INDEX IF NOT EXISTS idx_forge_outbox_events_idempotency_id
+    ON forge_outbox_events (idempotency_id);

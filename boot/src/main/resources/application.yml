@@ -41,6 +41,8 @@ security:
   email-verification:
     hmac-secret: ${SECURITY_EMAIL_VERIFICATION_HMAC_SECRET:}
 forge:
+  outbox:
+    domain-store: POSTGRES
   security:
     service-id: sitionixAuth
     dev:

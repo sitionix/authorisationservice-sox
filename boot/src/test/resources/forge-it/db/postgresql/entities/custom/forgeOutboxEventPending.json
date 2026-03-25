@@ -2,6 +2,7 @@
   "id": 1002,
   "eventType": "EMAIL_VERIFY",
   "payload": "{}",
+  "idempotencyId": "22222222-aaaa-bbbb-cccc-222222222222",
   "statusId": 1,
   "retryCount": 0,
   "nextRetryAt": "2026-01-01T00:00:00Z",

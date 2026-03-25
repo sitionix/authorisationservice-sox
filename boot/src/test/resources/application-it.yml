@@ -74,6 +74,11 @@ security:
   email-verification:
     hmac-secret: it-email-token-secret
 forge:
+  outbox:
+    worker:
+      enabled: false
+    cleanup:
+      enabled: false
   security:
     service-id: sitionixAuth
     dev:
