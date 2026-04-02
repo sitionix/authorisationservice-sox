@@ -2,9 +2,6 @@ name: DB Migrate Run
 description: Run Flyway migrations inside an environment-bound job.
 
 inputs:
-  github_environment:
-    description: GitHub Environment name used for the migration target.
-    required: true
   environment_id:
     description: Logical migration environment selected by the trigger comment.
     required: true
@@ -68,10 +65,8 @@ runs:
       env:
         INPUT_DATABASE_NAME: ${{ inputs.database_name }}
         INPUT_ENVIRONMENT_ID: ${{ inputs.environment_id }}
-        INPUT_GITHUB_ENVIRONMENT: ${{ inputs.github_environment }}
       run: |
         echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
-        echo "GitHub Environment: ${INPUT_GITHUB_ENVIRONMENT}"
         echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
 
     - name: Validate migration state

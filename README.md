@@ -43,16 +43,22 @@ with a `key-id` and `public-key`/`public-key-path`.
   /deploy db --name auths_sox --env dev
   ```
 - The workflow accepts only the exact canonical DB name `auths_sox`.
-- The workflow resolves the command contract, target name, selected environment, and migration connection binding from `db-migration/db-model.yaml`.
-- The workflow binds the migration job directly to the selected GitHub Environment from that model.
-- Migration connection settings are independent from `boot` runtime config; the workflow reads the GitHub Environment var/secret names from `db-model.yaml` and injects them into Flyway directly.
+- The command contract itself is enforced in the workflow.
+- `db-migration/db-model.yaml` contains only the DB migration model:
+  - canonical DB name
+  - supported environments
+  - GitHub Environment var/secret names for Flyway connection
+- Migration connection settings are independent from `boot` runtime config; the workflow reads the names from `db-model.yaml` and injects them into Flyway directly.
+- The workflow binds the job to the same GitHub Environment as `--env`.
 - The workflow runs Flyway only; it does not deploy the service binary.
 
 Current `db-model.yaml` mapping for `dev` requires:
 - GitHub Environment var `AUTHS_SOX_DB_MIGRATION_URL`
 - GitHub Environment var `AUTHS_SOX_DB_MIGRATION_USERNAME`
 - GitHub Environment secret `AUTHS_SOX_DB_MIGRATION_PASSWORD`
-- GitHub Environment secret `AUTH_TOKEN`
+
+Additional workflow secret:
+- `AUTH_TOKEN`
 
 ## Dev key generation (PEM)
 ```
