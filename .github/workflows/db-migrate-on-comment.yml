@@ -109,7 +109,6 @@ jobs:
           environment_id: ${{ needs.resolve.outputs.environment_id }}
           database_name: ${{ needs.resolve.outputs.database_name }}
         env:
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
           FLYWAY_URL: ${{ needs.resolve.outputs.database_url }}
           FLYWAY_USERNAME: ${{ needs.resolve.outputs.database_username }}
           FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.database_password_secret_name] }}

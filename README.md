@@ -38,6 +38,7 @@ with a `key-id` and `public-key`/`public-key-path`.
 
 ## DB migration workflow
 - Migrations run only through a PR comment trigger, not on push.
+
 - Command format:
   ```text
   /deploy db --name auths_sox --env dev
@@ -52,14 +53,16 @@ with a `key-id` and `public-key`/`public-key-path`.
 - Migration connection settings are independent from `boot` runtime config; the workflow reads them from `db-model.yaml` and injects them into Flyway directly.
 - The workflow binds the job to the same GitHub Environment as `--env`.
 - The workflow runs Flyway only; it does not deploy the service binary.
+- The workflow does not build the service; it runs standalone Flyway against the SQL files in `db-migration`.
 
 Current `db-model.yaml` mapping for `dev` requires:
-- Flyway URL `jdbc:postgresql://postgres:5432/auths_sox`
+- Flyway URL `jdbc:postgresql://127.0.0.1:15432/auths_sox`
 - Flyway username `authssox_app`
 - GitHub Environment secret `AUTHS_SOX_DB_PASSWORD`
-
-Additional workflow secret used for Maven package resolution:
-- `AUTH_TOKEN`
+- SSH tunnel contract:
+  - `DEPLOY_VM_HOST`
+  - `DEPLOY_VM_USER`
+  - `DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY`
 
 
 ## Dev key generation (PEM)
