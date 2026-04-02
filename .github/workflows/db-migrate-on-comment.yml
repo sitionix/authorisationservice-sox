@@ -12,19 +12,16 @@ jobs:
   resolve:
     runs-on: ubuntu-latest
     outputs:
-      enabled: ${{ steps.resolve.outputs.enabled }}
-      environment_id: ${{ steps.resolve.outputs.environment_id }}
-      summary: ${{ steps.resolve.outputs.summary }}
-      checkout_ref: ${{ steps.checkout_ref.outputs.value }}
-      issue_number: ${{ steps.issue_number.outputs.value }}
+      enabled: ${{ steps.resolve_target.outputs.enabled }}
+      environment_id: ${{ steps.resolve_target.outputs.environment_id }}
+      summary: ${{ steps.resolve_target.outputs.summary }}
       pr_head_ref: ${{ steps.pr.outputs.head_ref }}
-      database_name: ${{ steps.resolve.outputs.database_name }}
-      database_url: ${{ steps.resolve.outputs.database_url }}
-      database_username: ${{ steps.resolve.outputs.database_username }}
-      database_password_secret_name: ${{ steps.resolve.outputs.database_password_secret_name }}
+      checkout_ref: ${{ steps.pr.outputs.head_sha }}
+      database_name: ${{ steps.resolve_target.outputs.database_name }}
+      database_url: ${{ steps.resolve_target.outputs.database_url }}
+      database_username: ${{ steps.resolve_target.outputs.database_username }}
+      database_password_secret_name: ${{ steps.resolve_target.outputs.database_password_secret_name }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Read pull request metadata
         id: pr
         if: github.event.issue.pull_request
@@ -51,120 +48,18 @@ jobs:
           ref: ${{ steps.pr.outputs.head_sha }}
 
       - name: Resolve migration target
-        id: resolve
-        shell: bash
-        env:
-          DEPLOY_EVENT_NAME: issue_comment
-          DEPLOY_COMMENT_BODY: ${{ github.event.comment.body }}
-          DEPLOY_IS_PULL_REQUEST: ${{ github.event.issue.pull_request && 'true' || 'false' }}
-        run: |
-          ruby - <<'INNER_RUBY'
-          require "yaml"
-          require "shellwords"
-          require "pathname"
-
-          output_path = Pathname.new(ENV.fetch("GITHUB_OUTPUT"))
-
-          def emit(output_path, key, value)
-            output_path.open("a") do |handle|
-              handle.puts("#{key}=#{value}")
-            end
-          end
-
-          if ENV.fetch("DEPLOY_EVENT_NAME") != "issue_comment"
-            emit(output_path, "enabled", "false")
-            emit(output_path, "reason", "Unsupported event #{ENV.fetch('DEPLOY_EVENT_NAME')}")
-            exit 0
-          end
-
-          if ENV.fetch("DEPLOY_IS_PULL_REQUEST") != "true"
-            emit(output_path, "enabled", "false")
-            emit(output_path, "reason", "Comment migration is supported only on pull requests")
-            exit 0
-          end
-
-          workspace = Pathname.new(ENV.fetch("GITHUB_WORKSPACE"))
-          model = YAML.load_file(workspace.join("db-migration/db-model.yaml"))
-          database = model.fetch("database")
-          environments = database.fetch("environments")
-
-          comment_body = ENV.fetch("DEPLOY_COMMENT_BODY", "")
-          first_non_empty_line = comment_body.each_line.map(&:strip).find { |line| !line.empty? }
-          if first_non_empty_line.nil?
-            emit(output_path, "enabled", "false")
-            emit(output_path, "reason", "Comment does not match deployment command")
-            exit 0
-          end
-
-          begin
-            tokens = Shellwords.split(first_non_empty_line)
-          rescue ArgumentError => error
-            abort("Malformed deployment comment: #{error.message}")
-          end
-
-          if tokens.empty? || tokens[0] != "/deploy"
-            emit(output_path, "enabled", "false")
-            emit(output_path, "reason", "Comment does not match deployment command")
-            exit 0
-          end
-
-          if tokens.length < 2 || tokens[1] != "db"
-            missing = tokens.length > 1 ? tokens[1] : "<missing>"
-            abort("Unsupported deploy target type: #{missing}")
-          end
-
-          values = {}
-          index = 2
-          while index < tokens.length
-            option = tokens[index]
-            abort("Unsupported argument: #{option}") unless ["--name", "--env"].include?(option)
-            abort("Missing value for #{option}") if index + 1 >= tokens.length || tokens[index + 1].start_with?("--")
-            abort("Duplicate argument: #{option}") if values.key?(option)
-            values[option] = tokens[index + 1]
-            index += 2
-          end
-
-          database_name = values["--name"]
-          environment_id = values["--env"]
-          abort("Migration comment must include --name <database>") if database_name.nil? || database_name.empty?
-          abort("Migration comment must include --env <environment>") if environment_id.nil? || environment_id.empty?
-          abort("Unknown database name: #{database_name}") unless database_name == database.fetch("name")
-
-          environment = environments[environment_id]
-          abort("Unknown migration environment: #{environment_id}") if environment.nil?
-
-          emit(output_path, "enabled", "true")
-          emit(output_path, "database_name", database_name)
-          emit(output_path, "environment_id", environment_id)
-          emit(output_path, "database_url", environment.fetch("url"))
-          emit(output_path, "database_username", environment.fetch("username"))
-          emit(output_path, "database_password_secret_name", environment.fetch("password_secret_name"))
-          emit(output_path, "summary", "#{database_name} -> #{environment_id}")
-          INNER_RUBY
+        id: resolve_target
+        if: github.event.issue.pull_request && steps.pr.outputs.same_repo == 'true'
+        uses: ./.github/actions/db-migrate-resolve
+        with:
+          comment_body: ${{ github.event.comment.body }}
+          is_pull_request: ${{ github.event.issue.pull_request && 'true' || 'false' }}
 
       - name: Reject fork-based PR migration runs
-        if: steps.resolve.outputs.enabled == 'true' && steps.pr.outputs.same_repo != 'true'
+        if: github.event.issue.pull_request && steps.pr.outputs.same_repo != 'true'
         run: |
           echo "PR comment migrations are allowed only for branches in this repository." >&2
           exit 1
-
-      - name: Compute checkout ref
-        id: checkout_ref
-        run: |
-          if [[ "${{ steps.resolve.outputs.enabled }}" == "true" ]]; then
-            echo "value=${{ steps.pr.outputs.head_sha }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Capture issue number
-        id: issue_number
-        run: |
-          if [[ "${{ steps.resolve.outputs.enabled }}" == "true" ]]; then
-            echo "value=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=" >> "$GITHUB_OUTPUT"
-          fi
 
   migrate:
     needs: resolve
@@ -185,7 +80,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const issueNumber = Number("${{ needs.resolve.outputs.issue_number }}");
+            const issueNumber = Number("${{ github.event.issue.number }}");
             const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
             const body = [
               "---",
@@ -220,7 +115,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const issueNumber = Number("${{ needs.resolve.outputs.issue_number }}");
+            const issueNumber = Number("${{ github.event.issue.number }}");
             const body = [
               "---",
               "### DB migration succeeded",
@@ -242,7 +137,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const issueNumber = Number("${{ needs.resolve.outputs.issue_number }}");
+            const issueNumber = Number("${{ github.event.issue.number }}");
             const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
             const body = [
               "---",
