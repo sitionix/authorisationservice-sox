@@ -38,6 +38,7 @@ with a `key-id` and `public-key`/`public-key-path`.
 
 ## DB migration workflow
 - Migrations run only through a PR comment trigger, not on push.
+
 - Command format:
   ```text
   /deploy db --name auths_sox --env dev
