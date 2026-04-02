@@ -56,7 +56,7 @@ with a `key-id` and `public-key`/`public-key-path`.
 Current `db-model.yaml` mapping for `dev` requires:
 - Flyway URL `jdbc:postgresql://postgres:5432/auths_sox`
 - Flyway username `authssox_app`
-- GitHub Environment secret `AUTHS_SOX_DB_MIGRATION_PASSWORD`
+- GitHub Environment secret `AUTHS_SOX_DB_PASSWORD`
 
 Additional workflow secret used for Maven package resolution:
 - `AUTH_TOKEN`

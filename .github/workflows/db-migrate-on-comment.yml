@@ -19,9 +19,9 @@ jobs:
       issue_number: ${{ steps.issue_number.outputs.value }}
       pr_head_ref: ${{ steps.pr.outputs.head_ref }}
       database_name: ${{ steps.resolve.outputs.database_name }}
-      url: ${{ steps.resolve.outputs.url }}
-      username: ${{ steps.resolve.outputs.username }}
-      password_secret: ${{ steps.resolve.outputs.password_secret }}
+      database_url: ${{ steps.resolve.outputs.database_url }}
+      database_username: ${{ steps.resolve.outputs.database_username }}
+      database_password_secret_name: ${{ steps.resolve.outputs.database_password_secret_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -85,8 +85,8 @@ jobs:
 
           workspace = Pathname.new(ENV.fetch("GITHUB_WORKSPACE"))
           model = YAML.load_file(workspace.join("db-migration/db-model.yaml"))
-          db = model.fetch("db")
-          environments = db.fetch("env")
+          database = model.fetch("database")
+          environments = database.fetch("environments")
 
           comment_body = ENV.fetch("DEPLOY_COMMENT_BODY", "")
           first_non_empty_line = comment_body.each_line.map(&:strip).find { |line| !line.empty? }
@@ -128,7 +128,7 @@ jobs:
           environment_id = values["--env"]
           abort("Migration comment must include --name <database>") if database_name.nil? || database_name.empty?
           abort("Migration comment must include --env <environment>") if environment_id.nil? || environment_id.empty?
-          abort("Unknown database name: #{database_name}") unless database_name == db.fetch("name")
+          abort("Unknown database name: #{database_name}") unless database_name == database.fetch("name")
 
           environment = environments[environment_id]
           abort("Unknown migration environment: #{environment_id}") if environment.nil?
@@ -136,9 +136,9 @@ jobs:
           emit(output_path, "enabled", "true")
           emit(output_path, "database_name", database_name)
           emit(output_path, "environment_id", environment_id)
-          emit(output_path, "url", environment.fetch("url"))
-          emit(output_path, "username", environment.fetch("username"))
-          emit(output_path, "password_secret", environment.fetch("password_secret"))
+          emit(output_path, "database_url", environment.fetch("url"))
+          emit(output_path, "database_username", environment.fetch("username"))
+          emit(output_path, "database_password_secret_name", environment.fetch("password_secret_name"))
           emit(output_path, "summary", "#{database_name} -> #{environment_id}")
           INNER_RUBY
 
@@ -211,9 +211,9 @@ jobs:
           database_name: ${{ needs.resolve.outputs.database_name }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          FLYWAY_URL: ${{ needs.resolve.outputs.url }}
-          FLYWAY_USERNAME: ${{ needs.resolve.outputs.username }}
-          FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.password_secret] }}
+          FLYWAY_URL: ${{ needs.resolve.outputs.database_url }}
+          FLYWAY_USERNAME: ${{ needs.resolve.outputs.database_username }}
+          FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.database_password_secret_name] }}
 
       - name: Post success comment
         if: success()

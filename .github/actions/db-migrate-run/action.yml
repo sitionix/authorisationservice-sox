@@ -12,7 +12,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Validate migration environment secrets and vars
+    - name: Validate migration inputs
       shell: bash
       run: |
         for key in AUTH_TOKEN FLYWAY_URL FLYWAY_USERNAME FLYWAY_PASSWORD; do
@@ -69,29 +69,16 @@ runs:
         echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
         echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
 
-    - name: Validate migration state
+    - name: Execute Flyway lifecycle
       shell: bash
       run: |
-        mvn -B -q -pl boot -DskipTests \
-          -Dflyway.url="${FLYWAY_URL}" \
-          -Dflyway.user="${FLYWAY_USERNAME}" \
-          -Dflyway.password="${FLYWAY_PASSWORD}" \
-          flyway:validate
+        flyway_maven=(
+          mvn -B -q -pl boot -DskipTests
+          -Dflyway.url="${FLYWAY_URL}"
+          -Dflyway.user="${FLYWAY_USERNAME}"
+          -Dflyway.password="${FLYWAY_PASSWORD}"
+        )
 
-    - name: Apply Flyway migrations
-      shell: bash
-      run: |
-        mvn -B -q -pl boot -DskipTests \
-          -Dflyway.url="${FLYWAY_URL}" \
-          -Dflyway.user="${FLYWAY_USERNAME}" \
-          -Dflyway.password="${FLYWAY_PASSWORD}" \
-          flyway:migrate
-
-    - name: Report Flyway state
-      shell: bash
-      run: |
-        mvn -B -q -pl boot -DskipTests \
-          -Dflyway.url="${FLYWAY_URL}" \
-          -Dflyway.user="${FLYWAY_USERNAME}" \
-          -Dflyway.password="${FLYWAY_PASSWORD}" \
-          flyway:info
+        "${flyway_maven[@]}" flyway:validate
+        "${flyway_maven[@]}" flyway:migrate
+        "${flyway_maven[@]}" flyway:info
