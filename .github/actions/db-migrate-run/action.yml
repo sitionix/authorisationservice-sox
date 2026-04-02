@@ -62,8 +62,11 @@ runs:
 
     - name: Show Flyway target
       shell: bash
+      env:
+        INPUT_DATABASE_NAME: ${{ inputs.database_name }}
+        INPUT_GITHUB_ENVIRONMENT: ${{ inputs.github_environment }}
       run: |
-        echo "Running DB migration for ${{ inputs.database_name }} in ${{ inputs.github_environment }}"
+        echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_GITHUB_ENVIRONMENT}"
         echo "Flyway URL host is configured via AUTHS_SOX_DB_MIGRATION_URL"
 
     - name: Validate migration state
