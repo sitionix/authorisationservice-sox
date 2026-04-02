@@ -1,0 +1,263 @@
+name: DB Migrate On Comment
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.resolve.outputs.enabled }}
+      github_environment: ${{ steps.resolve.outputs.github_environment }}
+      summary: ${{ steps.resolve.outputs.summary }}
+      checkout_ref: ${{ steps.checkout_ref.outputs.value }}
+      issue_number: ${{ steps.issue_number.outputs.value }}
+      pr_head_ref: ${{ steps.pr.outputs.head_ref }}
+      database_name: ${{ steps.resolve.outputs.database_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pull request metadata
+        id: pr
+        if: github.event.issue.pull_request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            core.setOutput("head_ref", pr.data.head.ref);
+            core.setOutput("head_sha", pr.data.head.sha);
+            core.setOutput(
+              "same_repo",
+              pr.data.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}` ? "true" : "false"
+            );
+
+      - name: Checkout pull request head for config resolution
+        if: github.event.issue.pull_request && steps.pr.outputs.same_repo == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_sha }}
+
+      - name: Resolve migration target
+        id: resolve
+        shell: bash
+        env:
+          DEPLOY_EVENT_NAME: issue_comment
+          DEPLOY_COMMENT_BODY: ${{ github.event.comment.body }}
+          DEPLOY_IS_PULL_REQUEST: ${{ github.event.issue.pull_request && 'true' || 'false' }}
+        run: |
+          python3 - <<'INNER_PY'
+          import os
+          import shlex
+          from pathlib import Path
+
+          def load_simple_yaml(path: Path) -> dict[str, str]:
+              data: dict[str, str] = {}
+              for raw_line in path.read_text().splitlines():
+                  line = raw_line.strip()
+                  if not line or line.startswith('#'):
+                      continue
+                  if ':' not in line:
+                      raise RuntimeError(f'Unsupported config line in {path}: {raw_line}')
+                  key, value = line.split(':', 1)
+                  data[key.strip()] = value.strip()
+              return data
+
+          output_path = Path(os.environ['GITHUB_OUTPUT'])
+
+          def emit(key: str, value: str) -> None:
+              with output_path.open('a', encoding='utf-8') as handle:
+                  handle.write(f'{key}={value}\n')
+
+          if os.environ['DEPLOY_EVENT_NAME'] != 'issue_comment':
+              emit('enabled', 'false')
+              emit('reason', f"Unsupported event {os.environ['DEPLOY_EVENT_NAME']}")
+              raise SystemExit(0)
+
+          if os.environ['DEPLOY_IS_PULL_REQUEST'] != 'true':
+              emit('enabled', 'false')
+              emit('reason', 'Comment migration is supported only on pull requests')
+              raise SystemExit(0)
+
+          workspace = Path(os.environ['GITHUB_WORKSPACE'])
+          config = load_simple_yaml(workspace / 'deploy/db-migrate/config/migration-command.yml')
+          environments_root = workspace / 'deploy/db-migrate/environments'
+          environments = [load_simple_yaml(path) for path in sorted(environments_root.glob('*.yml'))]
+
+          comment_body = os.environ.get('DEPLOY_COMMENT_BODY', '')
+          first_non_empty_line = next((line.strip() for line in comment_body.splitlines() if line.strip()), None)
+          if not first_non_empty_line:
+              emit('enabled', 'false')
+              emit('reason', 'Comment does not match deployment command')
+              raise SystemExit(0)
+
+          try:
+              tokens = shlex.split(first_non_empty_line)
+          except ValueError as exc:
+              raise SystemExit(f'Malformed deployment comment: {exc}')
+
+          if not tokens or tokens[0] != config['command']:
+              emit('enabled', 'false')
+              emit('reason', 'Comment does not match deployment command')
+              raise SystemExit(0)
+
+          if len(tokens) < 2 or tokens[1] != config['target-type']:
+              missing = tokens[1] if len(tokens) > 1 else '<missing>'
+              raise SystemExit(f'Unsupported deploy target type: {missing}')
+
+          values: dict[str, str] = {}
+          index = 2
+          while index < len(tokens):
+              option = tokens[index]
+              if option not in {'--name', '--env'}:
+                  raise SystemExit(f'Unsupported argument: {option}')
+              if index + 1 >= len(tokens) or tokens[index + 1].startswith('--'):
+                  raise SystemExit(f'Missing value for {option}')
+              if option in values:
+                  raise SystemExit(f'Duplicate argument: {option}')
+              values[option] = tokens[index + 1]
+              index += 2
+
+          database_name = values.get('--name')
+          environment_id = values.get('--env')
+          if not database_name:
+              raise SystemExit('Migration comment must include --name <database>')
+          if not environment_id:
+              raise SystemExit('Migration comment must include --env <environment>')
+          if database_name != config['name']:
+              raise SystemExit(f'Unknown database name: {database_name}')
+
+          environment = next((entry for entry in environments if entry.get('id') == environment_id), None)
+          if environment is None:
+              raise SystemExit(f'Unknown migration environment: {environment_id}')
+
+          emit('enabled', 'true')
+          emit('database_name', database_name)
+          emit('github_environment', environment.get('github-environment', environment_id))
+          emit('summary', f'{database_name} -> {environment_id}')
+          INNER_PY
+
+      - name: Reject fork-based PR migration runs
+        if: steps.resolve.outputs.enabled == 'true' && steps.pr.outputs.same_repo != 'true'
+        run: |
+          echo "PR comment migrations are allowed only for branches in this repository." >&2
+          exit 1
+
+      - name: Compute checkout ref
+        id: checkout_ref
+        run: |
+          if [[ "${{ steps.resolve.outputs.enabled }}" == "true" ]]; then
+            echo "value=${{ steps.pr.outputs.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Capture issue number
+        id: issue_number
+        run: |
+          if [[ "${{ steps.resolve.outputs.enabled }}" == "true" ]]; then
+            echo "value=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=" >> "$GITHUB_OUTPUT"
+          fi
+
+  migrate:
+    needs: resolve
+    if: needs.resolve.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.github_environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Post start comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = Number("${{ needs.resolve.outputs.issue_number }}");
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### DB migration started",
+              "",
+              `- Target: ${{ needs.resolve.outputs.summary }}`,
+              `- Branch: ${{ needs.resolve.outputs.pr_head_ref }}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+      - name: Execute migration
+        uses: ./.github/actions/db-migrate-run
+        with:
+          github_environment: ${{ needs.resolve.outputs.github_environment }}
+          database_name: ${{ needs.resolve.outputs.database_name }}
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          AUTHS_SOX_DB_MIGRATION_URL: ${{ vars.AUTHS_SOX_DB_MIGRATION_URL }}
+          AUTHS_SOX_DB_MIGRATION_USERNAME: ${{ vars.AUTHS_SOX_DB_MIGRATION_USERNAME }}
+          AUTHS_SOX_DB_MIGRATION_PASSWORD: ${{ secrets.AUTHS_SOX_DB_MIGRATION_PASSWORD }}
+
+      - name: Post success comment
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = Number("${{ needs.resolve.outputs.issue_number }}");
+            const body = [
+              "---",
+              "### DB migration succeeded",
+              "",
+              `- Target: ${{ needs.resolve.outputs.summary }}`,
+              `- GitHub Environment: ${{ needs.resolve.outputs.github_environment }}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = Number("${{ needs.resolve.outputs.issue_number }}");
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### DB migration failed",
+              "",
+              `- Target: ${{ needs.resolve.outputs.summary }}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });

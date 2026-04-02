@@ -1,0 +1,3 @@
+command: /deploy
+target-type: db
+name: auths_sox

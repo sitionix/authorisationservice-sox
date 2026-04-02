@@ -1,0 +1,94 @@
+name: DB Migrate Run
+description: Run Flyway migrations inside an environment-bound job.
+
+inputs:
+  github_environment:
+    description: GitHub Environment name used for the migration target.
+    required: true
+  database_name:
+    description: Canonical database name for the migration target.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate migration environment secrets and vars
+      shell: bash
+      run: |
+        for key in AUTH_TOKEN AUTHS_SOX_DB_MIGRATION_URL AUTHS_SOX_DB_MIGRATION_USERNAME AUTHS_SOX_DB_MIGRATION_PASSWORD; do
+          if [[ -z "${!key:-}" ]]; then
+            echo "Missing required migration configuration: ${key}" >&2
+            exit 1
+          fi
+        done
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: "21"
+        distribution: "zulu"
+        cache: maven
+
+    - name: Setup Maven settings
+      shell: bash
+      run: |
+        mkdir -p ~/.m2
+        cat <<SETTINGS > ~/.m2/settings.xml
+        <settings>
+          <servers>
+            <server>
+              <id>github-forge-it</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+            <server>
+              <id>github-app-afesox</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+            <server>
+              <id>github-forge-security</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+            <server>
+              <id>github-forge-common</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+          </servers>
+        </settings>
+        SETTINGS
+
+    - name: Show Flyway target
+      shell: bash
+      run: |
+        echo "Running DB migration for ${{ inputs.database_name }} in ${{ inputs.github_environment }}"
+        echo "Flyway URL host is configured via AUTHS_SOX_DB_MIGRATION_URL"
+
+    - name: Validate migration state
+      shell: bash
+      run: |
+        mvn -B -q -pl boot -DskipTests \
+          -Dflyway.url="${AUTHS_SOX_DB_MIGRATION_URL}" \
+          -Dflyway.user="${AUTHS_SOX_DB_MIGRATION_USERNAME}" \
+          -Dflyway.password="${AUTHS_SOX_DB_MIGRATION_PASSWORD}" \
+          flyway:validate
+
+    - name: Apply Flyway migrations
+      shell: bash
+      run: |
+        mvn -B -q -pl boot -DskipTests \
+          -Dflyway.url="${AUTHS_SOX_DB_MIGRATION_URL}" \
+          -Dflyway.user="${AUTHS_SOX_DB_MIGRATION_USERNAME}" \
+          -Dflyway.password="${AUTHS_SOX_DB_MIGRATION_PASSWORD}" \
+          flyway:migrate
+
+    - name: Report Flyway state
+      shell: bash
+      run: |
+        mvn -B -q -pl boot -DskipTests \
+          -Dflyway.url="${AUTHS_SOX_DB_MIGRATION_URL}" \
+          -Dflyway.user="${AUTHS_SOX_DB_MIGRATION_USERNAME}" \
+          -Dflyway.password="${AUTHS_SOX_DB_MIGRATION_PASSWORD}" \
+          flyway:info
