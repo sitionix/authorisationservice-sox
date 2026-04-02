@@ -15,7 +15,7 @@ runs:
     - name: Validate migration inputs
       shell: bash
       run: |
-        for key in AUTH_TOKEN FLYWAY_URL FLYWAY_USERNAME FLYWAY_PASSWORD; do
+        for key in FLYWAY_URL FLYWAY_USERNAME FLYWAY_PASSWORD; do
           if [[ -z "${!key:-}" ]]; then
             echo "Missing required migration configuration: ${key}" >&2
             exit 1
@@ -40,44 +40,6 @@ runs:
           done
         fi
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: "21"
-        distribution: "zulu"
-        cache: maven
-
-    - name: Setup Maven settings
-      shell: bash
-      run: |
-        mkdir -p ~/.m2
-        cat <<SETTINGS > ~/.m2/settings.xml
-        <settings>
-          <servers>
-            <server>
-              <id>github-forge-it</id>
-              <username>${GITHUB_ACTOR}</username>
-              <password>${AUTH_TOKEN}</password>
-            </server>
-            <server>
-              <id>github-app-afesox</id>
-              <username>${GITHUB_ACTOR}</username>
-              <password>${AUTH_TOKEN}</password>
-            </server>
-            <server>
-              <id>github-forge-security</id>
-              <username>${GITHUB_ACTOR}</username>
-              <password>${AUTH_TOKEN}</password>
-            </server>
-            <server>
-              <id>github-forge-common</id>
-              <username>${GITHUB_ACTOR}</username>
-              <password>${AUTH_TOKEN}</password>
-            </server>
-          </servers>
-        </settings>
-        SETTINGS
-
     - name: Show Flyway target
       shell: bash
       env:
@@ -93,6 +55,18 @@ runs:
       run: |
         mkdir -p ~/.ssh
         key_path=~/.ssh/db-migrate-dev-only
+        tunnel_pid=""
+
+        cleanup() {
+          if [[ -n "${tunnel_pid}" ]]; then
+            kill "${tunnel_pid}" 2>/dev/null || true
+            wait "${tunnel_pid}" 2>/dev/null || true
+          fi
+          rm -f "${key_path}"
+        }
+
+        trap cleanup EXIT
+
         printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY}" > "${key_path}"
         chmod 600 "${key_path}"
 
@@ -103,9 +77,10 @@ runs:
           -o ExitOnForwardFailure=yes \
           -o ServerAliveInterval=15 \
           -o ServerAliveCountMax=3 \
-          -fN \
+          -N \
           -L "${SSH_TUNNEL_LOCAL_PORT}:${SSH_TUNNEL_REMOTE_HOST}:${SSH_TUNNEL_REMOTE_PORT}" \
-          "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}"
+          "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}" &
+        tunnel_pid=$!
 
         for _ in $(seq 1 20); do
           if bash -c ">/dev/tcp/127.0.0.1/${SSH_TUNNEL_LOCAL_PORT}" 2>/dev/null; then
@@ -117,21 +92,26 @@ runs:
         echo "SSH tunnel did not become ready on 127.0.0.1:${SSH_TUNNEL_LOCAL_PORT}" >&2
         exit 1
 
-    - name: Build local reactor modules
-      shell: bash
-      run: |
-        mvn -B -q -pl boot -am -DskipTests install
-
     - name: Execute Flyway lifecycle
       shell: bash
       run: |
-        flyway_maven=(
-          mvn -B -q -f boot/pom.xml -DskipTests
-          -Dflyway.url="${FLYWAY_URL}"
-          -Dflyway.user="${FLYWAY_USERNAME}"
-          -Dflyway.password="${FLYWAY_PASSWORD}"
+        workspace_path="${GITHUB_WORKSPACE:?}"
+        migration_sql_path="${workspace_path}/db-migration"
+
+        if [[ ! -d "${migration_sql_path}" ]]; then
+          echo "Missing Flyway migration directory: ${migration_sql_path}" >&2
+          exit 1
+        fi
+
+        flyway_docker=(
+          docker run --rm --network host
+          -v "${migration_sql_path}:/flyway/sql:ro"
+          flyway/flyway:10.10.0
+          -url="${FLYWAY_URL}"
+          -user="${FLYWAY_USERNAME}"
+          -password="${FLYWAY_PASSWORD}"
         )
 
-        "${flyway_maven[@]}" flyway:validate
-        "${flyway_maven[@]}" flyway:migrate
-        "${flyway_maven[@]}" flyway:info
+        "${flyway_docker[@]}" validate
+        "${flyway_docker[@]}" migrate
+        "${flyway_docker[@]}" info
