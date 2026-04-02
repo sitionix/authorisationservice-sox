@@ -54,6 +54,7 @@ with a `key-id` and `public-key`/`public-key-path`.
 - The workflow binds the job to the same GitHub Environment as `--env`.
 - The workflow runs Flyway only; it does not deploy the service binary.
 - The workflow does not build the service; it runs standalone Flyway against the SQL files in `db-migration`.
+- Pull request comment triggers run against the pull request head branch, not against `develop`.
 
 Current `db-model.yaml` mapping for `dev` requires:
 - Flyway URL `jdbc:postgresql://127.0.0.1:15432/auths_sox`
