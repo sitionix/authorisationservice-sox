@@ -13,12 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       enabled: ${{ steps.resolve.outputs.enabled }}
+      environment_id: ${{ steps.resolve.outputs.environment_id }}
       github_environment: ${{ steps.resolve.outputs.github_environment }}
       summary: ${{ steps.resolve.outputs.summary }}
       checkout_ref: ${{ steps.checkout_ref.outputs.value }}
       issue_number: ${{ steps.issue_number.outputs.value }}
       pr_head_ref: ${{ steps.pr.outputs.head_ref }}
       database_name: ${{ steps.resolve.outputs.database_name }}
+      flyway_url_var_name: ${{ steps.resolve.outputs.flyway_url_var_name }}
+      flyway_username_var_name: ${{ steps.resolve.outputs.flyway_username_var_name }}
+      flyway_password_secret_name: ${{ steps.resolve.outputs.flyway_password_secret_name }}
+      auth_token_secret_name: ${{ steps.resolve.outputs.auth_token_secret_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -55,96 +60,95 @@ jobs:
           DEPLOY_COMMENT_BODY: ${{ github.event.comment.body }}
           DEPLOY_IS_PULL_REQUEST: ${{ github.event.issue.pull_request && 'true' || 'false' }}
         run: |
-          python3 - <<'INNER_PY'
-          import os
-          import shlex
-          from pathlib import Path
+          ruby - <<'INNER_RUBY'
+          require "yaml"
+          require "shellwords"
+          require "pathname"
 
-          def load_simple_yaml(path: Path) -> dict[str, str]:
-              data: dict[str, str] = {}
-              for raw_line in path.read_text().splitlines():
-                  line = raw_line.strip()
-                  if not line or line.startswith('#'):
-                      continue
-                  if ':' not in line:
-                      raise RuntimeError(f'Unsupported config line in {path}: {raw_line}')
-                  key, value = line.split(':', 1)
-                  data[key.strip()] = value.strip()
-              return data
+          output_path = Pathname.new(ENV.fetch("GITHUB_OUTPUT"))
 
-          output_path = Path(os.environ['GITHUB_OUTPUT'])
+          def emit(output_path, key, value)
+            output_path.open("a") do |handle|
+              handle.puts("#{key}=#{value}")
+            end
+          end
 
-          def emit(key: str, value: str) -> None:
-              with output_path.open('a', encoding='utf-8') as handle:
-                  handle.write(f'{key}={value}\n')
+          if ENV.fetch("DEPLOY_EVENT_NAME") != "issue_comment"
+            emit(output_path, "enabled", "false")
+            emit(output_path, "reason", "Unsupported event #{ENV.fetch('DEPLOY_EVENT_NAME')}")
+            exit 0
+          end
 
-          if os.environ['DEPLOY_EVENT_NAME'] != 'issue_comment':
-              emit('enabled', 'false')
-              emit('reason', f"Unsupported event {os.environ['DEPLOY_EVENT_NAME']}")
-              raise SystemExit(0)
+          if ENV.fetch("DEPLOY_IS_PULL_REQUEST") != "true"
+            emit(output_path, "enabled", "false")
+            emit(output_path, "reason", "Comment migration is supported only on pull requests")
+            exit 0
+          end
 
-          if os.environ['DEPLOY_IS_PULL_REQUEST'] != 'true':
-              emit('enabled', 'false')
-              emit('reason', 'Comment migration is supported only on pull requests')
-              raise SystemExit(0)
+          workspace = Pathname.new(ENV.fetch("GITHUB_WORKSPACE"))
+          model = YAML.load_file(workspace.join("db-migration/db-model.yaml"))
+          db = model.fetch("db")
+          trigger = db.fetch("trigger")
+          environments = db.fetch("environments")
 
-          workspace = Path(os.environ['GITHUB_WORKSPACE'])
-          config = load_simple_yaml(workspace / 'deploy/db-migrate/config/migration-command.yml')
-          environments_root = workspace / 'deploy/db-migrate/environments'
-          environments = [load_simple_yaml(path) for path in sorted(environments_root.glob('*.yml'))]
+          comment_body = ENV.fetch("DEPLOY_COMMENT_BODY", "")
+          first_non_empty_line = comment_body.each_line.map(&:strip).find { |line| !line.empty? }
+          if first_non_empty_line.nil?
+            emit(output_path, "enabled", "false")
+            emit(output_path, "reason", "Comment does not match deployment command")
+            exit 0
+          end
 
-          comment_body = os.environ.get('DEPLOY_COMMENT_BODY', '')
-          first_non_empty_line = next((line.strip() for line in comment_body.splitlines() if line.strip()), None)
-          if not first_non_empty_line:
-              emit('enabled', 'false')
-              emit('reason', 'Comment does not match deployment command')
-              raise SystemExit(0)
+          begin
+            tokens = Shellwords.split(first_non_empty_line)
+          rescue ArgumentError => error
+            abort("Malformed deployment comment: #{error.message}")
+          end
 
-          try:
-              tokens = shlex.split(first_non_empty_line)
-          except ValueError as exc:
-              raise SystemExit(f'Malformed deployment comment: {exc}')
+          if tokens.empty? || tokens[0] != trigger.fetch("command")
+            emit(output_path, "enabled", "false")
+            emit(output_path, "reason", "Comment does not match deployment command")
+            exit 0
+          end
 
-          if not tokens or tokens[0] != config['command']:
-              emit('enabled', 'false')
-              emit('reason', 'Comment does not match deployment command')
-              raise SystemExit(0)
+          if tokens.length < 2 || tokens[1] != trigger.fetch("target_type")
+            missing = tokens.length > 1 ? tokens[1] : "<missing>"
+            abort("Unsupported deploy target type: #{missing}")
+          end
 
-          if len(tokens) < 2 or tokens[1] != config['target-type']:
-              missing = tokens[1] if len(tokens) > 1 else '<missing>'
-              raise SystemExit(f'Unsupported deploy target type: {missing}')
-
-          values: dict[str, str] = {}
+          values = {}
           index = 2
-          while index < len(tokens):
-              option = tokens[index]
-              if option not in {'--name', '--env'}:
-                  raise SystemExit(f'Unsupported argument: {option}')
-              if index + 1 >= len(tokens) or tokens[index + 1].startswith('--'):
-                  raise SystemExit(f'Missing value for {option}')
-              if option in values:
-                  raise SystemExit(f'Duplicate argument: {option}')
-              values[option] = tokens[index + 1]
-              index += 2
+          while index < tokens.length
+            option = tokens[index]
+            abort("Unsupported argument: #{option}") unless ["--name", "--env"].include?(option)
+            abort("Missing value for #{option}") if index + 1 >= tokens.length || tokens[index + 1].start_with?("--")
+            abort("Duplicate argument: #{option}") if values.key?(option)
+            values[option] = tokens[index + 1]
+            index += 2
+          end
 
-          database_name = values.get('--name')
-          environment_id = values.get('--env')
-          if not database_name:
-              raise SystemExit('Migration comment must include --name <database>')
-          if not environment_id:
-              raise SystemExit('Migration comment must include --env <environment>')
-          if database_name != config['name']:
-              raise SystemExit(f'Unknown database name: {database_name}')
+          database_name = values["--name"]
+          environment_id = values["--env"]
+          abort("Migration comment must include --name <database>") if database_name.nil? || database_name.empty?
+          abort("Migration comment must include --env <environment>") if environment_id.nil? || environment_id.empty?
+          abort("Unknown database name: #{database_name}") unless database_name == db.fetch("name")
 
-          environment = next((entry for entry in environments if entry.get('id') == environment_id), None)
-          if environment is None:
-              raise SystemExit(f'Unknown migration environment: {environment_id}')
+          environment = environments[environment_id]
+          abort("Unknown migration environment: #{environment_id}") if environment.nil?
 
-          emit('enabled', 'true')
-          emit('database_name', database_name)
-          emit('github_environment', environment.get('github-environment', environment_id))
-          emit('summary', f'{database_name} -> {environment_id}')
-          INNER_PY
+          connection = environment.fetch("connection")
+          build = environment.fetch("build")
+
+          emit(output_path, "enabled", "true")
+          emit(output_path, "database_name", database_name)
+          emit(output_path, "environment_id", environment_id)
+          emit(output_path, "github_environment", environment.fetch("github_environment", environment_id))
+          emit(output_path, "flyway_url_var_name", connection.fetch("url_var"))
+          emit(output_path, "flyway_username_var_name", connection.fetch("username_var"))
+          emit(output_path, "flyway_password_secret_name", connection.fetch("password_secret"))
+          emit(output_path, "auth_token_secret_name", build.fetch("auth_token_secret"))
+          emit(output_path, "summary", "#{database_name} -> #{environment_id}")
+          INNER_RUBY
 
       - name: Reject fork-based PR migration runs
         if: steps.resolve.outputs.enabled == 'true' && steps.pr.outputs.same_repo != 'true'
@@ -211,13 +215,14 @@ jobs:
       - name: Execute migration
         uses: ./.github/actions/db-migrate-run
         with:
+          environment_id: ${{ needs.resolve.outputs.environment_id }}
           github_environment: ${{ needs.resolve.outputs.github_environment }}
           database_name: ${{ needs.resolve.outputs.database_name }}
         env:
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          AUTHS_SOX_DB_MIGRATION_URL: ${{ vars.AUTHS_SOX_DB_MIGRATION_URL }}
-          AUTHS_SOX_DB_MIGRATION_USERNAME: ${{ vars.AUTHS_SOX_DB_MIGRATION_USERNAME }}
-          AUTHS_SOX_DB_MIGRATION_PASSWORD: ${{ secrets.AUTHS_SOX_DB_MIGRATION_PASSWORD }}
+          AUTH_TOKEN: ${{ secrets[needs.resolve.outputs.auth_token_secret_name] }}
+          FLYWAY_URL: ${{ vars[needs.resolve.outputs.flyway_url_var_name] }}
+          FLYWAY_USERNAME: ${{ vars[needs.resolve.outputs.flyway_username_var_name] }}
+          FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.flyway_password_secret_name] }}
 
       - name: Post success comment
         if: success()

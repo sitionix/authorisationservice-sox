@@ -5,6 +5,9 @@ inputs:
   github_environment:
     description: GitHub Environment name used for the migration target.
     required: true
+  environment_id:
+    description: Logical migration environment selected by the trigger comment.
+    required: true
   database_name:
     description: Canonical database name for the migration target.
     required: true
@@ -15,7 +18,7 @@ runs:
     - name: Validate migration environment secrets and vars
       shell: bash
       run: |
-        for key in AUTH_TOKEN AUTHS_SOX_DB_MIGRATION_URL AUTHS_SOX_DB_MIGRATION_USERNAME AUTHS_SOX_DB_MIGRATION_PASSWORD; do
+        for key in AUTH_TOKEN FLYWAY_URL FLYWAY_USERNAME FLYWAY_PASSWORD; do
           if [[ -z "${!key:-}" ]]; then
             echo "Missing required migration configuration: ${key}" >&2
             exit 1
@@ -64,34 +67,36 @@ runs:
       shell: bash
       env:
         INPUT_DATABASE_NAME: ${{ inputs.database_name }}
+        INPUT_ENVIRONMENT_ID: ${{ inputs.environment_id }}
         INPUT_GITHUB_ENVIRONMENT: ${{ inputs.github_environment }}
       run: |
-        echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_GITHUB_ENVIRONMENT}"
-        echo "Flyway URL host is configured via AUTHS_SOX_DB_MIGRATION_URL"
+        echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
+        echo "GitHub Environment: ${INPUT_GITHUB_ENVIRONMENT}"
+        echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
 
     - name: Validate migration state
       shell: bash
       run: |
         mvn -B -q -pl boot -DskipTests \
-          -Dflyway.url="${AUTHS_SOX_DB_MIGRATION_URL}" \
-          -Dflyway.user="${AUTHS_SOX_DB_MIGRATION_USERNAME}" \
-          -Dflyway.password="${AUTHS_SOX_DB_MIGRATION_PASSWORD}" \
+          -Dflyway.url="${FLYWAY_URL}" \
+          -Dflyway.user="${FLYWAY_USERNAME}" \
+          -Dflyway.password="${FLYWAY_PASSWORD}" \
           flyway:validate
 
     - name: Apply Flyway migrations
       shell: bash
       run: |
         mvn -B -q -pl boot -DskipTests \
-          -Dflyway.url="${AUTHS_SOX_DB_MIGRATION_URL}" \
-          -Dflyway.user="${AUTHS_SOX_DB_MIGRATION_USERNAME}" \
-          -Dflyway.password="${AUTHS_SOX_DB_MIGRATION_PASSWORD}" \
+          -Dflyway.url="${FLYWAY_URL}" \
+          -Dflyway.user="${FLYWAY_USERNAME}" \
+          -Dflyway.password="${FLYWAY_PASSWORD}" \
           flyway:migrate
 
     - name: Report Flyway state
       shell: bash
       run: |
         mvn -B -q -pl boot -DskipTests \
-          -Dflyway.url="${AUTHS_SOX_DB_MIGRATION_URL}" \
-          -Dflyway.user="${AUTHS_SOX_DB_MIGRATION_USERNAME}" \
-          -Dflyway.password="${AUTHS_SOX_DB_MIGRATION_PASSWORD}" \
+          -Dflyway.url="${FLYWAY_URL}" \
+          -Dflyway.user="${FLYWAY_USERNAME}" \
+          -Dflyway.password="${FLYWAY_PASSWORD}" \
           flyway:info

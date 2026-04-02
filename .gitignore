@@ -37,7 +37,6 @@ mvnw
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-/db-migration/db-model.yaml
 
 ### VS Code ###
 .vscode/

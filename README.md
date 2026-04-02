@@ -29,9 +29,10 @@ with a `key-id` and `public-key`/`public-key-path`.
 
 ## Database migrations
 - Flyway migrations live in `db-migration` at the repository root.
+- The migration control model also lives there in `db-migration/db-model.yaml`.
 - Add new migrations as flat, versioned SQL files like `V13__describe_change.sql`.
 - Do not edit applied migration files; add a new version instead.
-- This service owns its PostgreSQL schema; real datasource credentials must come from env/secrets (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`).
+- This service owns its PostgreSQL schema.
 - Hibernate schema generation is not the source of truth; Flyway is.
 - Existing Forge IT tests keep using their own schema/data setup under `boot/src/test/resources/forge-it/...`; the runtime migration workflow does not replace that test harness.
 
@@ -42,17 +43,16 @@ with a `key-id` and `public-key`/`public-key-path`.
   /deploy db --name auths_sox --env dev
   ```
 - The workflow accepts only the exact canonical DB name `auths_sox`.
-- Supported environments are defined under `deploy/db-migrate/environments`.
-- The workflow binds the migration job directly to the selected GitHub Environment.
+- The workflow resolves the command contract, target name, selected environment, and migration connection binding from `db-migration/db-model.yaml`.
+- The workflow binds the migration job directly to the selected GitHub Environment from that model.
+- Migration connection settings are independent from `boot` runtime config; the workflow reads the GitHub Environment var/secret names from `db-model.yaml` and injects them into Flyway directly.
 - The workflow runs Flyway only; it does not deploy the service binary.
 
-Required GitHub Environment variables:
-- `AUTHS_SOX_DB_MIGRATION_URL`
-- `AUTHS_SOX_DB_MIGRATION_USERNAME`
-
-Required GitHub Environment secrets:
-- `AUTHS_SOX_DB_MIGRATION_PASSWORD`
-- `AUTH_TOKEN`
+Current `db-model.yaml` mapping for `dev` requires:
+- GitHub Environment var `AUTHS_SOX_DB_MIGRATION_URL`
+- GitHub Environment var `AUTHS_SOX_DB_MIGRATION_USERNAME`
+- GitHub Environment secret `AUTHS_SOX_DB_MIGRATION_PASSWORD`
+- GitHub Environment secret `AUTH_TOKEN`
 
 ## Dev key generation (PEM)
 ```

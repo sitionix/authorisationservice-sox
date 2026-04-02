@@ -1,0 +1,14 @@
+db:
+  name: auths_sox
+  trigger:
+    command: /deploy
+    target_type: db
+  environments:
+    dev:
+      github_environment: dev
+      connection:
+        url_var: AUTHS_SOX_DB_MIGRATION_URL
+        username_var: AUTHS_SOX_DB_MIGRATION_USERNAME
+        password_secret: AUTHS_SOX_DB_MIGRATION_PASSWORD
+      build:
+        auth_token_secret: AUTH_TOKEN
