@@ -69,11 +69,16 @@ runs:
         echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
         echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
 
+    - name: Build local reactor modules
+      shell: bash
+      run: |
+        mvn -B -q -pl boot -am -DskipTests install
+
     - name: Execute Flyway lifecycle
       shell: bash
       run: |
         flyway_maven=(
-          mvn -B -q -pl boot -am -DskipTests
+          mvn -B -q -f boot/pom.xml -DskipTests
           -Dflyway.url="${FLYWAY_URL}"
           -Dflyway.user="${FLYWAY_USERNAME}"
           -Dflyway.password="${FLYWAY_PASSWORD}"
