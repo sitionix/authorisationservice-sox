@@ -73,7 +73,7 @@ runs:
       shell: bash
       run: |
         flyway_maven=(
-          mvn -B -q -pl boot -DskipTests
+          mvn -B -q -pl boot -am -DskipTests
           -Dflyway.url="${FLYWAY_URL}"
           -Dflyway.user="${FLYWAY_USERNAME}"
           -Dflyway.password="${FLYWAY_PASSWORD}"
