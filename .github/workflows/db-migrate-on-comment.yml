@@ -19,9 +19,9 @@ jobs:
       issue_number: ${{ steps.issue_number.outputs.value }}
       pr_head_ref: ${{ steps.pr.outputs.head_ref }}
       database_name: ${{ steps.resolve.outputs.database_name }}
-      flyway_url: ${{ steps.resolve.outputs.flyway_url }}
-      flyway_username: ${{ steps.resolve.outputs.flyway_username }}
-      flyway_password: ${{ steps.resolve.outputs.flyway_password }}
+      url: ${{ steps.resolve.outputs.url }}
+      username: ${{ steps.resolve.outputs.username }}
+      password_secret: ${{ steps.resolve.outputs.password_secret }}
     steps:
       - uses: actions/checkout@v4
 
@@ -136,9 +136,9 @@ jobs:
           emit(output_path, "enabled", "true")
           emit(output_path, "database_name", database_name)
           emit(output_path, "environment_id", environment_id)
-          emit(output_path, "flyway_url", environment.fetch("flyway_url"))
-          emit(output_path, "flyway_username", environment.fetch("flyway_username"))
-          emit(output_path, "flyway_password", environment.fetch("flyway_password"))
+          emit(output_path, "url", environment.fetch("url"))
+          emit(output_path, "username", environment.fetch("username"))
+          emit(output_path, "password_secret", environment.fetch("password_secret"))
           emit(output_path, "summary", "#{database_name} -> #{environment_id}")
           INNER_RUBY
 
@@ -211,9 +211,9 @@ jobs:
           database_name: ${{ needs.resolve.outputs.database_name }}
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-          FLYWAY_URL: ${{ vars[needs.resolve.outputs.flyway_url] }}
-          FLYWAY_USERNAME: ${{ vars[needs.resolve.outputs.flyway_username] }}
-          FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.flyway_password] }}
+          FLYWAY_URL: ${{ needs.resolve.outputs.url }}
+          FLYWAY_USERNAME: ${{ needs.resolve.outputs.username }}
+          FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.password_secret] }}
 
       - name: Post success comment
         if: success()

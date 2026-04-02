@@ -2,6 +2,6 @@ db:
   name: auths_sox
   env:
     dev:
-      flyway_url: AUTHS_SOX_DB_MIGRATION_URL
-      flyway_username: AUTHS_SOX_DB_MIGRATION_USERNAME
-      flyway_password: AUTHS_SOX_DB_MIGRATION_PASSWORD
+      url: jdbc:postgresql://postgres:5432/auths_sox
+      username: authssox_app
+      password_secret: AUTHS_SOX_DB_MIGRATION_PASSWORD

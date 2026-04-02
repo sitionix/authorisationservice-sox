@@ -47,17 +47,18 @@ with a `key-id` and `public-key`/`public-key-path`.
 - `db-migration/db-model.yaml` contains only the DB migration model:
   - canonical DB name
   - supported environments
-  - GitHub Environment var/secret names for Flyway connection
-- Migration connection settings are independent from `boot` runtime config; the workflow reads the names from `db-model.yaml` and injects them into Flyway directly.
+  - direct Flyway URL and username
+  - GitHub secret name for the Flyway password
+- Migration connection settings are independent from `boot` runtime config; the workflow reads them from `db-model.yaml` and injects them into Flyway directly.
 - The workflow binds the job to the same GitHub Environment as `--env`.
 - The workflow runs Flyway only; it does not deploy the service binary.
 
 Current `db-model.yaml` mapping for `dev` requires:
-- GitHub Environment var `AUTHS_SOX_DB_MIGRATION_URL`
-- GitHub Environment var `AUTHS_SOX_DB_MIGRATION_USERNAME`
+- Flyway URL `jdbc:postgresql://postgres:5432/auths_sox`
+- Flyway username `authssox_app`
 - GitHub Environment secret `AUTHS_SOX_DB_MIGRATION_PASSWORD`
 
-Additional workflow secret:
+Additional workflow secret used for Maven package resolution:
 - `AUTH_TOKEN`
 
 ## Dev key generation (PEM)
