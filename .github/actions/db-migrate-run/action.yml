@@ -1,0 +1,84 @@
+name: DB Migrate Run
+description: Run Flyway migrations inside an environment-bound job.
+
+inputs:
+  environment_id:
+    description: Logical migration environment selected by the trigger comment.
+    required: true
+  database_name:
+    description: Canonical database name for the migration target.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate migration inputs
+      shell: bash
+      run: |
+        for key in AUTH_TOKEN FLYWAY_URL FLYWAY_USERNAME FLYWAY_PASSWORD; do
+          if [[ -z "${!key:-}" ]]; then
+            echo "Missing required migration configuration: ${key}" >&2
+            exit 1
+          fi
+        done
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: "21"
+        distribution: "zulu"
+        cache: maven
+
+    - name: Setup Maven settings
+      shell: bash
+      run: |
+        mkdir -p ~/.m2
+        cat <<SETTINGS > ~/.m2/settings.xml
+        <settings>
+          <servers>
+            <server>
+              <id>github-forge-it</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+            <server>
+              <id>github-app-afesox</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+            <server>
+              <id>github-forge-security</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+            <server>
+              <id>github-forge-common</id>
+              <username>${GITHUB_ACTOR}</username>
+              <password>${AUTH_TOKEN}</password>
+            </server>
+          </servers>
+        </settings>
+        SETTINGS
+
+    - name: Show Flyway target
+      shell: bash
+      env:
+        INPUT_DATABASE_NAME: ${{ inputs.database_name }}
+        INPUT_ENVIRONMENT_ID: ${{ inputs.environment_id }}
+      run: |
+        echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
+        echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
+
+    - name: Execute Flyway lifecycle
+      shell: bash
+      run: |
+        flyway_maven=(
+          mvn -B -q -pl boot -DskipTests
+          -Dflyway.url="${FLYWAY_URL}"
+          -Dflyway.user="${FLYWAY_USERNAME}"
+          -Dflyway.password="${FLYWAY_PASSWORD}"
+        )
+
+        "${flyway_maven[@]}" flyway:validate
+        "${flyway_maven[@]}" flyway:migrate
+        "${flyway_maven[@]}" flyway:info

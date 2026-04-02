@@ -27,6 +27,40 @@ AUTH_JWT_KEY_STORE_KEY_PASSWORD=changeit
 Verification keys for rotation can be added via `auth.tokens.jwt.verification-keys` entries
 with a `key-id` and `public-key`/`public-key-path`.
 
+## Database migrations
+- Flyway migrations live in `db-migration` at the repository root.
+- The migration control model also lives there in `db-migration/db-model.yaml`.
+- Add new migrations as flat, versioned SQL files like `V13__describe_change.sql`.
+- Do not edit applied migration files; add a new version instead.
+- This service owns its PostgreSQL schema.
+- Hibernate schema generation is not the source of truth; Flyway is.
+- Existing Forge IT tests keep using their own schema/data setup under `boot/src/test/resources/forge-it/...`; the runtime migration workflow does not replace that test harness.
+
+## DB migration workflow
+- Migrations run only through a PR comment trigger, not on push.
+- Command format:
+  ```text
+  /deploy db --name auths_sox --env dev
+  ```
+- The workflow accepts only the exact canonical DB name `auths_sox`.
+- The command contract itself is enforced in the workflow.
+- `db-migration/db-model.yaml` contains only the DB migration model:
+  - canonical DB name
+  - supported environments
+  - direct Flyway URL and username
+  - GitHub secret name for the Flyway password
+- Migration connection settings are independent from `boot` runtime config; the workflow reads them from `db-model.yaml` and injects them into Flyway directly.
+- The workflow binds the job to the same GitHub Environment as `--env`.
+- The workflow runs Flyway only; it does not deploy the service binary.
+
+Current `db-model.yaml` mapping for `dev` requires:
+- Flyway URL `jdbc:postgresql://postgres:5432/auths_sox`
+- Flyway username `authssox_app`
+- GitHub Environment secret `AUTHS_SOX_DB_PASSWORD`
+
+Additional workflow secret used for Maven package resolution:
+- `AUTH_TOKEN`
+
 ## Dev key generation (PEM)
 ```
 mkdir -p ./keys

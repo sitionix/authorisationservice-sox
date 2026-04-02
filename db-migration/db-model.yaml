@@ -1,0 +1,7 @@
+database:
+  name: auths_sox
+  environments:
+    dev:
+      url: jdbc:postgresql://postgres:5432/auths_sox
+      username: authssox_app
+      password_secret_name: AUTHS_SOX_DB_PASSWORD

@@ -1,0 +1,156 @@
+name: DB Migrate On Comment
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.resolve_target.outputs.enabled }}
+      environment_id: ${{ steps.resolve_target.outputs.environment_id }}
+      summary: ${{ steps.resolve_target.outputs.summary }}
+      pr_head_ref: ${{ steps.pr.outputs.head_ref }}
+      checkout_ref: ${{ steps.pr.outputs.head_sha }}
+      database_name: ${{ steps.resolve_target.outputs.database_name }}
+      database_url: ${{ steps.resolve_target.outputs.database_url }}
+      database_username: ${{ steps.resolve_target.outputs.database_username }}
+      database_password_secret_name: ${{ steps.resolve_target.outputs.database_password_secret_name }}
+    steps:
+      - name: Read pull request metadata
+        id: pr
+        if: github.event.issue.pull_request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            core.setOutput("head_ref", pr.data.head.ref);
+            core.setOutput("head_sha", pr.data.head.sha);
+            core.setOutput(
+              "same_repo",
+              pr.data.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}` ? "true" : "false"
+            );
+
+      - name: Checkout pull request head for config resolution
+        if: github.event.issue.pull_request && steps.pr.outputs.same_repo == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_sha }}
+
+      - name: Resolve migration target
+        id: resolve_target
+        if: github.event.issue.pull_request && steps.pr.outputs.same_repo == 'true'
+        uses: ./.github/actions/db-migrate-resolve
+        with:
+          comment_body: ${{ github.event.comment.body }}
+          is_pull_request: ${{ github.event.issue.pull_request && 'true' || 'false' }}
+
+      - name: Reject fork-based PR migration runs
+        if: github.event.issue.pull_request && steps.pr.outputs.same_repo != 'true'
+        run: |
+          echo "PR comment migrations are allowed only for branches in this repository." >&2
+          exit 1
+
+  migrate:
+    needs: resolve
+    if: needs.resolve.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment_id }}
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Post start comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = Number("${{ github.event.issue.number }}");
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### DB migration started",
+              "",
+              `- Target: ${{ needs.resolve.outputs.summary }}`,
+              `- Branch: ${{ needs.resolve.outputs.pr_head_ref }}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+      - name: Execute migration
+        uses: ./.github/actions/db-migrate-run
+        with:
+          environment_id: ${{ needs.resolve.outputs.environment_id }}
+          database_name: ${{ needs.resolve.outputs.database_name }}
+        env:
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          FLYWAY_URL: ${{ needs.resolve.outputs.database_url }}
+          FLYWAY_USERNAME: ${{ needs.resolve.outputs.database_username }}
+          FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.database_password_secret_name] }}
+
+      - name: Post success comment
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = Number("${{ github.event.issue.number }}");
+            const body = [
+              "---",
+              "### DB migration succeeded",
+              "",
+              `- Target: ${{ needs.resolve.outputs.summary }}`,
+              `- GitHub Environment: ${{ needs.resolve.outputs.environment_id }}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = Number("${{ github.event.issue.number }}");
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### DB migration failed",
+              "",
+              `- Target: ${{ needs.resolve.outputs.summary }}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body,
+            });

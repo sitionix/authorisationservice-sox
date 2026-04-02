@@ -7,13 +7,13 @@ spring:
   kafka:
       bootstrap-servers: localhost:9092
   datasource:
-    url: jdbc:postgresql://localhost:5433/AUTHS_SOX
-    username: postgres
-    password: postgres-pwd
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl: update
+      ddl-auto: validate
 auth:
   tokens:
     issuer: athssox
