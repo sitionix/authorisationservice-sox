@@ -61,6 +61,7 @@ Current `db-model.yaml` mapping for `dev` requires:
 Additional workflow secret used for Maven package resolution:
 - `AUTH_TOKEN`
 
+
 ## Dev key generation (PEM)
 ```
 mkdir -p ./keys

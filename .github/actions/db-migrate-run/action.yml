@@ -22,6 +22,24 @@ runs:
           fi
         done
 
+        tunnel_keys=(SSH_TUNNEL_LOCAL_PORT SSH_TUNNEL_REMOTE_HOST SSH_TUNNEL_REMOTE_PORT)
+        tunnel_enabled=false
+        for key in "${tunnel_keys[@]}"; do
+          if [[ -n "${!key:-}" ]]; then
+            tunnel_enabled=true
+            break
+          fi
+        done
+
+        if [[ "${tunnel_enabled}" == "true" ]]; then
+          for key in DEPLOY_VM_HOST DEPLOY_VM_USER DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY "${tunnel_keys[@]}"; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "Missing required SSH tunnel configuration: ${key}" >&2
+              exit 1
+            fi
+          done
+        fi
+
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
@@ -69,11 +87,46 @@ runs:
         echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
         echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
 
+    - name: Open SSH tunnel to target database
+      if: ${{ env.SSH_TUNNEL_LOCAL_PORT != '' }}
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        key_path=~/.ssh/db-migrate-dev-only
+        printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY}" > "${key_path}"
+        chmod 600 "${key_path}"
+
+        ssh \
+          -i "${key_path}" \
+          -o IdentitiesOnly=yes \
+          -o StrictHostKeyChecking=accept-new \
+          -o ExitOnForwardFailure=yes \
+          -o ServerAliveInterval=15 \
+          -o ServerAliveCountMax=3 \
+          -fN \
+          -L "${SSH_TUNNEL_LOCAL_PORT}:${SSH_TUNNEL_REMOTE_HOST}:${SSH_TUNNEL_REMOTE_PORT}" \
+          "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}"
+
+        for _ in $(seq 1 20); do
+          if bash -c ">/dev/tcp/127.0.0.1/${SSH_TUNNEL_LOCAL_PORT}" 2>/dev/null; then
+            exit 0
+          fi
+          sleep 1
+        done
+
+        echo "SSH tunnel did not become ready on 127.0.0.1:${SSH_TUNNEL_LOCAL_PORT}" >&2
+        exit 1
+
+    - name: Build local reactor modules
+      shell: bash
+      run: |
+        mvn -B -q -pl boot -am -DskipTests install
+
     - name: Execute Flyway lifecycle
       shell: bash
       run: |
         flyway_maven=(
-          mvn -B -q -pl boot -DskipTests
+          mvn -B -q -f boot/pom.xml -DskipTests
           -Dflyway.url="${FLYWAY_URL}"
           -Dflyway.user="${FLYWAY_USERNAME}"
           -Dflyway.password="${FLYWAY_PASSWORD}"
