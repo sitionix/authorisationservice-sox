@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   resolve:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     outputs:
       enabled: ${{ steps.resolve_target.outputs.enabled }}
@@ -21,6 +22,9 @@ jobs:
       database_url: ${{ steps.resolve_target.outputs.database_url }}
       database_username: ${{ steps.resolve_target.outputs.database_username }}
       database_password_secret_name: ${{ steps.resolve_target.outputs.database_password_secret_name }}
+      tunnel_local_port: ${{ steps.resolve_target.outputs.tunnel_local_port }}
+      tunnel_remote_host: ${{ steps.resolve_target.outputs.tunnel_remote_host }}
+      tunnel_remote_port: ${{ steps.resolve_target.outputs.tunnel_remote_port }}
     steps:
       - name: Read pull request metadata
         id: pr
@@ -109,6 +113,12 @@ jobs:
           FLYWAY_URL: ${{ needs.resolve.outputs.database_url }}
           FLYWAY_USERNAME: ${{ needs.resolve.outputs.database_username }}
           FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.database_password_secret_name] }}
+          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
+          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
+          DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY }}
+          SSH_TUNNEL_LOCAL_PORT: ${{ needs.resolve.outputs.tunnel_local_port }}
+          SSH_TUNNEL_REMOTE_HOST: ${{ needs.resolve.outputs.tunnel_remote_host }}
+          SSH_TUNNEL_REMOTE_PORT: ${{ needs.resolve.outputs.tunnel_remote_port }}
 
       - name: Post success comment
         if: success()

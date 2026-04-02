@@ -32,6 +32,15 @@ outputs:
   database_password_secret_name:
     description: GitHub secret name that holds the Flyway password.
     value: ${{ steps.resolve.outputs.database_password_secret_name }}
+  tunnel_local_port:
+    description: Local port for an optional SSH tunnel.
+    value: ${{ steps.resolve.outputs.tunnel_local_port }}
+  tunnel_remote_host:
+    description: Remote host for an optional SSH tunnel.
+    value: ${{ steps.resolve.outputs.tunnel_remote_host }}
+  tunnel_remote_port:
+    description: Remote port for an optional SSH tunnel.
+    value: ${{ steps.resolve.outputs.tunnel_remote_port }}
   summary:
     description: Short human-readable migration target summary.
     value: ${{ steps.resolve.outputs.summary }}
@@ -125,5 +134,9 @@ runs:
         emit(output_path, "database_url", environment.fetch("url"))
         emit(output_path, "database_username", environment.fetch("username"))
         emit(output_path, "database_password_secret_name", environment.fetch("password_secret_name"))
+        tunnel = environment["tunnel"] || {}
+        emit(output_path, "tunnel_local_port", tunnel.fetch("local_port", ""))
+        emit(output_path, "tunnel_remote_host", tunnel.fetch("remote_host", ""))
+        emit(output_path, "tunnel_remote_port", tunnel.fetch("remote_port", ""))
         emit(output_path, "summary", "#{database_name} -> #{environment_id}")
         INNER_RUBY
