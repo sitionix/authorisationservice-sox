@@ -72,3 +72,4 @@ mkdir -p ./keys
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ./keys/jwt-private.pem
 openssl rsa -in ./keys/jwt-private.pem -pubout -out ./keys/jwt-public.pem
 ```
+
