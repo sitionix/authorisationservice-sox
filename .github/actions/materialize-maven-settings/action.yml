@@ -1,0 +1,49 @@
+name: Materialize Maven Settings
+description: Materialize Maven settings from the shared Sitionix Infra contract.
+
+inputs:
+  maven_repository_username:
+    description: Username used for private Maven repositories.
+    required: true
+  maven_repository_token:
+    description: Token used for private Maven repositories and shared contract checkout.
+    required: true
+  output_path:
+    description: Target path for the generated Maven settings file.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout shared Maven contract
+      uses: actions/checkout@v4
+      with:
+        repository: sitionix/sitionix-infra
+        ref: develop
+        path: .shared/sitionix-infra
+        token: ${{ inputs.maven_repository_token }}
+        fetch-depth: 1
+        persist-credentials: false
+
+    - name: Render Maven settings
+      shell: bash
+      env:
+        MAVEN_REPOSITORY_USERNAME: ${{ inputs.maven_repository_username }}
+        MAVEN_REPOSITORY_TOKEN: ${{ inputs.maven_repository_token }}
+        OUTPUT_PATH: ${{ inputs.output_path }}
+      run: |
+        template_path=".shared/sitionix-infra/contracts/shared/maven/settings.xml.template"
+
+        if [[ ! -f "${template_path}" ]]; then
+          echo "Missing shared Maven settings template: ${template_path}" >&2
+          exit 1
+        fi
+
+        mkdir -p "$(dirname "${OUTPUT_PATH}")"
+
+        perl -0pe '
+          s/\$\{MAVEN_REPOSITORY_USERNAME\}/$ENV{MAVEN_REPOSITORY_USERNAME}/g;
+          s/\$\{MAVEN_REPOSITORY_TOKEN\}/$ENV{MAVEN_REPOSITORY_TOKEN}/g;
+        ' "${template_path}" > "${OUTPUT_PATH}"
+
+        chmod 0600 "${OUTPUT_PATH}"

@@ -15,7 +15,6 @@ Use GitHub Environment `dev`.
 - `DEPLOY_VM_SSH_PRIVATE_KEY`
 - `GHCR_PULL_USERNAME`
 - `GHCR_PULL_TOKEN`
-- `MAVEN_SETTINGS_XML`
 - `AUTHS_SOX_DB_PASSWORD`
 - `AUTH_JWT_PRIVATE_KEY`
 - `AUTH_JWT_PUBLIC_KEY`
@@ -25,6 +24,10 @@ Use GitHub Environment `dev`.
 - `DEPLOY_VM_PORT`
 - `AUTH_JWT_KEY_ID`
 - `AUTHS_SOX_DOCKER_NETWORK`
+- `MAVEN_REPOSITORY_USERNAME`
+
+### Repository Secret
+- `MAVEN_REPOSITORY_TOKEN`
 
 ## VM Runtime Contract
 - Docker network: `sitionix-dev`
@@ -66,7 +69,15 @@ The deploy workflow materializes these runtime values for the container:
   - canonical JWKS endpoint
   - alias JWKS endpoint
   - both responses are identical
-  - the configured `AUTH_JWT_KEY_ID` is present in the returned key set
+- the configured `AUTH_JWT_KEY_ID` is present in the returned key set
+
+## Shared Maven Contract
+- The canonical Maven settings template is owned by `sitionix-infra`:
+  - `contracts/shared/maven/settings.xml.template`
+- This workflow checks out that shared template at runtime and injects only:
+  - repository variable `MAVEN_REPOSITORY_USERNAME`
+  - repository secret `MAVEN_REPOSITORY_TOKEN`
+- The full `settings.xml` blob is no longer stored as a secret in this repository.
 
 ## What This Workflow Does Not Do
 - It does not run Flyway DB migration.

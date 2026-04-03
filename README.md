@@ -69,6 +69,7 @@ Current `db-model.yaml` mapping for `dev` requires:
 ## Dev service deploy
 - Push to `develop` deploys the auth service to the `dev` VM through GitHub Actions.
 - The deploy model is push-based: no `git pull` on the VM and no manual VM edits in the primary path.
+- Private Maven artifact resolution uses the shared template owned by `sitionix-infra`, not a repo-local `settings.xml` blob secret.
 - See `docs/dev-vm-deploy.md` for the full runtime, secret, and verification contract.
 
 

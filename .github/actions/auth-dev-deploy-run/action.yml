@@ -26,7 +26,8 @@ runs:
           DEPLOY_VM_SSH_PRIVATE_KEY \
           GHCR_PULL_USERNAME \
           GHCR_PULL_TOKEN \
-          MAVEN_SETTINGS_XML \
+          MAVEN_REPOSITORY_USERNAME \
+          MAVEN_REPOSITORY_TOKEN \
           AUTHS_SOX_DB_PASSWORD \
           AUTH_JWT_KEY_ID \
           AUTH_JWT_PRIVATE_KEY \
@@ -49,10 +50,11 @@ runs:
       uses: docker/setup-buildx-action@v3
 
     - name: Materialize Maven settings
-      shell: bash
-      run: |
-        printf '%s\n' "$MAVEN_SETTINGS_XML" > .maven-settings.xml
-        chmod 0600 .maven-settings.xml
+      uses: ./.github/actions/materialize-maven-settings
+      with:
+        maven_repository_username: ${{ env.MAVEN_REPOSITORY_USERNAME }}
+        maven_repository_token: ${{ env.MAVEN_REPOSITORY_TOKEN }}
+        output_path: .maven-settings.xml
 
     - name: Run tests
       shell: bash

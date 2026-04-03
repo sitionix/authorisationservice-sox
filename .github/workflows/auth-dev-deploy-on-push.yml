@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/auth-dev-deploy-on-push.yml"
       - ".github/actions/auth-dev-deploy-run/**"
+      - ".github/actions/materialize-maven-settings/**"
       - "deploy/auth/**"
       - "boot/**"
       - "api-rest/**"
@@ -48,7 +49,8 @@ jobs:
           DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
           GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-          MAVEN_SETTINGS_XML: ${{ secrets.MAVEN_SETTINGS_XML }}
+          MAVEN_REPOSITORY_USERNAME: ${{ vars.MAVEN_REPOSITORY_USERNAME }}
+          MAVEN_REPOSITORY_TOKEN: ${{ secrets.MAVEN_REPOSITORY_TOKEN }}
           AUTHS_SOX_DB_PASSWORD: ${{ secrets.AUTHS_SOX_DB_PASSWORD }}
           AUTH_JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
           AUTH_JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
