@@ -66,6 +66,12 @@ Current `db-model.yaml` mapping for `dev` requires:
   - `DEPLOY_VM_SSH_PRIVATE_KEY`
   - remote tunnel target `127.0.0.1:5432` on the VM host
 
+## Dev service deploy
+- Push to `develop` deploys the auth service to the `dev` VM through GitHub Actions.
+- The deploy model is push-based: no `git pull` on the VM and no manual VM edits in the primary path.
+- Private Maven artifact resolution uses the shared template owned by `sitionix-infra`, not a repo-local `settings.xml` blob secret.
+- See `docs/dev-vm-deploy.md` for the full runtime, secret, and verification contract.
+
 
 ## Dev key generation (PEM)
 ```
@@ -73,4 +79,3 @@ mkdir -p ./keys
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ./keys/jwt-private.pem
 openssl rsa -in ./keys/jwt-private.pem -pubout -out ./keys/jwt-public.pem
 ```
-
