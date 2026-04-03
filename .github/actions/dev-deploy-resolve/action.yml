@@ -1,0 +1,106 @@
+name: Dev Deploy Resolve
+description: Resolve a service deploy target from a trigger comment.
+
+inputs:
+  comment_body:
+    description: Pull request comment body that triggered the workflow.
+    required: true
+  is_pull_request:
+    description: Whether the GitHub event targets a pull request.
+    required: true
+
+outputs:
+  enabled:
+    description: Whether the comment matches the service deploy contract.
+    value: ${{ steps.resolve.outputs.enabled }}
+  environment_id:
+    description: Target environment selected by the trigger comment.
+    value: ${{ steps.resolve.outputs.environment_id }}
+  service_name:
+    description: Canonical service name selected by the trigger comment.
+    value: ${{ steps.resolve.outputs.service_name }}
+  summary:
+    description: Short human-readable deploy target summary.
+    value: ${{ steps.resolve.outputs.summary }}
+  reason:
+    description: Reason why the command was ignored.
+    value: ${{ steps.resolve.outputs.reason }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve deploy target
+      id: resolve
+      shell: bash
+      env:
+        INPUT_COMMENT_BODY: ${{ inputs.comment_body }}
+        INPUT_IS_PULL_REQUEST: ${{ inputs.is_pull_request }}
+      run: |
+        ruby - <<'INNER_RUBY'
+        require "shellwords"
+        require "pathname"
+
+        output_path = Pathname.new(ENV.fetch("GITHUB_OUTPUT"))
+
+        def emit(output_path, key, value)
+          output_path.open("a") do |handle|
+            handle.puts("#{key}=#{value}")
+          end
+        end
+
+        if ENV.fetch("INPUT_IS_PULL_REQUEST") != "true"
+          emit(output_path, "enabled", "false")
+          emit(output_path, "reason", "Comment deploy is supported only on pull requests")
+          exit 0
+        end
+
+        comment_body = ENV.fetch("INPUT_COMMENT_BODY", "")
+        first_non_empty_line = comment_body.each_line.map(&:strip).find { |line| !line.empty? }
+        if first_non_empty_line.nil?
+          emit(output_path, "enabled", "false")
+          emit(output_path, "reason", "Comment does not match deployment command")
+          exit 0
+        end
+
+        begin
+          tokens = Shellwords.split(first_non_empty_line)
+        rescue ArgumentError => error
+          abort("Malformed deployment comment: #{error.message}")
+        end
+
+        if tokens.empty? || tokens[0] != "/deploy"
+          emit(output_path, "enabled", "false")
+          emit(output_path, "reason", "Comment does not match deployment command")
+          exit 0
+        end
+
+        if tokens.length < 2 || tokens[1] != "service"
+          emit(output_path, "enabled", "false")
+          emit(output_path, "reason", "Comment does not match service deploy command")
+          exit 0
+        end
+
+        values = {}
+        index = 2
+        while index < tokens.length
+          option = tokens[index]
+          abort("Unsupported argument: #{option}") unless ["--name", "--env"].include?(option)
+          abort("Missing value for #{option}") if index + 1 >= tokens.length || tokens[index + 1].start_with?("--")
+          abort("Duplicate argument: #{option}") if values.key?(option)
+          values[option] = tokens[index + 1]
+          index += 2
+        end
+
+        service_name = values["--name"]
+        environment_id = values["--env"]
+
+        abort("Deploy comment must include --name <service>") if service_name.nil? || service_name.empty?
+        abort("Deploy comment must include --env <environment>") if environment_id.nil? || environment_id.empty?
+        abort("Unknown service name: #{service_name}") unless service_name == "authorisationservice-sox"
+        abort("Unknown deploy environment: #{environment_id}") unless environment_id == "dev"
+
+        emit(output_path, "enabled", "true")
+        emit(output_path, "service_name", service_name)
+        emit(output_path, "environment_id", environment_id)
+        emit(output_path, "summary", "#{service_name} -> #{environment_id}")
+        INNER_RUBY

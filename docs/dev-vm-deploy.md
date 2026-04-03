@@ -2,6 +2,10 @@
 
 ## Model
 - Push to `develop` triggers `Dev Deploy On Push`.
+- A pull request comment can trigger `Dev Deploy On Comment` against the PR head branch:
+  ```text
+  /deploy service --name authorisationservice-sox --env dev
+  ```
 - GitHub Actions builds and publishes the runtime image, uploads a release bundle to the VM, and performs the rollout over SSH.
 - The VM is runtime-only. The workflow does not use `git pull` and does not require manual VM edits.
 - This workflow deploys only the auth service container. It does not run DB migrations; those stay in the PR comment-triggered Flyway workflow.

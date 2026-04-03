@@ -104,8 +104,9 @@ runs:
         end
 
         if tokens.length < 2 || tokens[1] != "db"
-          missing = tokens.length > 1 ? tokens[1] : "<missing>"
-          abort("Unsupported deploy target type: #{missing}")
+          emit(output_path, "enabled", "false")
+          emit(output_path, "reason", "Comment does not match DB migration command")
+          exit 0
         end
 
         values = {}
