@@ -90,8 +90,24 @@ class FlywayMigrationIT {
                         SELECT COUNT(*)
                         FROM information_schema.columns
                         WHERE table_name = 'refresh_tokens'
-                          AND column_name = 'status_id'
+                          AND column_name IN ('status_id', 'updated_at')
                           AND is_nullable = 'NO'
+                        """))
+                        .isEqualTo(2);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'refresh_tokens'
+                          AND column_name = 'updated_at'
+                          AND column_default = 'now()'
+                        """))
+                        .isEqualTo(1);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.table_constraints
+                        WHERE table_name = 'refresh_tokens'
+                          AND constraint_name = 'refresh_tokens_fk_status'
+                          AND constraint_type = 'FOREIGN KEY'
                         """))
                         .isEqualTo(1);
             }
