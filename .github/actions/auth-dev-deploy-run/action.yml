@@ -90,6 +90,8 @@ runs:
       shell: bash
       env:
         GITHUB_ENVIRONMENT_NAME: ${{ inputs.github_environment }}
+        RELEASE_ID: ${{ steps.release.outputs.release_id }}
+        IMAGE_REF: ${{ steps.release.outputs.image_ref }}
       run: |
         payload_root=".deploy/release/payload"
         mkdir -p "${payload_root}/bin"
@@ -98,8 +100,8 @@ runs:
         chmod +x "${payload_root}/bin/deploy-auth.sh"
 
         cat <<EOF > "${payload_root}/release.env"
-        SITIONIX_RELEASE_ID=${{ steps.release.outputs.release_id }}
-        SITIONIX_IMAGE_REF=${{ steps.release.outputs.image_ref }}
+        SITIONIX_RELEASE_ID=${RELEASE_ID}
+        SITIONIX_IMAGE_REF=${IMAGE_REF}
         SITIONIX_CONTAINER_NAME=authorisationservice-sox
         SITIONIX_NETWORK_ALIAS=authorisationservice-sox
         SITIONIX_BIND_ADDRESS=127.0.0.1
@@ -123,8 +125,8 @@ runs:
 
         cat <<EOF > "${payload_root}/release-manifest.json"
         {
-          "releaseId": "${{ steps.release.outputs.release_id }}",
-          "imageRef": "${{ steps.release.outputs.image_ref }}",
+          "releaseId": "${RELEASE_ID}",
+          "imageRef": "${IMAGE_REF}",
           "githubSha": "${GITHUB_SHA}",
           "githubEnvironment": "${GITHUB_ENVIRONMENT_NAME}",
           "dockerNetwork": "sitionix-dev",
@@ -168,9 +170,11 @@ runs:
 
     - name: Upload payload to VM
       shell: bash
+      env:
+        RELEASE_ID: ${{ steps.release.outputs.release_id }}
       run: |
-        remote_tarball="/tmp/${{ steps.release.outputs.release_id }}.tgz"
-        remote_secret_env="/tmp/${{ steps.release.outputs.release_id }}.env"
+        remote_tarball="/tmp/${RELEASE_ID}.tgz"
+        remote_secret_env="/tmp/${RELEASE_ID}.env"
         ssh_options=(-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
 
         for attempt in $(seq 1 5); do
@@ -186,10 +190,12 @@ runs:
 
     - name: Run remote deployment
       shell: bash
+      env:
+        RELEASE_ID: ${{ steps.release.outputs.release_id }}
       run: |
-        remote_root="/tmp/${{ steps.release.outputs.release_id }}"
-        remote_tarball="/tmp/${{ steps.release.outputs.release_id }}.tgz"
-        remote_secret_env="/tmp/${{ steps.release.outputs.release_id }}.env"
+        remote_root="/tmp/${RELEASE_ID}"
+        remote_tarball="/tmp/${RELEASE_ID}.tgz"
+        remote_secret_env="/tmp/${RELEASE_ID}.env"
         ssh_options=(-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
 
         ssh "${ssh_options[@]}" -p "${DEPLOY_VM_PORT:-22}" "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}" "
