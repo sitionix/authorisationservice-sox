@@ -5,8 +5,20 @@ inputs:
   maven_repository_username:
     description: Username used for private Maven repositories.
     required: true
-  maven_repository_token:
-    description: Token used for private Maven repositories and shared contract checkout.
+  sitionix_infra_read_token:
+    description: Token used to checkout the shared Sitionix Infra Maven contract.
+    required: true
+  github_forge_it_maven_token:
+    description: Token used for the github-forge-it Maven server id.
+    required: true
+  github_app_afesox_maven_token:
+    description: Token used for the github-app-afesox Maven server id.
+    required: true
+  github_forge_security_maven_token:
+    description: Token used for the github-forge-security Maven server id.
+    required: true
+  github_forge_common_maven_token:
+    description: Token used for the github-forge-common Maven server id.
     required: true
   output_path:
     description: Target path for the generated Maven settings file.
@@ -21,7 +33,7 @@ runs:
         repository: sitionix/sitionix-infra
         ref: develop
         path: .shared/sitionix-infra
-        token: ${{ inputs.maven_repository_token }}
+        token: ${{ inputs.sitionix_infra_read_token }}
         fetch-depth: 1
         persist-credentials: false
 
@@ -29,7 +41,10 @@ runs:
       shell: bash
       env:
         MAVEN_REPOSITORY_USERNAME: ${{ inputs.maven_repository_username }}
-        MAVEN_REPOSITORY_TOKEN: ${{ inputs.maven_repository_token }}
+        GITHUB_FORGE_IT_MAVEN_TOKEN: ${{ inputs.github_forge_it_maven_token }}
+        GITHUB_APP_AFESOX_MAVEN_TOKEN: ${{ inputs.github_app_afesox_maven_token }}
+        GITHUB_FORGE_SECURITY_MAVEN_TOKEN: ${{ inputs.github_forge_security_maven_token }}
+        GITHUB_FORGE_COMMON_MAVEN_TOKEN: ${{ inputs.github_forge_common_maven_token }}
         OUTPUT_PATH: ${{ inputs.output_path }}
       run: |
         template_path=".shared/sitionix-infra/contracts/shared/maven/settings.xml.template"
@@ -43,7 +58,10 @@ runs:
 
         perl -0pe '
           s/\$\{MAVEN_REPOSITORY_USERNAME\}/$ENV{MAVEN_REPOSITORY_USERNAME}/g;
-          s/\$\{MAVEN_REPOSITORY_TOKEN\}/$ENV{MAVEN_REPOSITORY_TOKEN}/g;
+          s/\$\{GITHUB_FORGE_IT_MAVEN_TOKEN\}/$ENV{GITHUB_FORGE_IT_MAVEN_TOKEN}/g;
+          s/\$\{GITHUB_APP_AFESOX_MAVEN_TOKEN\}/$ENV{GITHUB_APP_AFESOX_MAVEN_TOKEN}/g;
+          s/\$\{GITHUB_FORGE_SECURITY_MAVEN_TOKEN\}/$ENV{GITHUB_FORGE_SECURITY_MAVEN_TOKEN}/g;
+          s/\$\{GITHUB_FORGE_COMMON_MAVEN_TOKEN\}/$ENV{GITHUB_FORGE_COMMON_MAVEN_TOKEN}/g;
         ' "${template_path}" > "${OUTPUT_PATH}"
 
         chmod 0600 "${OUTPUT_PATH}"

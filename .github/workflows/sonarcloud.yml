@@ -42,7 +42,11 @@ jobs:
         uses: ./.github/actions/materialize-maven-settings
         with:
           maven_repository_username: ${{ vars.MAVEN_REPOSITORY_USERNAME }}
-          maven_repository_token: ${{ secrets.MAVEN_REPOSITORY_TOKEN }}
+          sitionix_infra_read_token: ${{ secrets.SITIONIX_INFRA_READ_TOKEN }}
+          github_forge_it_maven_token: ${{ secrets.GITHUB_FORGE_IT_MAVEN_TOKEN }}
+          github_app_afesox_maven_token: ${{ secrets.GITHUB_APP_AFESOX_MAVEN_TOKEN }}
+          github_forge_security_maven_token: ${{ secrets.GITHUB_FORGE_SECURITY_MAVEN_TOKEN }}
+          github_forge_common_maven_token: ${{ secrets.GITHUB_FORGE_COMMON_MAVEN_TOKEN }}
           output_path: .maven-settings.xml
 
       - name: Build and analyze
