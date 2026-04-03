@@ -49,49 +49,6 @@ runs:
         echo "Running DB migration for ${INPUT_DATABASE_NAME} in ${INPUT_ENVIRONMENT_ID}"
         echo "Flyway connection is configured from db-migration/db-model.yaml via environment vars/secrets"
 
-    - name: Open SSH tunnel to target database
-      if: ${{ env.SSH_TUNNEL_LOCAL_PORT != '' }}
-      shell: bash
-      run: |
-        mkdir -p ~/.ssh
-        key_path=~/.ssh/db-migrate-dev-only
-        tunnel_pid=""
-
-        cleanup() {
-          if [[ -n "${tunnel_pid}" ]]; then
-            kill "${tunnel_pid}" 2>/dev/null || true
-            wait "${tunnel_pid}" 2>/dev/null || true
-          fi
-          rm -f "${key_path}"
-        }
-
-        trap cleanup EXIT
-
-        printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY}" > "${key_path}"
-        chmod 600 "${key_path}"
-
-        ssh \
-          -i "${key_path}" \
-          -o IdentitiesOnly=yes \
-          -o StrictHostKeyChecking=accept-new \
-          -o ExitOnForwardFailure=yes \
-          -o ServerAliveInterval=15 \
-          -o ServerAliveCountMax=3 \
-          -N \
-          -L "${SSH_TUNNEL_LOCAL_PORT}:${SSH_TUNNEL_REMOTE_HOST}:${SSH_TUNNEL_REMOTE_PORT}" \
-          "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}" &
-        tunnel_pid=$!
-
-        for _ in $(seq 1 20); do
-          if bash -c ">/dev/tcp/127.0.0.1/${SSH_TUNNEL_LOCAL_PORT}" 2>/dev/null; then
-            exit 0
-          fi
-          sleep 1
-        done
-
-        echo "SSH tunnel did not become ready on 127.0.0.1:${SSH_TUNNEL_LOCAL_PORT}" >&2
-        exit 1
-
     - name: Execute Flyway lifecycle
       shell: bash
       run: |
@@ -111,6 +68,49 @@ runs:
           -user="${FLYWAY_USERNAME}"
           -password="${FLYWAY_PASSWORD}"
         )
+
+        tunnel_pid=""
+        key_path=~/.ssh/db-migrate-dev-only
+
+        cleanup() {
+          if [[ -n "${tunnel_pid}" ]]; then
+            kill "${tunnel_pid}" 2>/dev/null || true
+            wait "${tunnel_pid}" 2>/dev/null || true
+          fi
+          rm -f "${key_path}"
+        }
+
+        trap cleanup EXIT
+
+        if [[ -n "${SSH_TUNNEL_LOCAL_PORT:-}" ]]; then
+          mkdir -p ~/.ssh
+          printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY}" > "${key_path}"
+          chmod 600 "${key_path}"
+
+          ssh \
+            -i "${key_path}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ExitOnForwardFailure=yes \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            -N \
+            -L "${SSH_TUNNEL_LOCAL_PORT}:${SSH_TUNNEL_REMOTE_HOST}:${SSH_TUNNEL_REMOTE_PORT}" \
+            "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}" &
+          tunnel_pid=$!
+
+          for _ in $(seq 1 20); do
+            if bash -c ">/dev/tcp/127.0.0.1/${SSH_TUNNEL_LOCAL_PORT}" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          if ! bash -c ">/dev/tcp/127.0.0.1/${SSH_TUNNEL_LOCAL_PORT}" 2>/dev/null; then
+            echo "SSH tunnel did not become ready on 127.0.0.1:${SSH_TUNNEL_LOCAL_PORT}" >&2
+            exit 1
+          fi
+        fi
 
         "${flyway_docker[@]}" validate
         "${flyway_docker[@]}" migrate
