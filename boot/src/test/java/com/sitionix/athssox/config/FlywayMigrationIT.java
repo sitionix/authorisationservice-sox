@@ -33,13 +33,13 @@ class FlywayMigrationIT {
             final var firstResult = flyway.migrate();
             final var secondResult = flyway.migrate();
 
-            assertThat(firstResult.migrationsExecuted).isEqualTo(12);
+            assertThat(firstResult.migrationsExecuted).isEqualTo(13);
             assertThat(secondResult.migrationsExecuted).isZero();
 
             try (Connection connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
                  Statement statement = connection.createStatement()) {
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM flyway_schema_history WHERE success = true"))
-                        .isEqualTo(12);
+                        .isEqualTo(13);
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM users"))
                         .isZero();
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM global_roles"))
@@ -56,6 +56,19 @@ class FlywayMigrationIT {
                         .isEqualTo(5);
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM forge_outbox_aggregate_types"))
                         .isEqualTo(1);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'forge_outbox_events'
+                          AND column_name IN (
+                              'idempotency_id',
+                              'headers',
+                              'metadata',
+                              'initiator_type',
+                              'initiator_id'
+                          )
+                        """))
+                        .isEqualTo(5);
             }
         } finally {
             TimeZone.setDefault(originalTimeZone);
