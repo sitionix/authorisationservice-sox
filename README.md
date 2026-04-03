@@ -63,7 +63,7 @@ Current `db-model.yaml` mapping for `dev` requires:
 - SSH tunnel contract:
   - `DEPLOY_VM_HOST`
   - `DEPLOY_VM_USER`
-  - `DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY`
+  - `DEPLOY_VM_SSH_PRIVATE_KEY`
 
 
 ## Dev key generation (PEM)

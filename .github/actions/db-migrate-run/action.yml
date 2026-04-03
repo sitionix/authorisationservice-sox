@@ -32,7 +32,7 @@ runs:
         done
 
         if [[ "${tunnel_enabled}" == "true" ]]; then
-          for key in DEPLOY_VM_HOST DEPLOY_VM_USER DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY "${tunnel_keys[@]}"; do
+          for key in DEPLOY_VM_HOST DEPLOY_VM_USER DEPLOY_VM_SSH_PRIVATE_KEY "${tunnel_keys[@]}"; do
             if [[ -z "${!key:-}" ]]; then
               echo "Missing required SSH tunnel configuration: ${key}" >&2
               exit 1
@@ -70,7 +70,7 @@ runs:
         )
 
         tunnel_pid=""
-        key_path=~/.ssh/db-migrate-dev-only
+        key_path=~/.ssh/db-migrate
 
         cleanup() {
           if [[ -n "${tunnel_pid}" ]]; then
@@ -84,7 +84,7 @@ runs:
 
         if [[ -n "${SSH_TUNNEL_LOCAL_PORT:-}" ]]; then
           mkdir -p ~/.ssh
-          printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY}" > "${key_path}"
+          printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY}" > "${key_path}"
           chmod 600 "${key_path}"
 
           ssh \
