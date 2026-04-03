@@ -114,7 +114,7 @@ jobs:
           FLYWAY_PASSWORD: ${{ secrets[needs.resolve.outputs.database_password_secret_name] }}
           DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
           DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
-          DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY_DEV_ONLY }}
+          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
           SSH_TUNNEL_LOCAL_PORT: ${{ needs.resolve.outputs.tunnel_local_port }}
           SSH_TUNNEL_REMOTE_HOST: ${{ needs.resolve.outputs.tunnel_remote_host }}
           SSH_TUNNEL_REMOTE_PORT: ${{ needs.resolve.outputs.tunnel_remote_port }}
