@@ -83,8 +83,8 @@ runs:
         file: ./Dockerfile
         push: true
         tags: ${{ steps.release.outputs.image_ref }}
-        secrets: |
-          id=maven_settings,src=${{ github.workspace }}/.maven-settings.xml
+        secret-files: |
+          maven_settings=${{ github.workspace }}/.maven-settings.xml
 
     - name: Prepare deployment payload
       shell: bash
