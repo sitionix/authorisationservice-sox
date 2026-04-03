@@ -1,4 +1,4 @@
-name: Auth Dev Deploy On Push
+name: Dev Deploy On Push
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - name: Execute auth dev deployment
+      - name: Execute dev deployment
         uses: ./.github/actions/auth-dev-deploy-run
         with:
           github_environment: dev

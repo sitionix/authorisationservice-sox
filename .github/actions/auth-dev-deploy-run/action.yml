@@ -1,4 +1,4 @@
-name: Auth Dev Deploy Run
+name: Dev Deploy Run
 description: Build, publish, deploy, and verify the authorisation service on the dev VM.
 
 inputs:
@@ -8,7 +8,7 @@ inputs:
 
 outputs:
   release_id:
-    description: Generated auth release id.
+    description: Generated release id.
     value: ${{ steps.release.outputs.release_id }}
   image_ref:
     description: Published immutable image reference.
@@ -54,7 +54,7 @@ runs:
         printf '%s\n' "$MAVEN_SETTINGS_XML" > .maven-settings.xml
         chmod 0600 .maven-settings.xml
 
-    - name: Run auth tests
+    - name: Run tests
       shell: bash
       run: mvn -s .maven-settings.xml -q -pl boot -DskipITs test
 
