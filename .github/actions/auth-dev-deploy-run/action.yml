@@ -70,10 +70,12 @@ runs:
     - name: Prepare release metadata
       id: release
       shell: bash
+      env:
+        GITHUB_ENVIRONMENT_NAME: ${{ inputs.github_environment }}
       run: |
         owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
         short_sha="$(git rev-parse --short HEAD)"
-        release_id="${{ inputs.github_environment }}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${short_sha}"
+        release_id="${GITHUB_ENVIRONMENT_NAME}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${short_sha}"
         image_ref="ghcr.io/${owner}/authorisationservice-sox:${GITHUB_SHA}"
 
         echo "release_id=${release_id}" >> "$GITHUB_OUTPUT"
@@ -91,6 +93,8 @@ runs:
 
     - name: Prepare deployment payload
       shell: bash
+      env:
+        GITHUB_ENVIRONMENT_NAME: ${{ inputs.github_environment }}
       run: |
         payload_root=".deploy/release/payload"
         mkdir -p "${payload_root}/bin"
@@ -128,7 +132,7 @@ runs:
           "releaseId": "${{ steps.release.outputs.release_id }}",
           "imageRef": "${{ steps.release.outputs.image_ref }}",
           "githubSha": "${GITHUB_SHA}",
-          "githubEnvironment": "${{ inputs.github_environment }}",
+          "githubEnvironment": "${GITHUB_ENVIRONMENT_NAME}",
           "dockerNetwork": "${AUTHS_SOX_DOCKER_NETWORK:-sitionix-dev}",
           "containerName": "authorisationservice-sox",
           "privateHostPort": "127.0.0.1:9090",
@@ -156,10 +160,9 @@ runs:
       shell: bash
       run: |
         install -m 0700 -d ~/.ssh
+        install -m 0600 /dev/null ~/.ssh/id_ed25519
         printf '%s\n' "$DEPLOY_VM_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-        chmod 0600 ~/.ssh/id_ed25519
-        touch ~/.ssh/known_hosts
-        chmod 0600 ~/.ssh/known_hosts
+        install -m 0600 /dev/null ~/.ssh/known_hosts
 
         known_hosts_tmp="$(mktemp)"
         if ssh-keyscan -T 10 -p "${DEPLOY_VM_PORT:-22}" -H "$DEPLOY_VM_HOST" > "${known_hosts_tmp}" 2>/dev/null && [[ -s "${known_hosts_tmp}" ]]; then
