@@ -14,7 +14,6 @@ for variable_name in \
   DEPLOY_VM_HOST \
   DEPLOY_VM_USER \
   DEPLOY_VM_SSH_PRIVATE_KEY \
-  AUTH_JWT_KEY_ID \
   SITIONIX_RELEASE_ID; do
   require_env "${variable_name}"
 done
@@ -70,15 +69,14 @@ alias_url="http://127.0.0.1:${local_port}/authsox/oauth2/v1/keys"
 curl -fsS "${canonical_url}" > "${canonical_file}"
 curl -fsS "${alias_url}" > "${alias_file}"
 
-python3 - <<'PY' "${canonical_file}" "${alias_file}" "${AUTH_JWT_KEY_ID}" "${SITIONIX_RELEASE_ID}"
+python3 - <<'PY' "${canonical_file}" "${alias_file}" "${SITIONIX_RELEASE_ID}"
 import json
 import pathlib
 import sys
 
 canonical_path = pathlib.Path(sys.argv[1])
 alias_path = pathlib.Path(sys.argv[2])
-expected_kid = sys.argv[3]
-release_id = sys.argv[4]
+release_id = sys.argv[3]
 
 canonical = json.loads(canonical_path.read_text())
 alias = json.loads(alias_path.read_text())
@@ -89,9 +87,6 @@ if canonical != alias:
 keys = canonical.get("keys")
 if not isinstance(keys, list) or not keys:
     raise SystemExit("JWKS response does not contain keys")
-
-if not any(key.get("kid") == expected_kid for key in keys):
-    raise SystemExit(f"JWKS response does not contain expected kid: {expected_kid}")
 
 print(f"Auth private smoke passed for release {release_id}")
 PY

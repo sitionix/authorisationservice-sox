@@ -1,7 +1,7 @@
 # Dev VM Deploy
 
 ## Model
-- Push to `develop` triggers `Auth Dev Deploy On Push`.
+- Push to `develop` triggers `Dev Deploy On Push`.
 - GitHub Actions builds and publishes the runtime image, uploads a release bundle to the VM, and performs the rollout over SSH.
 - The VM is runtime-only. The workflow does not use `git pull` and does not require manual VM edits.
 - This workflow deploys only the auth service container. It does not run DB migrations; those stay in the PR comment-triggered Flyway workflow.
@@ -22,8 +22,6 @@ Use GitHub Environment `dev`.
 
 ### Vars
 - `DEPLOY_VM_PORT`
-- `AUTH_JWT_KEY_ID`
-- `AUTHS_SOX_DOCKER_NETWORK`
 - `MAVEN_REPOSITORY_USERNAME`
 
 ### Repository Secrets
@@ -56,11 +54,11 @@ The deploy workflow materializes these runtime values for the container:
 - `SPRING_DATASOURCE_USERNAME=authssox_app`
 - `SPRING_DATASOURCE_PASSWORD` from `AUTHS_SOX_DB_PASSWORD`
 - `SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092`
-- `AUTH_JWT_KEY_ID`
 - `AUTH_JWT_PRIVATE_KEY_PATH`
 - `AUTH_JWT_PUBLIC_KEY_PATH`
 - `SECURITY_EMAIL_VERIFICATION_HMAC_SECRET`
 - `FORGE_SECURITY_DEV_JWT_SECRET` from the shared infra-owned file
+- JWT key id falls back to the application default `local-dev`
 
 ## Verification
 - Remote rollout waits for the private JWKS endpoint:
@@ -69,7 +67,7 @@ The deploy workflow materializes these runtime values for the container:
   - canonical JWKS endpoint
   - alias JWKS endpoint
   - both responses are identical
-- the configured `AUTH_JWT_KEY_ID` is present in the returned key set
+- the returned JWKS contains at least one key
 
 ## Shared Maven Contract
 - The canonical Maven settings template is owned by `sitionix-infra`:

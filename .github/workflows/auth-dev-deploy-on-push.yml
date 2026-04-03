@@ -29,8 +29,6 @@ jobs:
     environment: dev
     env:
       DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
-      AUTH_JWT_KEY_ID: ${{ vars.AUTH_JWT_KEY_ID }}
-      AUTHS_SOX_DOCKER_NETWORK: ${{ vars.AUTHS_SOX_DOCKER_NETWORK }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,9 +39,6 @@ jobs:
         with:
           github_environment: dev
         env:
-          DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
-          AUTH_JWT_KEY_ID: ${{ vars.AUTH_JWT_KEY_ID }}
-          AUTHS_SOX_DOCKER_NETWORK: ${{ vars.AUTHS_SOX_DOCKER_NETWORK }}
           DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
           DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
           DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
