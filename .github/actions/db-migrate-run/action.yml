@@ -112,6 +112,6 @@ runs:
           fi
         fi
 
-        "${flyway_docker[@]}" validate
         "${flyway_docker[@]}" migrate
+        "${flyway_docker[@]}" validate
         "${flyway_docker[@]}" info
