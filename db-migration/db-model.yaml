@@ -7,5 +7,5 @@ database:
       password_secret_name: AUTHS_SOX_DB_PASSWORD
       tunnel:
         local_port: 15432
-        remote_host: postgres
+        remote_host: 127.0.0.1
         remote_port: 5432

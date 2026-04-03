@@ -64,6 +64,7 @@ Current `db-model.yaml` mapping for `dev` requires:
   - `DEPLOY_VM_HOST`
   - `DEPLOY_VM_USER`
   - `DEPLOY_VM_SSH_PRIVATE_KEY`
+  - remote tunnel target `127.0.0.1:5432` on the VM host
 
 
 ## Dev key generation (PEM)
