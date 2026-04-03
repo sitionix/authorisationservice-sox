@@ -57,7 +57,7 @@ runs:
 
     - name: Run tests
       shell: bash
-      run: mvn -s .maven-settings.xml -q -pl boot -DskipITs test
+      run: mvn -s .maven-settings.xml -q -pl boot -am -DskipITs test
 
     - name: Log in to GHCR for image publish
       uses: docker/login-action@v3
