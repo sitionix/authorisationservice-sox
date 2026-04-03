@@ -27,11 +27,7 @@ runs:
           GHCR_PULL_USERNAME \
           GHCR_PULL_TOKEN \
           MAVEN_REPOSITORY_USERNAME \
-          SITIONIX_INFRA_READ_TOKEN \
-          GITHUB_FORGE_IT_MAVEN_TOKEN \
-          GITHUB_APP_AFESOX_MAVEN_TOKEN \
-          GITHUB_FORGE_SECURITY_MAVEN_TOKEN \
-          GITHUB_FORGE_COMMON_MAVEN_TOKEN \
+          MAVEN_REPOSITORY_TOKEN \
           AUTHS_SOX_DB_PASSWORD \
           AUTH_JWT_KEY_ID \
           AUTH_JWT_PRIVATE_KEY \
@@ -57,11 +53,7 @@ runs:
       uses: ./.github/actions/materialize-maven-settings
       with:
         maven_repository_username: ${{ env.MAVEN_REPOSITORY_USERNAME }}
-        sitionix_infra_read_token: ${{ env.SITIONIX_INFRA_READ_TOKEN }}
-        github_forge_it_maven_token: ${{ env.GITHUB_FORGE_IT_MAVEN_TOKEN }}
-        github_app_afesox_maven_token: ${{ env.GITHUB_APP_AFESOX_MAVEN_TOKEN }}
-        github_forge_security_maven_token: ${{ env.GITHUB_FORGE_SECURITY_MAVEN_TOKEN }}
-        github_forge_common_maven_token: ${{ env.GITHUB_FORGE_COMMON_MAVEN_TOKEN }}
+        maven_repository_token: ${{ env.MAVEN_REPOSITORY_TOKEN }}
         output_path: .maven-settings.xml
 
     - name: Run tests

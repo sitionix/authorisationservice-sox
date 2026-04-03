@@ -27,11 +27,7 @@ Use GitHub Environment `dev`.
 - `MAVEN_REPOSITORY_USERNAME`
 
 ### Repository Secrets
-- `SITIONIX_INFRA_READ_TOKEN`
-- `GITHUB_FORGE_IT_MAVEN_TOKEN`
-- `GITHUB_APP_AFESOX_MAVEN_TOKEN`
-- `GITHUB_FORGE_SECURITY_MAVEN_TOKEN`
-- `GITHUB_FORGE_COMMON_MAVEN_TOKEN`
+- `MAVEN_REPOSITORY_TOKEN`
 
 ## VM Runtime Contract
 - Docker network: `sitionix-dev`
@@ -80,11 +76,7 @@ The deploy workflow materializes these runtime values for the container:
   - `contracts/shared/maven/settings.xml.template`
 - This workflow checks out that shared template at runtime and injects:
   - repository variable `MAVEN_REPOSITORY_USERNAME`
-  - repository secret `SITIONIX_INFRA_READ_TOKEN`
-  - repository secret `GITHUB_FORGE_IT_MAVEN_TOKEN`
-  - repository secret `GITHUB_APP_AFESOX_MAVEN_TOKEN`
-  - repository secret `GITHUB_FORGE_SECURITY_MAVEN_TOKEN`
-  - repository secret `GITHUB_FORGE_COMMON_MAVEN_TOKEN`
+  - repository secret `MAVEN_REPOSITORY_TOKEN`
 - The full `settings.xml` blob is no longer stored as a secret in this repository.
 
 ## What This Workflow Does Not Do
