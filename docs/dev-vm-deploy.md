@@ -1,0 +1,74 @@
+# Dev VM Deploy
+
+## Model
+- Push to `develop` triggers `Auth Dev Deploy On Push`.
+- GitHub Actions builds and publishes the runtime image, uploads a release bundle to the VM, and performs the rollout over SSH.
+- The VM is runtime-only. The workflow does not use `git pull` and does not require manual VM edits.
+- This workflow deploys only the auth service container. It does not run DB migrations; those stay in the PR comment-triggered Flyway workflow.
+
+## GitHub Environment
+Use GitHub Environment `dev`.
+
+### Secrets
+- `DEPLOY_VM_HOST`
+- `DEPLOY_VM_USER`
+- `DEPLOY_VM_SSH_PRIVATE_KEY`
+- `GHCR_PULL_USERNAME`
+- `GHCR_PULL_TOKEN`
+- `MAVEN_SETTINGS_XML`
+- `AUTHS_SOX_DB_PASSWORD`
+- `AUTH_JWT_PRIVATE_KEY`
+- `AUTH_JWT_PUBLIC_KEY`
+- `SECURITY_EMAIL_VERIFICATION_HMAC_SECRET`
+
+### Vars
+- `DEPLOY_VM_PORT`
+- `AUTH_JWT_KEY_ID`
+- `AUTHS_SOX_DOCKER_NETWORK`
+
+## VM Runtime Contract
+- Docker network: `sitionix-dev`
+- Container name: `authorisationservice-sox`
+- Docker network alias: `authorisationservice-sox`
+- Host-only bind: `127.0.0.1:9090 -> 9090`
+- Internal base URL for downstream services: `http://authorisationservice-sox:9090/authsox`
+- VM-local verification URL: `http://127.0.0.1:9090/authsox/.well-known/jwks.json`
+
+## Files Materialized on the VM
+- Runtime root: `/opt/sitionix/runtime/authorisationservice-sox`
+- Service env file:
+  - `/opt/sitionix/runtime/authorisationservice-sox/shared/authorisationservice-sox.dev.env`
+- JWT key files:
+  - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-private.pem`
+  - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-public.pem`
+- Shared internal auth env file, owned by infra:
+  - `/opt/sitionix/runtime/shared/dev-internal-auth.env`
+- Release backups:
+  - `/opt/sitionix/backups/authorisationservice-sox/releases/<release-id>/release-manifest.json`
+
+## Runtime Environment Values
+The deploy workflow materializes these runtime values for the container:
+- `SPRING_PROFILES_ACTIVE=dev`
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auths_sox`
+- `SPRING_DATASOURCE_USERNAME=authssox_app`
+- `SPRING_DATASOURCE_PASSWORD` from `AUTHS_SOX_DB_PASSWORD`
+- `SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092`
+- `AUTH_JWT_KEY_ID`
+- `AUTH_JWT_PRIVATE_KEY_PATH`
+- `AUTH_JWT_PUBLIC_KEY_PATH`
+- `SECURITY_EMAIL_VERIFICATION_HMAC_SECRET`
+- `FORGE_SECURITY_DEV_JWT_SECRET` from the shared infra-owned file
+
+## Verification
+- Remote rollout waits for the private JWKS endpoint:
+  - `GET /authsox/.well-known/jwks.json`
+- Workflow smoke verification opens an SSH tunnel to `127.0.0.1:9090` on the VM and checks:
+  - canonical JWKS endpoint
+  - alias JWKS endpoint
+  - both responses are identical
+  - the configured `AUTH_JWT_KEY_ID` is present in the returned key set
+
+## What This Workflow Does Not Do
+- It does not run Flyway DB migration.
+- It does not deploy BFF or any other service.
+- It does not expose auth publicly on `0.0.0.0`.

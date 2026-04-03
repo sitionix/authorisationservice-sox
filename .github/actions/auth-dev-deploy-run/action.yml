@@ -1,0 +1,222 @@
+name: Auth Dev Deploy Run
+description: Build, publish, deploy, and verify the authorisation service on the dev VM.
+
+inputs:
+  github_environment:
+    description: GitHub Environment name used to generate the release id.
+    required: true
+
+outputs:
+  release_id:
+    description: Generated auth release id.
+    value: ${{ steps.release.outputs.release_id }}
+  image_ref:
+    description: Published immutable image reference.
+    value: ${{ steps.release.outputs.image_ref }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate deploy environment contract
+      shell: bash
+      run: |
+        for required_name in \
+          DEPLOY_VM_HOST \
+          DEPLOY_VM_USER \
+          DEPLOY_VM_SSH_PRIVATE_KEY \
+          GHCR_PULL_USERNAME \
+          GHCR_PULL_TOKEN \
+          MAVEN_SETTINGS_XML \
+          AUTHS_SOX_DB_PASSWORD \
+          AUTH_JWT_KEY_ID \
+          AUTH_JWT_PRIVATE_KEY \
+          AUTH_JWT_PUBLIC_KEY \
+          SECURITY_EMAIL_VERIFICATION_HMAC_SECRET; do
+          if [[ -z "${!required_name:-}" ]]; then
+            echo "Missing required deploy value: ${required_name}" >&2
+            exit 1
+          fi
+        done
+
+    - name: Set up Java 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "21"
+        cache: maven
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Materialize Maven settings
+      shell: bash
+      run: |
+        printf '%s\n' "$MAVEN_SETTINGS_XML" > .maven-settings.xml
+        chmod 0600 .maven-settings.xml
+
+    - name: Run auth tests
+      shell: bash
+      run: mvn -s .maven-settings.xml -q -pl boot -DskipITs test
+
+    - name: Log in to GHCR for image publish
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Prepare release metadata
+      id: release
+      shell: bash
+      run: |
+        owner="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+        short_sha="$(git rev-parse --short HEAD)"
+        release_id="${{ inputs.github_environment }}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${short_sha}"
+        image_ref="ghcr.io/${owner}/authorisationservice-sox:${GITHUB_SHA}"
+
+        echo "release_id=${release_id}" >> "$GITHUB_OUTPUT"
+        echo "image_ref=${image_ref}" >> "$GITHUB_OUTPUT"
+
+    - name: Build and publish runtime image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.release.outputs.image_ref }}
+        secrets: |
+          id=maven_settings,src=${{ github.workspace }}/.maven-settings.xml
+
+    - name: Prepare deployment payload
+      shell: bash
+      run: |
+        payload_root=".deploy/release/payload"
+        mkdir -p "${payload_root}/bin"
+
+        cp deploy/auth/vm/deploy-auth.sh "${payload_root}/bin/deploy-auth.sh"
+        chmod +x "${payload_root}/bin/deploy-auth.sh"
+
+        cat <<EOF > "${payload_root}/release.env"
+        SITIONIX_RELEASE_ID=${{ steps.release.outputs.release_id }}
+        SITIONIX_IMAGE_REF=${{ steps.release.outputs.image_ref }}
+        SITIONIX_CONTAINER_NAME=authorisationservice-sox
+        SITIONIX_NETWORK_ALIAS=authorisationservice-sox
+        SITIONIX_BIND_ADDRESS=127.0.0.1
+        SITIONIX_HOST_PORT=9090
+        SITIONIX_CONTAINER_PORT=9090
+        SITIONIX_ACTIVE_PROFILE=dev
+        SITIONIX_DOCKER_NETWORK=${AUTHS_SOX_DOCKER_NETWORK:-sitionix-dev}
+        SITIONIX_RUNTIME_ROOT=/opt/sitionix/runtime/authorisationservice-sox
+        SITIONIX_BACKUP_ROOT=/opt/sitionix/backups/authorisationservice-sox
+        SITIONIX_SHARED_SECRET_ENV_PATH=/opt/sitionix/runtime/shared/dev-internal-auth.env
+        SITIONIX_SERVICE_ENV_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/authorisationservice-sox.dev.env
+        SITIONIX_KEYS_DIR=/opt/sitionix/runtime/authorisationservice-sox/shared/keys
+        SITIONIX_JWT_PRIVATE_KEY_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-private.pem
+        SITIONIX_JWT_PUBLIC_KEY_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-public.pem
+        SITIONIX_LOCAL_JWKS_URL=http://127.0.0.1:9090/authsox/.well-known/jwks.json
+        SITIONIX_LOCAL_JWKS_ALIAS_URL=http://127.0.0.1:9090/authsox/oauth2/v1/keys
+        SITIONIX_DB_URL=jdbc:postgresql://postgres:5432/auths_sox
+        SITIONIX_DB_USERNAME=authssox_app
+        SITIONIX_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+        AUTH_JWT_KEY_ID=${AUTH_JWT_KEY_ID}
+        EOF
+
+        cat <<EOF > "${payload_root}/release-manifest.json"
+        {
+          "releaseId": "${{ steps.release.outputs.release_id }}",
+          "imageRef": "${{ steps.release.outputs.image_ref }}",
+          "githubSha": "${GITHUB_SHA}",
+          "githubEnvironment": "${{ inputs.github_environment }}",
+          "dockerNetwork": "${AUTHS_SOX_DOCKER_NETWORK:-sitionix-dev}",
+          "containerName": "authorisationservice-sox",
+          "privateHostPort": "127.0.0.1:9090",
+          "privateBaseUrl": "http://authorisationservice-sox:9090/authsox"
+        }
+        EOF
+
+        secrets_file=".deploy/runtime-secrets.env"
+        : > "${secrets_file}"
+        for name in \
+          GHCR_PULL_USERNAME \
+          GHCR_PULL_TOKEN \
+          AUTHS_SOX_DB_PASSWORD \
+          AUTH_JWT_PRIVATE_KEY \
+          AUTH_JWT_PUBLIC_KEY \
+          SECURITY_EMAIL_VERIFICATION_HMAC_SECRET; do
+          value="${!name}"
+          printf 'export %s=%q\n' "${name}" "${value}" >> "${secrets_file}"
+        done
+        chmod 0600 "${secrets_file}"
+
+        tar -C "${payload_root}" -czf .deploy/auth-release.tgz .
+
+    - name: Configure SSH
+      shell: bash
+      run: |
+        install -m 0700 -d ~/.ssh
+        printf '%s\n' "$DEPLOY_VM_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 0600 ~/.ssh/id_ed25519
+        touch ~/.ssh/known_hosts
+        chmod 0600 ~/.ssh/known_hosts
+
+        known_hosts_tmp="$(mktemp)"
+        if ssh-keyscan -T 10 -p "${DEPLOY_VM_PORT:-22}" -H "$DEPLOY_VM_HOST" > "${known_hosts_tmp}" 2>/dev/null && [[ -s "${known_hosts_tmp}" ]]; then
+          cat "${known_hosts_tmp}" >> ~/.ssh/known_hosts
+        else
+          echo "Warning: unable to prefetch SSH host key for ${DEPLOY_VM_HOST}:${DEPLOY_VM_PORT:-22}; continuing with accept-new." >&2
+        fi
+        rm -f "${known_hosts_tmp}"
+
+    - name: Upload payload to VM
+      shell: bash
+      run: |
+        remote_tarball="/tmp/${{ steps.release.outputs.release_id }}.tgz"
+        remote_secret_env="/tmp/${{ steps.release.outputs.release_id }}.env"
+        ssh_options=(-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+
+        for attempt in $(seq 1 5); do
+          if scp "${ssh_options[@]}" -P "${DEPLOY_VM_PORT:-22}" .deploy/auth-release.tgz "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}:${remote_tarball}" \
+            && scp "${ssh_options[@]}" -P "${DEPLOY_VM_PORT:-22}" .deploy/runtime-secrets.env "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}:${remote_secret_env}"; then
+            exit 0
+          fi
+          sleep 3
+        done
+
+        echo "Unable to upload auth payload to ${DEPLOY_VM_HOST}:${DEPLOY_VM_PORT:-22}" >&2
+        exit 1
+
+    - name: Run remote deployment
+      shell: bash
+      env:
+        AUTH_JWT_KEY_ID: ${{ env.AUTH_JWT_KEY_ID }}
+      run: |
+        remote_root="/tmp/${{ steps.release.outputs.release_id }}"
+        remote_tarball="/tmp/${{ steps.release.outputs.release_id }}.tgz"
+        remote_secret_env="/tmp/${{ steps.release.outputs.release_id }}.env"
+        ssh_options=(-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+        auth_jwt_key_id_escaped="$(printf '%q' "$AUTH_JWT_KEY_ID")"
+
+        ssh "${ssh_options[@]}" -p "${DEPLOY_VM_PORT:-22}" "${DEPLOY_VM_USER}@${DEPLOY_VM_HOST}" "
+          set -euo pipefail
+          cleanup() {
+            rm -f '${remote_tarball}' '${remote_secret_env}'
+            rm -rf '${remote_root}'
+          }
+          trap cleanup EXIT
+          rm -rf '${remote_root}'
+          mkdir -p '${remote_root}'
+          tar -xzf '${remote_tarball}' -C '${remote_root}'
+          chmod +x '${remote_root}/bin/deploy-auth.sh'
+          set -a
+          . '${remote_secret_env}'
+          set +a
+          export AUTH_JWT_KEY_ID=${auth_jwt_key_id_escaped}
+          '${remote_root}/bin/deploy-auth.sh'
+        "
+
+    - name: Verify private deployment
+      shell: bash
+      env:
+        SITIONIX_RELEASE_ID: ${{ steps.release.outputs.release_id }}
+        AUTH_JWT_KEY_ID: ${{ env.AUTH_JWT_KEY_ID }}
+      run: deploy/auth/ci/verify-private-deploy.sh
