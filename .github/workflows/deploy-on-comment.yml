@@ -5,13 +5,13 @@ on:
     types:
       - created
 
-permissions:
-  contents: read
-
 jobs:
   prepare:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       enabled: ${{ steps.route.outputs.enabled }}
       target_type: ${{ steps.route.outputs.target_type }}
@@ -97,6 +97,8 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.same_repo != 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Reject fork-based comment deploy runs
         run: |
@@ -107,6 +109,8 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.target_type == 'db' && needs.prepare.outputs.same_repo == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       enabled: ${{ steps.resolve_target.outputs.enabled }}
       environment_id: ${{ steps.resolve_target.outputs.environment_id }}
@@ -135,6 +139,8 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.target_type == 'service' && needs.prepare.outputs.same_repo == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       enabled: ${{ steps.resolve_target.outputs.enabled }}
       environment_id: ${{ steps.resolve_target.outputs.environment_id }}
