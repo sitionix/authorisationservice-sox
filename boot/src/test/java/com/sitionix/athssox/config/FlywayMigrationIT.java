@@ -33,13 +33,13 @@ class FlywayMigrationIT {
             final var firstResult = flyway.migrate();
             final var secondResult = flyway.migrate();
 
-            assertThat(firstResult.migrationsExecuted).isEqualTo(12);
+            assertThat(firstResult.migrationsExecuted).isEqualTo(13);
             assertThat(secondResult.migrationsExecuted).isZero();
 
             try (Connection connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
                  Statement statement = connection.createStatement()) {
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM flyway_schema_history WHERE success = true"))
-                        .isEqualTo(12);
+                        .isEqualTo(13);
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM users"))
                         .isZero();
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM global_roles"))
@@ -55,6 +55,60 @@ class FlywayMigrationIT {
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM forge_outbox_statuses"))
                         .isEqualTo(5);
                 assertThat(this.countRows(statement, "SELECT COUNT(*) FROM forge_outbox_aggregate_types"))
+                        .isEqualTo(1);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'forge_outbox_events'
+                          AND column_name IN (
+                              'idempotency_id',
+                              'headers',
+                              'metadata',
+                              'initiator_type',
+                              'initiator_id'
+                          )
+                        """))
+                        .isEqualTo(5);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'forge_outbox_events'
+                          AND column_name = 'idempotency_id'
+                          AND is_nullable = 'NO'
+                        """))
+                        .isEqualTo(1);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'forge_outbox_events'
+                          AND column_name IN ('headers', 'metadata')
+                          AND is_nullable = 'NO'
+                          AND column_default = '''{}''::jsonb'
+                        """))
+                        .isEqualTo(2);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'refresh_tokens'
+                          AND column_name IN ('status_id', 'updated_at')
+                          AND is_nullable = 'NO'
+                        """))
+                        .isEqualTo(2);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_name = 'refresh_tokens'
+                          AND column_name = 'updated_at'
+                          AND column_default = 'now()'
+                        """))
+                        .isEqualTo(1);
+                assertThat(this.countRows(statement, """
+                        SELECT COUNT(*)
+                        FROM information_schema.table_constraints
+                        WHERE table_name = 'refresh_tokens'
+                          AND constraint_name = 'refresh_tokens_fk_status'
+                          AND constraint_type = 'FOREIGN KEY'
+                        """))
                         .isEqualTo(1);
             }
         } finally {

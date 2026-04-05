@@ -1,0 +1,392 @@
+name: Deploy On Comment
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  prepare:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      enabled: ${{ steps.route.outputs.enabled }}
+      target_type: ${{ steps.route.outputs.target_type }}
+      pr_head_ref: ${{ steps.pr.outputs.head_ref }}
+      checkout_ref: ${{ steps.pr.outputs.head_sha }}
+      same_repo: ${{ steps.pr.outputs.same_repo }}
+    steps:
+      - name: Read pull request metadata
+        id: pr
+        if: github.event.issue.pull_request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            core.setOutput("head_ref", pr.data.head.ref);
+            core.setOutput("head_sha", pr.data.head.sha);
+            core.setOutput(
+              "same_repo",
+              pr.data.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}` ? "true" : "false"
+            );
+
+      - name: Route comment command
+        id: route
+        shell: bash
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request && 'true' || 'false' }}
+        run: |
+          ruby - <<'INNER_RUBY'
+          require "shellwords"
+          require "pathname"
+
+          output_path = Pathname.new(ENV.fetch("GITHUB_OUTPUT"))
+
+          def emit(output_path, key, value)
+            output_path.open("a") do |handle|
+              handle.puts("#{key}=#{value}")
+            end
+          end
+
+          if ENV.fetch("IS_PULL_REQUEST") != "true"
+            emit(output_path, "enabled", "false")
+            emit(output_path, "target_type", "")
+            exit 0
+          end
+
+          first_non_empty_line = ENV.fetch("COMMENT_BODY", "").each_line.map(&:strip).find { |line| !line.empty? }
+          if first_non_empty_line.nil?
+            emit(output_path, "enabled", "false")
+            emit(output_path, "target_type", "")
+            exit 0
+          end
+
+          begin
+            tokens = Shellwords.split(first_non_empty_line)
+          rescue ArgumentError => error
+            abort("Malformed deployment comment: #{error.message}")
+          end
+
+          unless tokens[0] == "/deploy"
+            emit(output_path, "enabled", "false")
+            emit(output_path, "target_type", "")
+            exit 0
+          end
+
+          target_type = tokens[1].to_s
+          unless %w[db service].include?(target_type)
+            emit(output_path, "enabled", "false")
+            emit(output_path, "target_type", "")
+            exit 0
+          end
+
+          emit(output_path, "enabled", "true")
+          emit(output_path, "target_type", target_type)
+          INNER_RUBY
+
+  reject-fork:
+    needs: prepare
+    if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.same_repo != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Reject fork-based comment deploy runs
+        run: |
+          echo "PR comment deploys are allowed only for branches in this repository." >&2
+          exit 1
+
+  resolve-db:
+    needs: prepare
+    if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.target_type == 'db' && needs.prepare.outputs.same_repo == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.resolve_target.outputs.enabled }}
+      environment_id: ${{ steps.resolve_target.outputs.environment_id }}
+      summary: ${{ steps.resolve_target.outputs.summary }}
+      database_name: ${{ steps.resolve_target.outputs.database_name }}
+      database_url: ${{ steps.resolve_target.outputs.database_url }}
+      database_username: ${{ steps.resolve_target.outputs.database_username }}
+      database_password_secret_name: ${{ steps.resolve_target.outputs.database_password_secret_name }}
+      tunnel_local_port: ${{ steps.resolve_target.outputs.tunnel_local_port }}
+      tunnel_remote_host: ${{ steps.resolve_target.outputs.tunnel_remote_host }}
+      tunnel_remote_port: ${{ steps.resolve_target.outputs.tunnel_remote_port }}
+    steps:
+      - name: Checkout pull request head for DB config resolution
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+
+      - name: Resolve DB migration target
+        id: resolve_target
+        uses: ./.github/actions/db-migrate-resolve
+        with:
+          comment_body: ${{ github.event.comment.body }}
+          is_pull_request: "true"
+
+  resolve-service:
+    needs: prepare
+    if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.target_type == 'service' && needs.prepare.outputs.same_repo == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.resolve_target.outputs.enabled }}
+      environment_id: ${{ steps.resolve_target.outputs.environment_id }}
+      summary: ${{ steps.resolve_target.outputs.summary }}
+    steps:
+      - name: Checkout pull request head for service deploy resolution
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+
+      - name: Resolve service deploy target
+        id: resolve_target
+        uses: ./.github/actions/dev-deploy-resolve
+        with:
+          comment_body: ${{ github.event.comment.body }}
+          is_pull_request: "true"
+
+  migrate:
+    needs:
+      - prepare
+      - resolve-db
+    if: needs.resolve-db.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve-db.outputs.environment_id }}
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Post start comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_SUMMARY: ${{ needs.resolve-db.outputs.summary }}
+          PR_HEAD_REF: ${{ needs.prepare.outputs.pr_head_ref }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### DB migration started",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- Branch: ${process.env.PR_HEAD_REF}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+      - name: Execute migration
+        uses: ./.github/actions/db-migrate-run
+        with:
+          environment_id: ${{ needs.resolve-db.outputs.environment_id }}
+          database_name: ${{ needs.resolve-db.outputs.database_name }}
+        env:
+          FLYWAY_URL: ${{ needs.resolve-db.outputs.database_url }}
+          FLYWAY_USERNAME: ${{ needs.resolve-db.outputs.database_username }}
+          FLYWAY_PASSWORD: ${{ secrets[needs.resolve-db.outputs.database_password_secret_name] }}
+          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
+          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
+          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
+          SSH_TUNNEL_LOCAL_PORT: ${{ needs.resolve-db.outputs.tunnel_local_port }}
+          SSH_TUNNEL_REMOTE_HOST: ${{ needs.resolve-db.outputs.tunnel_remote_host }}
+          SSH_TUNNEL_REMOTE_PORT: ${{ needs.resolve-db.outputs.tunnel_remote_port }}
+
+      - name: Post success comment
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_SUMMARY: ${{ needs.resolve-db.outputs.summary }}
+          ENVIRONMENT_ID: ${{ needs.resolve-db.outputs.environment_id }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const body = [
+              "---",
+              "### DB migration succeeded",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- GitHub Environment: ${process.env.ENVIRONMENT_ID}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_SUMMARY: ${{ needs.resolve-db.outputs.summary }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### DB migration failed",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+  deploy:
+    needs:
+      - prepare
+      - resolve-service
+    if: needs.resolve-service.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve-service.outputs.environment_id }}
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+    env:
+      DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Post start comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_SUMMARY: ${{ needs.resolve-service.outputs.summary }}
+          PR_HEAD_REF: ${{ needs.prepare.outputs.pr_head_ref }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### Service deploy started",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- Branch: ${process.env.PR_HEAD_REF}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+      - name: Execute deployment
+        uses: ./.github/actions/auth-dev-deploy-run
+        with:
+          github_environment: ${{ needs.resolve-service.outputs.environment_id }}
+        env:
+          DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
+          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
+          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
+          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
+          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          MAVEN_REPOSITORY_USERNAME: ${{ vars.MAVEN_REPOSITORY_USERNAME }}
+          MAVEN_REPOSITORY_TOKEN: ${{ secrets.MAVEN_REPOSITORY_TOKEN }}
+          AUTHS_SOX_DB_PASSWORD: ${{ secrets.AUTHS_SOX_DB_PASSWORD }}
+          AUTH_JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          AUTH_JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
+          SECURITY_EMAIL_VERIFICATION_HMAC_SECRET: ${{ secrets.SECURITY_EMAIL_VERIFICATION_HMAC_SECRET }}
+
+      - name: Post success comment
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_SUMMARY: ${{ needs.resolve-service.outputs.summary }}
+          ENVIRONMENT_ID: ${{ needs.resolve-service.outputs.environment_id }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const body = [
+              "---",
+              "### Service deploy succeeded",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- GitHub Environment: ${process.env.ENVIRONMENT_ID}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_SUMMARY: ${{ needs.resolve-service.outputs.summary }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### Service deploy failed",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
