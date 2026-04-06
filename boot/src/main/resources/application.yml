@@ -14,6 +14,21 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
 auth:
   tokens:
     issuer: athssox
@@ -60,3 +75,6 @@ forge:
       excludes:
         - "/.well-known/jwks.json"
         - "/oauth2/v1/keys"
+        - "/actuator/health"
+        - "/actuator/health/readiness"
+        - "/actuator/health/liveness"

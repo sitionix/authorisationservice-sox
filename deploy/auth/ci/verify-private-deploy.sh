@@ -10,6 +10,38 @@ require_env() {
   fi
 }
 
+wait_for_up_status() {
+  local url="$1"
+  local label="$2"
+  local response_file
+  response_file="$(mktemp)"
+
+  for _ in $(seq 1 20); do
+    if curl -sS -o "${response_file}" -w '%{http_code}' "${url}" | grep -qx '200'; then
+      if python3 - "${response_file}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+if payload.get("status") != "UP":
+    raise SystemExit(1)
+PY
+      then
+        rm -f "${response_file}"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+
+  echo "${label} did not become UP at ${url}" >&2
+  cat "${response_file}" >&2 || true
+  rm -f "${response_file}"
+  exit 1
+}
+
 for variable_name in \
   DEPLOY_VM_HOST \
   DEPLOY_VM_USER \
@@ -65,6 +97,11 @@ fi
 
 canonical_url="http://127.0.0.1:${local_port}/authsox/.well-known/jwks.json"
 alias_url="http://127.0.0.1:${local_port}/authsox/oauth2/v1/keys"
+readiness_url="http://127.0.0.1:${local_port}/authsox/actuator/health/readiness"
+health_url="http://127.0.0.1:${local_port}/authsox/actuator/health"
+
+wait_for_up_status "${readiness_url}" "Auth private readiness"
+wait_for_up_status "${health_url}" "Auth private health"
 
 curl -fsS "${canonical_url}" > "${canonical_file}"
 curl -fsS "${alias_url}" > "${alias_file}"

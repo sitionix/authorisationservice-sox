@@ -68,6 +68,8 @@ for variable_name in \
   SITIONIX_KEYS_DIR \
   SITIONIX_JWT_PRIVATE_KEY_PATH \
   SITIONIX_JWT_PUBLIC_KEY_PATH \
+  SITIONIX_LOCAL_READINESS_URL \
+  SITIONIX_LOCAL_HEALTH_URL \
   SITIONIX_LOCAL_JWKS_URL \
   SITIONIX_DB_URL \
   SITIONIX_DB_USERNAME \
@@ -148,7 +150,13 @@ if ! docker run -d \
   exit 1
 fi
 
-if ! wait_for_url "${SITIONIX_LOCAL_JWKS_URL}" 30; then
+if ! wait_for_url "${SITIONIX_LOCAL_READINESS_URL}" 30; then
+  docker logs "${SITIONIX_CONTAINER_NAME}" --tail 200 >&2 || true
+  rollback_previous_container
+  exit 1
+fi
+
+if ! wait_for_url "${SITIONIX_LOCAL_HEALTH_URL}" 10; then
   docker logs "${SITIONIX_CONTAINER_NAME}" --tail 200 >&2 || true
   rollback_previous_container
   exit 1

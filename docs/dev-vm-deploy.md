@@ -2,10 +2,13 @@
 
 ## Model
 - Push to `develop` triggers `Dev Deploy On Push`.
-- A pull request comment can trigger `Deploy On Comment` against the PR head branch:
+- A pull request comment can trigger the lightweight `Deploy Comment Router`, which dispatches one real command workflow against the PR head branch:
   ```text
   /deploy service --name authorisationservice-sox --env dev
   ```
+- Real command workflows are split:
+  - `Service Deploy On Command`
+  - `DB Migrate On Command`
 - GitHub Actions builds and publishes the runtime image, uploads a release bundle to the VM, and performs the rollout over SSH.
 - The VM is runtime-only. The workflow does not use `git pull` and does not require manual VM edits.
 - The shared PR comment workflow routes only one target per command:
@@ -41,7 +44,9 @@ Use GitHub Environment `dev`.
 - Docker network alias: `authorisationservice-sox`
 - Host-only bind: `127.0.0.1:9090 -> 9090`
 - Internal base URL for downstream services: `http://authorisationservice-sox:9090/authsox`
-- VM-local verification URL: `http://127.0.0.1:9090/authsox/.well-known/jwks.json`
+- VM-local readiness URL: `http://127.0.0.1:9090/authsox/actuator/health/readiness`
+- VM-local health URL: `http://127.0.0.1:9090/authsox/actuator/health`
+- VM-local JWKS URL: `http://127.0.0.1:9090/authsox/.well-known/jwks.json`
 
 ## Files Materialized on the VM
 - Runtime root: `/opt/sitionix/runtime/authorisationservice-sox`
@@ -69,9 +74,12 @@ The deploy workflow materializes these runtime values for the container:
 - JWT key id falls back to the application default `local-dev`
 
 ## Verification
-- Remote rollout waits for the private JWKS endpoint:
-  - `GET /authsox/.well-known/jwks.json`
+- Remote rollout waits for Spring actuator health:
+  - `GET /authsox/actuator/health/readiness`
+  - `GET /authsox/actuator/health`
 - Workflow smoke verification opens an SSH tunnel to `127.0.0.1:9090` on the VM and checks:
+  - readiness endpoint returns `UP`
+  - health endpoint returns `UP`
   - canonical JWKS endpoint
   - alias JWKS endpoint
   - both responses are identical

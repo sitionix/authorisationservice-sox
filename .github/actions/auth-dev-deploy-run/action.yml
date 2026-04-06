@@ -116,6 +116,8 @@ runs:
         SITIONIX_KEYS_DIR=/opt/sitionix/runtime/authorisationservice-sox/shared/keys
         SITIONIX_JWT_PRIVATE_KEY_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-private.pem
         SITIONIX_JWT_PUBLIC_KEY_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-public.pem
+        SITIONIX_LOCAL_READINESS_URL=http://127.0.0.1:9090/authsox/actuator/health/readiness
+        SITIONIX_LOCAL_HEALTH_URL=http://127.0.0.1:9090/authsox/actuator/health
         SITIONIX_LOCAL_JWKS_URL=http://127.0.0.1:9090/authsox/.well-known/jwks.json
         SITIONIX_LOCAL_JWKS_ALIAS_URL=http://127.0.0.1:9090/authsox/oauth2/v1/keys
         SITIONIX_DB_URL=jdbc:postgresql://postgres:5432/auths_sox
@@ -219,4 +221,4 @@ runs:
       shell: bash
       env:
         SITIONIX_RELEASE_ID: ${{ steps.release.outputs.release_id }}
-      run: deploy/auth/ci/verify-private-deploy.sh
+      run: bash deploy/auth/ci/verify-private-deploy.sh

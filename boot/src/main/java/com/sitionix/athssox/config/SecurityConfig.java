@@ -21,7 +21,10 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/.well-known/jwks.json",
-            "/oauth2/v1/keys"
+            "/oauth2/v1/keys",
+            "/actuator/health",
+            "/actuator/health/readiness",
+            "/actuator/health/liveness"
     };
 
     @Bean
