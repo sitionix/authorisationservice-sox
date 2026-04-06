@@ -50,17 +50,17 @@ jobs:
         uses: ./.github/actions/db-migrate-run
         with:
           environment_id: ${{ github.event.client_payload.environmentId }}
-          database_name: ${{ github.event.client_payload.databaseName }}
+          database_name: ${{ github.event.client_payload.database.name }}
         env:
-          FLYWAY_URL: ${{ github.event.client_payload.databaseUrl }}
-          FLYWAY_USERNAME: ${{ github.event.client_payload.databaseUsername }}
-          FLYWAY_PASSWORD: ${{ secrets[github.event.client_payload.databasePasswordSecretName] }}
+          FLYWAY_URL: ${{ github.event.client_payload.database.url }}
+          FLYWAY_USERNAME: ${{ github.event.client_payload.database.username }}
+          FLYWAY_PASSWORD: ${{ secrets[github.event.client_payload.database.passwordSecretName] }}
           DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
           DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
           DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
-          SSH_TUNNEL_LOCAL_PORT: ${{ github.event.client_payload.tunnelLocalPort }}
-          SSH_TUNNEL_REMOTE_HOST: ${{ github.event.client_payload.tunnelRemoteHost }}
-          SSH_TUNNEL_REMOTE_PORT: ${{ github.event.client_payload.tunnelRemotePort }}
+          SSH_TUNNEL_LOCAL_PORT: ${{ github.event.client_payload.tunnel.localPort }}
+          SSH_TUNNEL_REMOTE_HOST: ${{ github.event.client_payload.tunnel.remoteHost }}
+          SSH_TUNNEL_REMOTE_PORT: ${{ github.event.client_payload.tunnel.remotePort }}
 
       - name: Post success comment
         if: success()

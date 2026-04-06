@@ -195,13 +195,17 @@ jobs:
                 prHeadRef: process.env.PR_HEAD_REF,
                 checkoutRef: process.env.CHECKOUT_REF,
                 environmentId: process.env.ENVIRONMENT_ID,
-                databaseName: process.env.DATABASE_NAME,
-                databaseUrl: process.env.DATABASE_URL,
-                databaseUsername: process.env.DATABASE_USERNAME,
-                databasePasswordSecretName: process.env.DATABASE_PASSWORD_SECRET_NAME,
-                tunnelLocalPort: process.env.TUNNEL_LOCAL_PORT,
-                tunnelRemoteHost: process.env.TUNNEL_REMOTE_HOST,
-                tunnelRemotePort: process.env.TUNNEL_REMOTE_PORT,
+                database: {
+                  name: process.env.DATABASE_NAME,
+                  url: process.env.DATABASE_URL,
+                  username: process.env.DATABASE_USERNAME,
+                  passwordSecretName: process.env.DATABASE_PASSWORD_SECRET_NAME,
+                },
+                tunnel: {
+                  localPort: process.env.TUNNEL_LOCAL_PORT,
+                  remoteHost: process.env.TUNNEL_REMOTE_HOST,
+                  remotePort: process.env.TUNNEL_REMOTE_PORT,
+                },
               },
             });
 

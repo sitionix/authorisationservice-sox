@@ -7,7 +7,9 @@ on:
     paths:
       - ".github/workflows/auth-dev-deploy-on-push.yml"
       - ".github/actions/auth-dev-deploy-run/**"
+      - ".github/actions/db-migrate-run/**"
       - ".github/actions/materialize-maven-settings/**"
+      - "db-migration/**"
       - "deploy/auth/**"
       - "boot/**"
       - "api-rest/**"
@@ -21,12 +23,110 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  deploy:
+  detect-db-migrations:
+    runs-on: ubuntu-latest
+    outputs:
+      migrations_changed: ${{ steps.detect.outputs.migrations_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Detect DB migration changes
+        id: detect
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "${EVENT_NAME}" != "push" || -z "${BEFORE_SHA}" || "${BEFORE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
+            echo "migrations_changed=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if git diff --name-only "${BEFORE_SHA}" "${AFTER_SHA}" | grep -Eq '^db-migration/'; then
+            echo "migrations_changed=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "migrations_changed=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+  db-migrate:
+    needs: detect-db-migrations
+    if: needs.detect-db-migrations.outputs.migrations_changed == 'true'
     runs-on: ubuntu-latest
     environment: dev
+    permissions:
+      contents: read
+    outputs:
+      database_name: ${{ steps.resolve.outputs.database_name }}
+      database_url: ${{ steps.resolve.outputs.database_url }}
+      database_username: ${{ steps.resolve.outputs.database_username }}
+      database_password_secret_name: ${{ steps.resolve.outputs.database_password_secret_name }}
+      tunnel_local_port: ${{ steps.resolve.outputs.tunnel_local_port }}
+      tunnel_remote_host: ${{ steps.resolve.outputs.tunnel_remote_host }}
+      tunnel_remote_port: ${{ steps.resolve.outputs.tunnel_remote_port }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Resolve DB migration target
+        id: resolve
+        shell: bash
+        run: |
+          ruby - <<'INNER_RUBY'
+          require "yaml"
+          model = YAML.load_file("db-migration/db-model.yaml")
+          env = model.fetch("database").fetch("environments").fetch("dev")
+          tunnel = env.fetch("tunnel")
+
+          File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |out|
+            out.puts("database_name=#{model.fetch("database").fetch("name")}")
+            out.puts("database_url=#{env.fetch("url")}")
+            out.puts("database_username=#{env.fetch("username")}")
+            out.puts("database_password_secret_name=#{env.fetch("password_secret_name")}")
+            out.puts("tunnel_local_port=#{tunnel.fetch("local_port")}")
+            out.puts("tunnel_remote_host=#{tunnel.fetch("remote_host")}")
+            out.puts("tunnel_remote_port=#{tunnel.fetch("remote_port")}")
+          end
+          INNER_RUBY
+
+      - name: Execute DB migration
+        uses: ./.github/actions/db-migrate-run
+        with:
+          environment_id: dev
+          database_name: ${{ steps.resolve.outputs.database_name }}
+        env:
+          FLYWAY_URL: ${{ steps.resolve.outputs.database_url }}
+          FLYWAY_USERNAME: ${{ steps.resolve.outputs.database_username }}
+          FLYWAY_PASSWORD: ${{ secrets[steps.resolve.outputs.database_password_secret_name] }}
+          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
+          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
+          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
+          SSH_TUNNEL_LOCAL_PORT: ${{ steps.resolve.outputs.tunnel_local_port }}
+          SSH_TUNNEL_REMOTE_HOST: ${{ steps.resolve.outputs.tunnel_remote_host }}
+          SSH_TUNNEL_REMOTE_PORT: ${{ steps.resolve.outputs.tunnel_remote_port }}
+
+  deploy:
+    needs:
+      - detect-db-migrations
+      - db-migrate
+    if: |
+      always() &&
+      needs.detect-db-migrations.result == 'success' &&
+      (
+        needs.detect-db-migrations.outputs.migrations_changed != 'true' ||
+        needs.db-migrate.result == 'success'
+      )
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      packages: write
     env:
       DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
     steps:
