@@ -1,0 +1,122 @@
+name: Service Deploy On Command
+
+on:
+  repository_dispatch:
+    types:
+      - service-deploy-command
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.client_payload.environmentId }}
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+    env:
+      DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.checkoutRef }}
+          fetch-depth: 0
+
+      - name: Post start comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.client_payload.prNumber }}
+          TARGET_SUMMARY: ${{ github.event.client_payload.targetSummary }}
+          PR_HEAD_REF: ${{ github.event.client_payload.prHeadRef }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### Service deploy started",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- Branch: ${process.env.PR_HEAD_REF}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+      - name: Execute deployment
+        uses: ./.github/actions/auth-dev-deploy-run
+        with:
+          github_environment: ${{ github.event.client_payload.environmentId }}
+        env:
+          DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
+          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
+          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
+          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
+          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          MAVEN_REPOSITORY_USERNAME: ${{ vars.MAVEN_REPOSITORY_USERNAME }}
+          MAVEN_REPOSITORY_TOKEN: ${{ secrets.MAVEN_REPOSITORY_TOKEN }}
+          AUTHS_SOX_DB_PASSWORD: ${{ secrets.AUTHS_SOX_DB_PASSWORD }}
+          AUTH_JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
+          AUTH_JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
+          SECURITY_EMAIL_VERIFICATION_HMAC_SECRET: ${{ secrets.SECURITY_EMAIL_VERIFICATION_HMAC_SECRET }}
+
+      - name: Post success comment
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.client_payload.prNumber }}
+          TARGET_SUMMARY: ${{ github.event.client_payload.targetSummary }}
+          ENVIRONMENT_ID: ${{ github.event.client_payload.environmentId }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const body = [
+              "---",
+              "### Service deploy succeeded",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- GitHub Environment: ${process.env.ENVIRONMENT_ID}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.client_payload.prNumber }}
+          TARGET_SUMMARY: ${{ github.event.client_payload.targetSummary }}
+        with:
+          script: |
+            const pullNumber = Number(process.env.PR_NUMBER);
+            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              "---",
+              "### Service deploy failed",
+              "",
+              `- Target: ${process.env.TARGET_SUMMARY}`,
+              `- Workflow: ${workflowRunUrl}`,
+              "---",
+            ].join("\n");
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              body,
+              event: "COMMENT",
+            });

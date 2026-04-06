@@ -1,4 +1,4 @@
-name: Deploy On Comment
+name: Deploy Comment Router
 
 on:
   issue_comment:
@@ -158,235 +158,82 @@ jobs:
           comment_body: ${{ github.event.comment.body }}
           is_pull_request: "true"
 
-  migrate:
+  dispatch-db-migrate:
     needs:
       - prepare
       - resolve-db
     if: needs.resolve-db.outputs.enabled == 'true'
     runs-on: ubuntu-latest
-    environment: ${{ needs.resolve-db.outputs.environment_id }}
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.checkout_ref }}
-          fetch-depth: 0
-
-      - name: Post start comment
+      - name: Dispatch DB migrate workflow
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
           TARGET_SUMMARY: ${{ needs.resolve-db.outputs.summary }}
           PR_HEAD_REF: ${{ needs.prepare.outputs.pr_head_ref }}
-        with:
-          script: |
-            const pullNumber = Number(process.env.PR_NUMBER);
-            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const body = [
-              "---",
-              "### DB migration started",
-              "",
-              `- Target: ${process.env.TARGET_SUMMARY}`,
-              `- Branch: ${process.env.PR_HEAD_REF}`,
-              `- Workflow: ${workflowRunUrl}`,
-              "---",
-            ].join("\n");
-
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pullNumber,
-              body,
-              event: "COMMENT",
-            });
-
-      - name: Execute migration
-        uses: ./.github/actions/db-migrate-run
-        with:
-          environment_id: ${{ needs.resolve-db.outputs.environment_id }}
-          database_name: ${{ needs.resolve-db.outputs.database_name }}
-        env:
-          FLYWAY_URL: ${{ needs.resolve-db.outputs.database_url }}
-          FLYWAY_USERNAME: ${{ needs.resolve-db.outputs.database_username }}
-          FLYWAY_PASSWORD: ${{ secrets[needs.resolve-db.outputs.database_password_secret_name] }}
-          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
-          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
-          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
-          SSH_TUNNEL_LOCAL_PORT: ${{ needs.resolve-db.outputs.tunnel_local_port }}
-          SSH_TUNNEL_REMOTE_HOST: ${{ needs.resolve-db.outputs.tunnel_remote_host }}
-          SSH_TUNNEL_REMOTE_PORT: ${{ needs.resolve-db.outputs.tunnel_remote_port }}
-
-      - name: Post success comment
-        if: success()
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ github.event.issue.number }}
-          TARGET_SUMMARY: ${{ needs.resolve-db.outputs.summary }}
+          CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
           ENVIRONMENT_ID: ${{ needs.resolve-db.outputs.environment_id }}
+          DATABASE_NAME: ${{ needs.resolve-db.outputs.database_name }}
+          DATABASE_URL: ${{ needs.resolve-db.outputs.database_url }}
+          DATABASE_USERNAME: ${{ needs.resolve-db.outputs.database_username }}
+          DATABASE_PASSWORD_SECRET_NAME: ${{ needs.resolve-db.outputs.database_password_secret_name }}
+          TUNNEL_LOCAL_PORT: ${{ needs.resolve-db.outputs.tunnel_local_port }}
+          TUNNEL_REMOTE_HOST: ${{ needs.resolve-db.outputs.tunnel_remote_host }}
+          TUNNEL_REMOTE_PORT: ${{ needs.resolve-db.outputs.tunnel_remote_port }}
         with:
           script: |
-            const pullNumber = Number(process.env.PR_NUMBER);
-            const body = [
-              "---",
-              "### DB migration succeeded",
-              "",
-              `- Target: ${process.env.TARGET_SUMMARY}`,
-              `- GitHub Environment: ${process.env.ENVIRONMENT_ID}`,
-              "---",
-            ].join("\n");
-
-            await github.rest.pulls.createReview({
+            await github.rest.repos.createDispatchEvent({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: pullNumber,
-              body,
-              event: "COMMENT",
+              event_type: "db-migrate-command",
+              client_payload: {
+                prNumber: Number(process.env.PR_NUMBER),
+                targetSummary: process.env.TARGET_SUMMARY,
+                prHeadRef: process.env.PR_HEAD_REF,
+                checkoutRef: process.env.CHECKOUT_REF,
+                environmentId: process.env.ENVIRONMENT_ID,
+                databaseName: process.env.DATABASE_NAME,
+                databaseUrl: process.env.DATABASE_URL,
+                databaseUsername: process.env.DATABASE_USERNAME,
+                databasePasswordSecretName: process.env.DATABASE_PASSWORD_SECRET_NAME,
+                tunnelLocalPort: process.env.TUNNEL_LOCAL_PORT,
+                tunnelRemoteHost: process.env.TUNNEL_REMOTE_HOST,
+                tunnelRemotePort: process.env.TUNNEL_REMOTE_PORT,
+              },
             });
 
-      - name: Post failure comment
-        if: failure()
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ github.event.issue.number }}
-          TARGET_SUMMARY: ${{ needs.resolve-db.outputs.summary }}
-        with:
-          script: |
-            const pullNumber = Number(process.env.PR_NUMBER);
-            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const body = [
-              "---",
-              "### DB migration failed",
-              "",
-              `- Target: ${process.env.TARGET_SUMMARY}`,
-              `- Workflow: ${workflowRunUrl}`,
-              "---",
-            ].join("\n");
-
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pullNumber,
-              body,
-              event: "COMMENT",
-            });
-
-  deploy:
+  dispatch-service-deploy:
     needs:
       - prepare
       - resolve-service
     if: needs.resolve-service.outputs.enabled == 'true'
     runs-on: ubuntu-latest
-    environment: ${{ needs.resolve-service.outputs.environment_id }}
     permissions:
-      contents: read
-      packages: write
+      contents: write
       pull-requests: write
-    env:
-      DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.checkout_ref }}
-          fetch-depth: 0
-
-      - name: Post start comment
+      - name: Dispatch service deploy workflow
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
           TARGET_SUMMARY: ${{ needs.resolve-service.outputs.summary }}
           PR_HEAD_REF: ${{ needs.prepare.outputs.pr_head_ref }}
-        with:
-          script: |
-            const pullNumber = Number(process.env.PR_NUMBER);
-            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const body = [
-              "---",
-              "### Service deploy started",
-              "",
-              `- Target: ${process.env.TARGET_SUMMARY}`,
-              `- Branch: ${process.env.PR_HEAD_REF}`,
-              `- Workflow: ${workflowRunUrl}`,
-              "---",
-            ].join("\n");
-
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pullNumber,
-              body,
-              event: "COMMENT",
-            });
-
-      - name: Execute deployment
-        uses: ./.github/actions/auth-dev-deploy-run
-        with:
-          github_environment: ${{ needs.resolve-service.outputs.environment_id }}
-        env:
-          DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
-          DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
-          DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
-          DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
-          GHCR_PULL_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-          MAVEN_REPOSITORY_USERNAME: ${{ vars.MAVEN_REPOSITORY_USERNAME }}
-          MAVEN_REPOSITORY_TOKEN: ${{ secrets.MAVEN_REPOSITORY_TOKEN }}
-          AUTHS_SOX_DB_PASSWORD: ${{ secrets.AUTHS_SOX_DB_PASSWORD }}
-          AUTH_JWT_PRIVATE_KEY: ${{ secrets.AUTH_JWT_PRIVATE_KEY }}
-          AUTH_JWT_PUBLIC_KEY: ${{ secrets.AUTH_JWT_PUBLIC_KEY }}
-          SECURITY_EMAIL_VERIFICATION_HMAC_SECRET: ${{ secrets.SECURITY_EMAIL_VERIFICATION_HMAC_SECRET }}
-
-      - name: Post success comment
-        if: success()
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ github.event.issue.number }}
-          TARGET_SUMMARY: ${{ needs.resolve-service.outputs.summary }}
+          CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
           ENVIRONMENT_ID: ${{ needs.resolve-service.outputs.environment_id }}
         with:
           script: |
-            const pullNumber = Number(process.env.PR_NUMBER);
-            const body = [
-              "---",
-              "### Service deploy succeeded",
-              "",
-              `- Target: ${process.env.TARGET_SUMMARY}`,
-              `- GitHub Environment: ${process.env.ENVIRONMENT_ID}`,
-              "---",
-            ].join("\n");
-
-            await github.rest.pulls.createReview({
+            await github.rest.repos.createDispatchEvent({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: pullNumber,
-              body,
-              event: "COMMENT",
-            });
-
-      - name: Post failure comment
-        if: failure()
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ github.event.issue.number }}
-          TARGET_SUMMARY: ${{ needs.resolve-service.outputs.summary }}
-        with:
-          script: |
-            const pullNumber = Number(process.env.PR_NUMBER);
-            const workflowRunUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const body = [
-              "---",
-              "### Service deploy failed",
-              "",
-              `- Target: ${process.env.TARGET_SUMMARY}`,
-              `- Workflow: ${workflowRunUrl}`,
-              "---",
-            ].join("\n");
-
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pullNumber,
-              body,
-              event: "COMMENT",
+              event_type: "service-deploy-command",
+              client_payload: {
+                prNumber: Number(process.env.PR_NUMBER),
+                targetSummary: process.env.TARGET_SUMMARY,
+                prHeadRef: process.env.PR_HEAD_REF,
+                checkoutRef: process.env.CHECKOUT_REF,
+                environmentId: process.env.ENVIRONMENT_ID,
+              },
             });
