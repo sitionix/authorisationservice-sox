@@ -23,7 +23,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   detect-db-migrations:
@@ -125,6 +124,9 @@ jobs:
       )
     runs-on: ubuntu-latest
     environment: dev
+    permissions:
+      contents: read
+      packages: write
     env:
       DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
     steps:
