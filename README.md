@@ -73,6 +73,7 @@ Current `db-model.yaml` mapping for `dev` requires:
   ```text
   /deploy service --name authorisationservice-sox --env dev
   ```
+- A small technical pull request can be used to verify comment-driven DB deploys before merge.
 - Private Maven artifact resolution uses the shared template owned by `sitionix-infra`, not a repo-local `settings.xml` blob secret.
 - See `docs/dev-vm-deploy.md` for the full runtime, secret, and verification contract.
 
