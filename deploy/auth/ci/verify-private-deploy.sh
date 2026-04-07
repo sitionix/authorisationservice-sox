@@ -17,7 +17,7 @@ wait_for_up_status() {
   response_file="$(mktemp)"
 
   for _ in $(seq 1 20); do
-    if curl -sS -o "${response_file}" -w '%{http_code}' "${url}" | grep -qx '200'; then
+    if curl --connect-timeout 2 --max-time 5 -sS -o "${response_file}" -w '%{http_code}' "${url}" | grep -qx '200'; then
       if python3 - "${response_file}" <<'PY'
 import json
 import sys
@@ -103,8 +103,8 @@ health_url="http://127.0.0.1:${local_port}/authsox/actuator/health"
 wait_for_up_status "${readiness_url}" "Auth private readiness"
 wait_for_up_status "${health_url}" "Auth private health"
 
-curl -fsS "${canonical_url}" > "${canonical_file}"
-curl -fsS "${alias_url}" > "${alias_file}"
+curl --connect-timeout 2 --max-time 5 -fsS "${canonical_url}" > "${canonical_file}"
+curl --connect-timeout 2 --max-time 5 -fsS "${alias_url}" > "${alias_file}"
 
 python3 - <<'PY' "${canonical_file}" "${alias_file}" "${SITIONIX_RELEASE_ID}"
 import json

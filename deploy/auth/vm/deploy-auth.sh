@@ -32,7 +32,7 @@ wait_for_url() {
   local attempt=1
 
   while (( attempt <= max_attempts )); do
-    if curl -fsS "${target_url}" >/dev/null; then
+    if curl --connect-timeout 2 --max-time 5 -fsS "${target_url}" >/dev/null; then
       return 0
     fi
     sleep 2
