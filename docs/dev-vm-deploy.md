@@ -55,6 +55,7 @@ Use GitHub Environment `dev`.
 - JWT key files:
   - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-private.pem`
   - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-public.pem`
+  - the keys directory is bind-mounted read-only into the runtime container
 - Shared internal auth env file, owned by infra:
   - `/opt/sitionix/runtime/shared/dev-internal-auth.env`
 - Release backups:
@@ -63,6 +64,7 @@ Use GitHub Environment `dev`.
 ## Runtime Environment Values
 The deploy workflow materializes these runtime values for the container:
 - `SPRING_PROFILES_ACTIVE=dev`
+- `ENVIRONMENT=dev`
 - `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auths_sox`
 - `SPRING_DATASOURCE_USERNAME=authssox_app`
 - `SPRING_DATASOURCE_PASSWORD` from `AUTHS_SOX_DB_PASSWORD`
