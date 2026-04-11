@@ -96,7 +96,7 @@ runs:
         payload_root=".deploy/release/payload"
         mkdir -p "${payload_root}/bin"
 
-        cp deploy/auth/vm/deploy-auth.sh "${payload_root}/bin/deploy-auth.sh"
+        cp .github/deploy/auth/vm/deploy-auth.sh "${payload_root}/bin/deploy-auth.sh"
         chmod +x "${payload_root}/bin/deploy-auth.sh"
 
         cat <<EOF > "${payload_root}/release.env"
@@ -221,4 +221,4 @@ runs:
       shell: bash
       env:
         SITIONIX_RELEASE_ID: ${{ steps.release.outputs.release_id }}
-      run: bash deploy/auth/ci/verify-private-deploy.sh
+      run: bash .github/deploy/auth/ci/verify-private-deploy.sh
