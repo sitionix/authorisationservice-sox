@@ -10,7 +10,7 @@ on:
       - ".github/actions/db-migrate-run/**"
       - ".github/actions/materialize-maven-settings/**"
       - "db-migration/**"
-      - "deploy/auth/**"
+      - ".github/deploy/auth/**"
       - "boot/**"
       - "api-rest/**"
       - "application/**"
