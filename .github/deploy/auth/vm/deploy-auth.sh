@@ -143,6 +143,7 @@ if ! docker run -d \
   --network "${SITIONIX_DOCKER_NETWORK}" \
   --network-alias "${SITIONIX_NETWORK_ALIAS}" \
   -p "${SITIONIX_BIND_ADDRESS}:${SITIONIX_HOST_PORT}:${SITIONIX_CONTAINER_PORT}" \
+  -v "${SITIONIX_KEYS_DIR}:${SITIONIX_KEYS_DIR}:ro" \
   --env-file "${SITIONIX_SHARED_SECRET_ENV_PATH}" \
   --env-file "${SITIONIX_SERVICE_ENV_PATH}" \
   "${SITIONIX_IMAGE_REF}" >/dev/null; then
