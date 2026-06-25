@@ -57,6 +57,7 @@ jobs:
           FLYWAY_PASSWORD: ${{ secrets[github.event.client_payload.database.passwordSecretName] }}
           DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
           DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
+          DEPLOY_VM_PORT: ${{ vars.DEPLOY_VM_PORT }}
           DEPLOY_VM_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_VM_SSH_PRIVATE_KEY }}
           SSH_TUNNEL_LOCAL_PORT: ${{ github.event.client_payload.tunnel.localPort }}
           SSH_TUNNEL_REMOTE_HOST: ${{ github.event.client_payload.tunnel.remoteHost }}

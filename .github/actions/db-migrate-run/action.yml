@@ -83,12 +83,14 @@ runs:
         trap cleanup EXIT
 
         if [[ -n "${SSH_TUNNEL_LOCAL_PORT:-}" ]]; then
+          DEPLOY_VM_PORT="${DEPLOY_VM_PORT:-22}"
           mkdir -p ~/.ssh
           printf '%s\n' "${DEPLOY_VM_SSH_PRIVATE_KEY}" > "${key_path}"
           chmod 600 "${key_path}"
 
           ssh \
             -i "${key_path}" \
+            -p "${DEPLOY_VM_PORT}" \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             -o ExitOnForwardFailure=yes \
