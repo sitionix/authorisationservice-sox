@@ -121,6 +121,20 @@ chmod 0600 "${SITIONIX_JWT_PRIVATE_KEY_PATH}" "${SITIONIX_JWT_PUBLIC_KEY_PATH}"
 } > "${SITIONIX_SERVICE_ENV_PATH}"
 chmod 0600 "${SITIONIX_SERVICE_ENV_PATH}"
 
+if ! docker run --rm \
+  --entrypoint sh \
+  --env-file "${SITIONIX_SHARED_SECRET_ENV_PATH}" \
+  --env-file "${SITIONIX_SERVICE_ENV_PATH}" \
+  --mount "type=bind,src=${SITIONIX_KEYS_DIR},dst=${SITIONIX_KEYS_DIR},readonly" \
+  "${SITIONIX_IMAGE_REF}" \
+  -lc '
+    test -r "${AUTH_JWT_PRIVATE_KEY_PATH:?}"
+    test -r "${AUTH_JWT_PUBLIC_KEY_PATH:?}"
+  '; then
+  echo "JWT key files are not readable from the container runtime." >&2
+  exit 1
+fi
+
 if ! docker network inspect "${SITIONIX_DOCKER_NETWORK}" >/dev/null 2>&1; then
   docker network create "${SITIONIX_DOCKER_NETWORK}" >/dev/null
 fi
@@ -145,6 +159,7 @@ if ! docker run -d \
   -p "${SITIONIX_BIND_ADDRESS}:${SITIONIX_HOST_PORT}:${SITIONIX_CONTAINER_PORT}" \
   --env-file "${SITIONIX_SHARED_SECRET_ENV_PATH}" \
   --env-file "${SITIONIX_SERVICE_ENV_PATH}" \
+  --mount "type=bind,src=${SITIONIX_KEYS_DIR},dst=${SITIONIX_KEYS_DIR},readonly" \
   "${SITIONIX_IMAGE_REF}" >/dev/null; then
   rollback_previous_container
   exit 1
