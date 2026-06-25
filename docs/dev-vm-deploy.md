@@ -55,6 +55,8 @@ Use GitHub Environment `dev`.
 - JWT key files:
   - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-private.pem`
   - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-public.pem`
+- JWT key directory bind mount:
+  - `/opt/sitionix/runtime/authorisationservice-sox/shared/keys` is mounted into the container at the same absolute path as read-only.
 - Shared internal auth env file, owned by infra:
   - `/opt/sitionix/runtime/shared/dev-internal-auth.env`
 - Release backups:
@@ -77,6 +79,7 @@ The deploy workflow materializes these runtime values for the container:
 - Remote rollout waits for Spring actuator health:
   - `GET /authsox/actuator/health/readiness`
   - `GET /authsox/actuator/health`
+- Before replacing the running container, rollout starts a temporary container with the same image, env files, and read-only key mount to verify that both configured JWT key paths are readable.
 - Workflow smoke verification opens an SSH tunnel to `127.0.0.1:9090` on the VM and checks:
   - readiness endpoint returns `UP`
   - health endpoint returns `UP`
