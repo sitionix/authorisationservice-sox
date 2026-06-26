@@ -65,6 +65,7 @@ Use GitHub Environment `dev`.
 ## Runtime Environment Values
 The deploy workflow materializes these runtime values for the container:
 - `SPRING_PROFILES_ACTIVE=dev`
+- `ENVIRONMENT=dev`
 - `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auths_sox`
 - `SPRING_DATASOURCE_USERNAME=authssox_app`
 - `SPRING_DATASOURCE_PASSWORD` from `AUTHS_SOX_DB_PASSWORD`

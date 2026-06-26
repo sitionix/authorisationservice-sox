@@ -1,4 +1,4 @@
-name: Dev Deploy Resolve
+name: Service Deploy Resolve
 description: Resolve a service deploy target from a trigger comment.
 
 inputs:
@@ -97,7 +97,7 @@ runs:
         abort("Deploy comment must include --name <service>") if service_name.nil? || service_name.empty?
         abort("Deploy comment must include --env <environment>") if environment_id.nil? || environment_id.empty?
         abort("Unknown service name: #{service_name}") unless service_name == "authorisationservice-sox"
-        abort("Unknown deploy environment: #{environment_id}") unless environment_id == "dev"
+        abort("Invalid deploy environment: #{environment_id}") unless environment_id.match?(/\A[a-z][a-z0-9-]*\z/)
 
         emit(output_path, "enabled", "true")
         emit(output_path, "service_name", service_name)

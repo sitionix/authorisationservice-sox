@@ -1,12 +1,12 @@
-name: Dev Deploy On Push
+name: Auth Deploy On Push
 
 on:
   push:
     branches:
       - develop
     paths:
-      - ".github/workflows/auth-dev-deploy-on-push.yml"
-      - ".github/actions/auth-dev-deploy-run/**"
+      - ".github/workflows/auth-deploy-on-push.yml"
+      - ".github/actions/auth-service-deploy-run/**"
       - ".github/actions/db-migrate-run/**"
       - ".github/actions/materialize-maven-settings/**"
       - "db-migration/**"
@@ -20,13 +20,43 @@ on:
       - "Dockerfile"
       - "pom.xml"
   workflow_dispatch:
-
-permissions:
-  contents: read
+    inputs:
+      environment_id:
+        description: GitHub Environment id to deploy. Falls back to PUSH_DEPLOY_ENVIRONMENT_ID when omitted.
+        required: false
+        type: string
 
 jobs:
+  resolve-deploy-target:
+    runs-on: ubuntu-latest
+    outputs:
+      environment_id: ${{ steps.resolve.outputs.environment_id }}
+    steps:
+      - name: Resolve deploy environment
+        id: resolve
+        shell: bash
+        env:
+          INPUT_ENVIRONMENT_ID: ${{ github.event.inputs.environment_id }}
+          PUSH_ENVIRONMENT_ID: ${{ vars.PUSH_DEPLOY_ENVIRONMENT_ID }}
+        run: |
+          environment_id="${INPUT_ENVIRONMENT_ID:-}"
+          if [[ -z "${environment_id}" ]]; then
+            environment_id="${PUSH_ENVIRONMENT_ID:-}"
+          fi
+          if [[ -z "${environment_id}" ]]; then
+            echo "Missing deployment environment. Set PUSH_DEPLOY_ENVIRONMENT_ID or provide workflow_dispatch environment_id." >&2
+            exit 1
+          fi
+          if [[ ! "${environment_id}" =~ ^[a-z][a-z0-9-]*$ ]]; then
+            echo "Invalid deployment environment: ${environment_id}" >&2
+            exit 1
+          fi
+          echo "environment_id=${environment_id}" >> "${GITHUB_OUTPUT}"
+
   detect-db-migrations:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       migrations_changed: ${{ steps.detect.outputs.migrations_changed }}
     steps:
@@ -55,10 +85,12 @@ jobs:
           fi
 
   db-migrate:
-    needs: detect-db-migrations
+    needs:
+      - detect-db-migrations
+      - resolve-deploy-target
     if: needs.detect-db-migrations.outputs.migrations_changed == 'true'
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ needs.resolve-deploy-target.outputs.environment_id }}
     permissions:
       contents: read
     outputs:
@@ -77,11 +109,14 @@ jobs:
       - name: Resolve DB migration target
         id: resolve
         shell: bash
+        env:
+          TARGET_ENVIRONMENT_ID: ${{ needs.resolve-deploy-target.outputs.environment_id }}
         run: |
           ruby - <<'INNER_RUBY'
           require "yaml"
           model = YAML.load_file("db-migration/db-model.yaml")
-          env = model.fetch("database").fetch("environments").fetch("dev")
+          environment_id = ENV.fetch("TARGET_ENVIRONMENT_ID")
+          env = model.fetch("database").fetch("environments").fetch(environment_id)
           tunnel = env.fetch("tunnel")
 
           File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |out|
@@ -98,7 +133,7 @@ jobs:
       - name: Execute DB migration
         uses: ./.github/actions/db-migrate-run
         with:
-          environment_id: dev
+          environment_id: ${{ needs.resolve-deploy-target.outputs.environment_id }}
           database_name: ${{ steps.resolve.outputs.database_name }}
         env:
           FLYWAY_URL: ${{ steps.resolve.outputs.database_url }}
@@ -115,16 +150,18 @@ jobs:
   deploy:
     needs:
       - detect-db-migrations
+      - resolve-deploy-target
       - db-migrate
     if: |
       always() &&
       needs.detect-db-migrations.result == 'success' &&
+      needs.resolve-deploy-target.result == 'success' &&
       (
         needs.detect-db-migrations.outputs.migrations_changed != 'true' ||
         needs.db-migrate.result == 'success'
       )
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ needs.resolve-deploy-target.outputs.environment_id }}
     permissions:
       contents: read
       packages: write
@@ -135,10 +172,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - name: Execute dev deployment
-        uses: ./.github/actions/auth-dev-deploy-run
+      - name: Execute deployment
+        uses: ./.github/actions/auth-service-deploy-run
         with:
-          github_environment: dev
+          github_environment: ${{ needs.resolve-deploy-target.outputs.environment_id }}
         env:
           DEPLOY_VM_HOST: ${{ secrets.DEPLOY_VM_HOST }}
           DEPLOY_VM_USER: ${{ secrets.DEPLOY_VM_USER }}
