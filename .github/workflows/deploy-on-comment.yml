@@ -153,7 +153,7 @@ jobs:
 
       - name: Resolve service deploy target
         id: resolve_target
-        uses: ./.github/actions/dev-deploy-resolve
+        uses: ./.github/actions/service-deploy-resolve
         with:
           comment_body: ${{ github.event.comment.body }}
           is_pull_request: "true"

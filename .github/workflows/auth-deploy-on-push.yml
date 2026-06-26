@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       environment_id:
-        description: GitHub Environment id to deploy. Falls back to AUTH_PUSH_DEPLOY_ENVIRONMENT_ID when omitted.
+        description: GitHub Environment id to deploy. Falls back to PUSH_DEPLOY_ENVIRONMENT_ID when omitted.
         required: false
         type: string
 
@@ -40,14 +40,14 @@ jobs:
         shell: bash
         env:
           INPUT_ENVIRONMENT_ID: ${{ github.event.inputs.environment_id }}
-          PUSH_ENVIRONMENT_ID: ${{ vars.AUTH_PUSH_DEPLOY_ENVIRONMENT_ID }}
+          PUSH_ENVIRONMENT_ID: ${{ vars.PUSH_DEPLOY_ENVIRONMENT_ID }}
         run: |
           environment_id="${INPUT_ENVIRONMENT_ID:-}"
           if [[ -z "${environment_id}" ]]; then
             environment_id="${PUSH_ENVIRONMENT_ID:-}"
           fi
           if [[ -z "${environment_id}" ]]; then
-            echo "Missing deployment environment. Set AUTH_PUSH_DEPLOY_ENVIRONMENT_ID or provide workflow_dispatch environment_id." >&2
+            echo "Missing deployment environment. Set PUSH_DEPLOY_ENVIRONMENT_ID or provide workflow_dispatch environment_id." >&2
             exit 1
           fi
           if [[ ! "${environment_id}" =~ ^[a-z][a-z0-9-]*$ ]]; then
