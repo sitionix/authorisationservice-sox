@@ -50,7 +50,7 @@ jobs:
             });
 
       - name: Execute deployment
-        uses: ./.github/actions/auth-dev-deploy-run
+        uses: ./.github/actions/auth-service-deploy-run
         with:
           github_environment: ${{ github.event.client_payload.environmentId }}
         env:

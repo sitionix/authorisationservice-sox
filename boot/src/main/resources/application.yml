@@ -1,4 +1,4 @@
-environment: localhost
+environment: ${ENVIRONMENT:localhost}
 server:
   port: 9090
   servlet:

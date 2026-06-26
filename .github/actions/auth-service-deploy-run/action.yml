@@ -1,5 +1,5 @@
-name: Dev Deploy Run
-description: Build, publish, deploy, and verify the authorisation service on the dev VM.
+name: Auth Service Deploy Run
+description: Build, publish, deploy, and verify the authorisation service on the target VM environment.
 
 inputs:
   github_environment:
@@ -107,12 +107,13 @@ runs:
         SITIONIX_BIND_ADDRESS=127.0.0.1
         SITIONIX_HOST_PORT=9090
         SITIONIX_CONTAINER_PORT=9090
-        SITIONIX_ACTIVE_PROFILE=dev
-        SITIONIX_DOCKER_NETWORK=sitionix-dev
+        SITIONIX_ACTIVE_PROFILE=${GITHUB_ENVIRONMENT_NAME}
+        SITIONIX_ENVIRONMENT=${GITHUB_ENVIRONMENT_NAME}
+        SITIONIX_DOCKER_NETWORK=sitionix-${GITHUB_ENVIRONMENT_NAME}
         SITIONIX_RUNTIME_ROOT=/opt/sitionix/runtime/authorisationservice-sox
         SITIONIX_BACKUP_ROOT=/opt/sitionix/backups/authorisationservice-sox
-        SITIONIX_SHARED_SECRET_ENV_PATH=/opt/sitionix/runtime/shared/dev-internal-auth.env
-        SITIONIX_SERVICE_ENV_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/authorisationservice-sox.dev.env
+        SITIONIX_SHARED_SECRET_ENV_PATH=/opt/sitionix/runtime/shared/${GITHUB_ENVIRONMENT_NAME}-internal-auth.env
+        SITIONIX_SERVICE_ENV_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/authorisationservice-sox.${GITHUB_ENVIRONMENT_NAME}.env
         SITIONIX_KEYS_DIR=/opt/sitionix/runtime/authorisationservice-sox/shared/keys
         SITIONIX_JWT_PRIVATE_KEY_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-private.pem
         SITIONIX_JWT_PUBLIC_KEY_PATH=/opt/sitionix/runtime/authorisationservice-sox/shared/keys/jwt-public.pem
@@ -131,7 +132,7 @@ runs:
           "imageRef": "${IMAGE_REF}",
           "githubSha": "${GITHUB_SHA}",
           "githubEnvironment": "${GITHUB_ENVIRONMENT_NAME}",
-          "dockerNetwork": "sitionix-dev",
+          "dockerNetwork": "sitionix-${GITHUB_ENVIRONMENT_NAME}",
           "containerName": "authorisationservice-sox",
           "privateHostPort": "127.0.0.1:9090",
           "privateBaseUrl": "http://authorisationservice-sox:9090/authsox"
